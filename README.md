@@ -130,7 +130,7 @@ Sobald jemand mit normalem Internetzugriff (z. B. lokal oder in Android
 Studio) am Projekt arbeitet, genügt einmalig:
 
 ```
-gradle wrapper --gradle-version 8.2 --distribution-type bin
+gradle wrapper --gradle-version 8.7 --distribution-type bin
 ```
 
 um `gradlew`, `gradlew.bat` und `gradle-wrapper.jar` zu erzeugen und
@@ -139,37 +139,55 @@ einzuchecken.
 ## Versionsmatrix
 
 Ausgangspunkt war AGP 8.5.2 / Kotlin 1.9.24 / Compose BOM 2024.06.00 /
-Compose-Compiler-Extension 1.5.14. Geprüft anhand der offiziellen
+Compose-Compiler-Extension 1.5.14. Das war ein zweistufiger Prozess:
+
+**1. Dokumentationsprüfung (vor dem ersten CI-Lauf):** Anhand der offiziellen
 [AGP/Kotlin-Kompatibilitätstabelle](https://developer.android.com/build/kotlin-support)
-(Stand 2026-07-06):
+(Stand 2026-07-06) schien Kotlin 1.9 auf AGP 7.4.2-8.2 begrenzt, während AGP
+8.5.2 mindestens Kotlin 2.0 verlangt. Da die Compose-Compiler-Extension 1.5.14
+exakt an Kotlin 1.9.24 gebunden ist, wurde in einer ersten Version AGP auf
+8.2.2 heruntergezogen statt Kotlin/Compose-Compiler hochzuziehen.
 
-| Kotlin-Version | Erforderliche AGP-Version |
-|---|---|
-| 1.9 | 7.4.2 - 8.2 |
-| 2.0 | 7.4.2 - 8.3 |
+**2. Korrektur durch den echten CI-Build:** Der erste `gradle assembleDebug`-
+Lauf in CI schlug an `:app:compileDebugKotlin` fehl - nicht wegen der App-
+Logik, sondern weil `com.google.mlkit:genai-speech-recognition:1.0.0-alpha1`
+selbst transitiv **`kotlin-stdlib:2.2.20`** zieht:
 
-**Ergebnis: AGP 8.5.2 und Kotlin 1.9.24 sind laut dieser Tabelle nicht
-kompatibel** (AGP 8.5.2 verlangt mindestens Kotlin 2.0). Da die
-Compose-Compiler-Extension 1.5.14 wiederum exakt an Kotlin 1.9.24 gebunden
-ist (letzte 1.9.x-kompatible Compiler-Version laut
-[Compose-Kotlin-Kompatibilitätstabelle](https://developer.android.com/jetpack/androidx/releases/compose-kotlin)),
-wurde **AGP auf 8.2.2 heruntergezogen** (die höchste mit Kotlin 1.9.x
-kompatible Version) statt Kotlin/Compose-Compiler hochzuziehen - das ist die
-kleinere, konsistente Änderung und vermeidet den Umstieg auf das neue
-Compose-Compiler-Gradle-Plugin (K2), das erst ab Kotlin 2.0 greift.
+```
+e: Class 'kotlin.Unit' was compiled with an incompatible version of Kotlin.
+   The actual metadata version is 2.2.0, but the compiler version 1.9.0
+   can read versions up to 2.0.0.
+```
+
+Diese Alpha-API ist selbst bereits mit einem deutlich neueren Kotlin gebaut,
+als die (per Doku-Tabelle plausible) 1.9.24-Wahl vorsah - genau die Art von
+Erkenntnis, die nur ein echter Build mit echtem Netzzugriff liefern kann,
+keine Versionstabelle. Reaktion: Kotlin auf **2.2.20** hochziehen (passend
+zur bereits transitiv gezogenen Stdlib-Version), womit AGP 8.5.2 wieder
+gültig wird (Kotlin 2.2 erlaubt laut Tabelle AGP 7.3.1-8.10) - **AGP konnte
+also auf den ursprünglich vorgesehenen Wert zurückgesetzt werden**. Die alte
+`composeOptions.kotlinCompilerExtensionVersion`-Mechanik (K1) existiert ab
+Kotlin 2.0 nicht mehr; sie wurde durch das offizielle
+`org.jetbrains.kotlin.plugin.compose`-Gradle-Plugin (K2, Version = Kotlin-
+Version) ersetzt.
 
 Finale Versionen:
 
 | Komponente | Wert |
 |---|---|
-| Android Gradle Plugin | **8.2.2** (↓ von 8.5.2) |
-| Kotlin | 1.9.24 (unverändert) |
-| Compose BOM | 2024.06.00 (unverändert) |
-| Compose-Compiler-Extension | 1.5.14 (unverändert) |
-| Gradle | 8.2 (passend zu AGP 8.2.2) |
-| compileSdk / targetSdk | 34 (Maximum für AGP 8.2) |
+| Android Gradle Plugin | 8.5.2 (unverändert - siehe oben, zwischenzeitlich auf 8.2.2 herunter- und wieder hochgezogen) |
+| Kotlin | **2.2.20** (↑ von 1.9.24, durch echten CI-Fehler erzwungen) |
+| Compose-Compiler-Mechanik | **`org.jetbrains.kotlin.plugin.compose` 2.2.20** (↑ ersetzt die K1-Extension 1.5.14, die es ab Kotlin 2.0 nicht mehr gibt) |
+| Compose BOM | 2024.06.00 (unverändert; ggf. bei weiteren CI-Fehlern nochmals prüfen) |
+| Gradle | **8.7** (↑ von 8.2, Mindestversion für AGP 8.5.2) |
+| compileSdk / targetSdk | 34 (unverändert) |
 | minSdk | 26 (unverändert, hartes Requirement) |
 | JDK (Gradle/AGP) | 17 |
+
+Dieser Verlauf ist ein gutes Beispiel dafür, warum der CI-Lauf in
+`.github/workflows/build-apk.yml` die verbindliche Verifikation ist und die
+Versionsmatrix hier nur der Ausgangspunkt: Die endgültigen Zahlen stehen erst
+fest, wenn `gradle assembleDebug` tatsächlich grün ist.
 
 ## Offene Punkte
 

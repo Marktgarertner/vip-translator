@@ -32,10 +32,10 @@ jobs:
       - name: Android-Plattform & Build-Tools installieren
         run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Gradle 8.2 einrichten
+      - name: Gradle 8.7 einrichten
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.2"
+          gradle-version: "8.7"
 
       # Kein gradlew im Repo eingecheckt: das Wrapper-Binary konnte in der
       # Entwicklungs-Sandbox nicht von services.gradle.org bezogen werden
