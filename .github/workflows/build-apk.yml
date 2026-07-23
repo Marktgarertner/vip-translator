@@ -16,6 +16,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,7 +43,7 @@ jobs:
       # (siehe README). Gradle wird hier stattdessen direkt über
       # gradle/actions/setup-gradle bereitgestellt.
       - name: Debug-APK bauen
-        run: gradle assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace --no-daemon
 
       - name: APK hochladen
         uses: actions/upload-artifact@v4
