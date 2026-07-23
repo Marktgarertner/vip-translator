@@ -1,0 +1,51 @@
+name: Build APK
+
+# Diese Session konnte den Build nicht lokal validieren: die Sandbox-Egress-
+# Policy blockiert dl.google.com / maven.google.com / developers.google.com,
+# wodurch weder AndroidX/Compose noch ML Kit (Translate, GenAI Speech
+# Recognition) noch Android-SDK-Komponenten auflösbar waren. Dieser Workflow
+# läuft auf einem GitHub-Runner mit vollem Internetzugriff und ist damit die
+# eigentliche, verbindliche Build-Verifikation für dieses Projekt. Siehe
+# README.md, Abschnitt "Build-Verifikation".
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: JDK 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK einrichten
+        uses: android-actions/setup-android@v3
+
+      - name: Android-Plattform & Build-Tools installieren
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Gradle 8.2 einrichten
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.2"
+
+      # Kein gradlew im Repo eingecheckt: das Wrapper-Binary konnte in der
+      # Entwicklungs-Sandbox nicht von services.gradle.org bezogen werden
+      # (siehe README). Gradle wird hier stattdessen direkt über
+      # gradle/actions/setup-gradle bereitgestellt.
+      - name: Debug-APK bauen
+        run: gradle assembleDebug --stacktrace
+
+      - name: APK hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: vip-live-uebersetzer-debug
+          path: app/build/outputs/apk/debug/*.apk
