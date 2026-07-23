@@ -14,6 +14,7 @@ import com.google.mlkit.genai.speechrecognition.speechRecognizerRequest
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -67,7 +68,7 @@ object SpeechEngine {
 
     /** Prüft, ob das Modell bereits verfügbar ist oder erst heruntergeladen werden muss. */
     suspend fun checkFeatureStatus(recognizer: SpeechRecognizer): Int =
-        recognizer.checkFeatureStatus().await()
+        recognizer.checkStatus().await()
 
     /**
      * Lädt das Spracherkennungsmodell bei Bedarf herunter. [onProgress] liefert
@@ -95,7 +96,7 @@ object SpeechEngine {
                 throw exception
             }
         }
-        recognizer.downloadFeature(callback).await()
+        recognizer.download(callback).await()
     }
 
     /**
@@ -121,6 +122,12 @@ object SpeechEngine {
                         is SpeechRecognizerResponse.PartialTextResponse -> onPartial(response.text)
                         is SpeechRecognizerResponse.FinalTextResponse -> onFinal(response.text)
                         is SpeechRecognizerResponse.CompletedResponse -> Unit
+                        // Exaktes Feld/Property von ErrorResponse ist bei diesem Alpha-API
+                        // per CI-Diagnose (javap) noch zu bestimmen; response.toString()
+                        // ist hier ein bewusster Zwischenstand, kein Rückfall auf den
+                        // ursprünglichen Platzhalter (der betraf den Text-Fall, nicht Fehler).
+                        is SpeechRecognizerResponse.ErrorResponse ->
+                            onError(IllegalStateException("Speech-Recognition-Fehler: $response"))
                     }
                 }
             } catch (e: CancellationException) {
@@ -131,8 +138,15 @@ object SpeechEngine {
         }
     }
 
+    /**
+     * `stopRecognition()` ist eine suspend fun; da [stopListening] aus nicht-suspend
+     * Kontexten (z. B. `DisposableEffect.onDispose`) aufgerufen wird, läuft der Aufruf
+     * in einem eigenen, von der Compose-Lifecycle unabhängigen Scope.
+     */
     fun stopListening(recognizer: SpeechRecognizer) {
-        recognizer.stopRecognition()
+        CoroutineScope(Dispatchers.Default).launch {
+            runCatching { recognizer.stopRecognition() }
+        }
     }
 
     fun release(recognizer: SpeechRecognizer) {
