@@ -1,9 +1,7 @@
 package de.vip.liveuebersetzer
 
 import android.os.Build
-import com.google.mlkit.genai.common.DownloadCallback
 import com.google.mlkit.genai.common.FeatureStatus
-import com.google.mlkit.genai.common.GenAiException
 import com.google.mlkit.genai.common.audio.AudioSource
 import com.google.mlkit.genai.speechrecognition.SpeechRecognition
 import com.google.mlkit.genai.speechrecognition.SpeechRecognizer
@@ -18,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 /**
  * Dünner Wrapper um ML Kit GenAI Speech Recognition
@@ -68,35 +65,17 @@ object SpeechEngine {
 
     /** Prüft, ob das Modell bereits verfügbar ist oder erst heruntergeladen werden muss. */
     suspend fun checkFeatureStatus(recognizer: SpeechRecognizer): Int =
-        recognizer.checkStatus().await()
+        recognizer.checkStatus()
 
     /**
-     * Lädt das Spracherkennungsmodell bei Bedarf herunter. [onProgress] liefert
-     * (heruntergeladene Bytes, Gesamtgröße) für eine optionale Fortschrittsanzeige.
+     * Lädt das Spracherkennungsmodell bei Bedarf herunter. `download()` liefert (laut
+     * CI-Diagnose der realen Alpha-AAR) direkt einen `Flow<DownloadStatus>` statt eines
+     * callback-basierten Downloads - hier bis zum Abschluss durchlaufen. Der genaue Aufbau
+     * von `DownloadStatus` ist nicht verifiziert, daher aktuell ohne Fortschrittsanzeige.
      */
-    suspend fun ensureModelDownloaded(
-        recognizer: SpeechRecognizer,
-        onProgress: (downloaded: Long, total: Long) -> Unit = { _, _ -> },
-    ) {
+    suspend fun ensureModelDownloaded(recognizer: SpeechRecognizer) {
         if (checkFeatureStatus(recognizer) != FeatureStatus.DOWNLOADABLE) return
-
-        var totalBytes = 0L
-        val callback = object : DownloadCallback {
-            override fun onDownloadStarted(bytesToDownload: Long) {
-                totalBytes = bytesToDownload
-            }
-
-            override fun onDownloadProgress(totalBytesDownloaded: Long) {
-                onProgress(totalBytesDownloaded, totalBytes)
-            }
-
-            override fun onDownloadCompleted() = Unit
-
-            override fun onDownloadFailed(exception: GenAiException) {
-                throw exception
-            }
-        }
-        recognizer.download(callback).await()
+        recognizer.download().collect { /* DownloadStatus: Fortschritt aktuell nicht ausgewertet */ }
     }
 
     /**
@@ -122,12 +101,7 @@ object SpeechEngine {
                         is SpeechRecognizerResponse.PartialTextResponse -> onPartial(response.text)
                         is SpeechRecognizerResponse.FinalTextResponse -> onFinal(response.text)
                         is SpeechRecognizerResponse.CompletedResponse -> Unit
-                        // Exaktes Feld/Property von ErrorResponse ist bei diesem Alpha-API
-                        // per CI-Diagnose (javap) noch zu bestimmen; response.toString()
-                        // ist hier ein bewusster Zwischenstand, kein Rückfall auf den
-                        // ursprünglichen Platzhalter (der betraf den Text-Fall, nicht Fehler).
-                        is SpeechRecognizerResponse.ErrorResponse ->
-                            onError(IllegalStateException("Speech-Recognition-Fehler: $response"))
+                        is SpeechRecognizerResponse.ErrorResponse -> onError(response.e)
                     }
                 }
             } catch (e: CancellationException) {

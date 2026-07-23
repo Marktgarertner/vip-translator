@@ -69,21 +69,33 @@ unberührt.
 
 `SpeechEngine.listen()` verarbeitet den `Flow<SpeechRecognizerResponse>` aus
 `SpeechRecognizer.startRecognition()` jetzt korrekt über ein `when` auf die
-drei tatsächlichen Antworttypen (Paket `com.google.mlkit.genai.speechrecognition`):
+vier tatsächlichen Antworttypen (Paket `com.google.mlkit.genai.speechrecognition`):
 
 - `SpeechRecognizerResponse.PartialTextResponse` - vorläufiger Text, über `.text`
 - `SpeechRecognizerResponse.FinalTextResponse` - finaler Text eines Segments, über `.text`
 - `SpeechRecognizerResponse.CompletedResponse` - Stream-Ende, kein Text
+- `SpeechRecognizerResponse.ErrorResponse` - Fehlerfall, über `.e` (eine `GenAiException`)
 
-Diese Namen stammen aus der öffentlichen ML-Kit-Referenzdokumentation
-(`developers.google.com/android/reference/.../SpeechRecognizerResponse.*`).
-Ein direktes Decompilieren der Alpha-AAR war in der Entwicklungs-Sandbox
-dieser Session nicht möglich (siehe nächster Abschnitt) - die Recherche
-erfolgte stattdessen über Suchmaschinen-Snippets der offiziellen Referenzseiten,
-da ein direkter Seitenabruf dort mit HTTP 403 blockiert wurde. **Da die API
-Alpha-Status hat, sollte dieser Teil beim ersten echten Build auf einem
-Gerät mit Zugriff auf `dl.google.com` gegen die tatsächliche AAR
-gegengeprüft werden.**
+**Diese Namen sind gegen die echte Alpha-AAR verifiziert**, nicht nur aus
+Doku-Snippets rekonstruiert: `developers.google.com` war für diese Session
+durchgehend blockiert (HTTP 403, sowohl direkt als auch über WebFetch), aber
+der CI-Workflow in `.github/workflows/build-apk.yml` enthält einen
+Diagnose-Schritt ("ML-Kit-GenAI-Speech-API introspizieren"), der die von
+Gradle aufgelöste AAR mit `javap -p` decompiliert und die echten
+Methodensignaturen ins Build-Log schreibt. Dabei zeigte sich, dass die
+anfängliche (aus Suchmaschinen-Snippets rekonstruierte) Annahme an mehreren
+Stellen falsch war:
+
+| Angenommen | Tatsächlich (per `javap`) |
+|---|---|
+| `checkFeatureStatus(): Task<Int>` | `checkStatus(): Int` (suspend, kein `Task`) |
+| `downloadFeature(callback): Task<Void>` | `download(): Flow<DownloadStatus>` (kein Callback, keine Parameter) |
+| `ErrorResponse` unbekannter Aufbau | `ErrorResponse(val e: GenAiException)` |
+| `SpeechRecognizerOptions.Mode` als Enum | `Mode` ist ein `@IntDef`-Interface mit `Int`-Konstanten |
+
+`DownloadStatus`s genauer Aufbau (für eine Fortschrittsanzeige beim Modell-
+Download) ist noch nicht verifiziert - `ensureModelDownloaded()` durchläuft
+den Flow aktuell bis zum Abschluss, ohne den Fortschritt auszuwerten.
 
 ## Build-Verifikation
 
