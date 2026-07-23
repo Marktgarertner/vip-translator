@@ -78,11 +78,12 @@ vier tatsächlichen Antworttypen (Paket `com.google.mlkit.genai.speechrecognitio
 
 **Diese Namen sind gegen die echte Alpha-AAR verifiziert**, nicht nur aus
 Doku-Snippets rekonstruiert: `developers.google.com` war für diese Session
-durchgehend blockiert (HTTP 403, sowohl direkt als auch über WebFetch), aber
-der CI-Workflow in `.github/workflows/build-apk.yml` enthält einen
-Diagnose-Schritt ("ML-Kit-GenAI-Speech-API introspizieren"), der die von
-Gradle aufgelöste AAR mit `javap -p` decompiliert und die echten
-Methodensignaturen ins Build-Log schreibt. Dabei zeigte sich, dass die
+durchgehend blockiert (HTTP 403, sowohl direkt als auch über WebFetch), daher
+enthielt der CI-Workflow zwischenzeitlich einen Diagnose-Schritt
+("ML-Kit-GenAI-Speech-API introspizieren"), der die von Gradle aufgelöste AAR
+mit `javap -p` decompiliert und die echten Methodensignaturen ins Build-Log
+geschrieben hat (mittlerweile aus dem Workflow entfernt, da sein Zweck erfüllt
+ist - das Ergebnis ist hier dokumentiert). Dabei zeigte sich, dass die
 anfängliche (aus Suchmaschinen-Snippets rekonstruierte) Annahme an mehreren
 Stellen falsch war:
 
@@ -99,10 +100,15 @@ den Flow aktuell bis zum Abschluss, ohne den Fortschritt auszuwerten.
 
 ## Build-Verifikation
 
-**Wichtiger Hinweis zu dieser Session:** Die Entwicklungs-Sandbox, in der
-dieses Projekt geschrieben wurde, hat eine Egress-Policy, die u. a.
+**Status: `gradle assembleDebug` ist grün.** Der CI-Workflow
+[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) baut das
+Projekt auf einem GitHub-Actions-Runner erfolgreich zu einer Debug-APK
+(Artifact `vip-live-uebersetzer-debug`).
+
+**Warum überhaupt CI statt eines lokalen Builds:** Die Entwicklungs-Sandbox,
+in der dieses Projekt geschrieben wurde, hat eine Egress-Policy, die u. a.
 `dl.google.com`, `maven.google.com` und `developers.google.com` blockiert
-(HTTP 403 auf allen drei Hosts, verifiziert). Damit war es nicht möglich,
+(HTTP 403 auf allen drei Hosts, verifiziert). Damit war es dort nicht möglich,
 - Android-SDK-Plattformen/Build-Tools per `sdkmanager` zu installieren,
 - AndroidX/Jetpack-Compose-Artefakte aufzulösen (nur auf Google Maven
   gehostet, kein Mirror auf Maven Central),
@@ -110,31 +116,38 @@ dieses Projekt geschrieben wurde, hat eine Egress-Policy, die u. a.
 - oder die offizielle Gradle-Distribution zu laden (der Download von
   `services.gradle.org` leitet auf einen GitHub-Release-Download um, der in
   dieser Sandbox ebenfalls blockiert war - deshalb liegt hier **kein
-  `gradlew`/`gradle-wrapper.jar`** im Repo).
+  `gradlew`/`gradle-wrapper.jar`** im Repo, siehe unten).
 
 Ein echter `gradle assembleDebug` war in dieser Sandbox also grundsätzlich
-nicht durchführbar - unabhängig vom Anwendungscode. Validiert wurde
-stattdessen:
+nicht durchführbar - unabhängig vom Anwendungscode. Der Weg zu einem grünen
+Build:
 
-1. Eine Kotlin-Kompilierprüfung des Anwendungscodes gegen lokal geschriebene
-   Stubs, die exakt die recherchierte API-Form von ML Kit Translate/GenAI
-   Speech Recognition sowie Jetpack Compose nachbilden (Kotlin-2.0.21-Compiler
-   aus der lokalen Gradle-Distribution, da kein `kotlinc` direkt verfügbar war).
-   **Ergebnis: alle sieben Quelldateien (`LanguageCatalog.kt`, `TranslationEngine.kt`,
-   `SpeechEngine.kt`, `MainActivity.kt`, `Color.kt`, `Type.kt`, `Theme.kt`) kompilieren
-   fehlerfrei** (Exit-Code 0, 117 erzeugte `.class`-Dateien). Dabei wurde ein echter Bug
-   gefunden und gefixt: `MainActivity.kt` enthielt ein `return@TypedModePanel` in einer
-   Lambda, die an eine nicht-`inline`-Funktion übergeben wird - dieses implizite Label
-   existiert dort nicht (nur bei `inline`-Funktionen). Behoben durch Entfernen der
-   (ohnehin durch `Button.enabled` bereits redundanten) Guard-Klausel. Diese
-   Stub-Kompilierung prüft nur Syntax/Typen/Referenzen der App-eigenen Logik gegen
-   die recherchierte API-Form, **nicht** die Korrektheit dieser Recherche selbst
-   gegen die echte ML-Kit-Alpha-AAR - das leistet erst der CI-Lauf.
-2. Der tatsächliche `gradle assembleDebug`-Lauf über
-   [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) auf
-   einem GitHub-Actions-Runner mit vollem Internetzugriff - das ist die
-   verbindliche Build-Verifikation für dieses Projekt, wie in der
-   Aufgabenstellung als Fallback vorgesehen.
+1. Kotlin-Kompilierprüfung des Anwendungscodes gegen lokal geschriebene Stubs,
+   die die recherchierte API-Form von ML Kit Translate/GenAI Speech
+   Recognition sowie Jetpack Compose nachbilden (Kotlin-2.0.21-Compiler aus
+   der lokalen Gradle-Distribution, da kein `kotlinc` direkt verfügbar war).
+   Fing einen echten Bug ab (`return@TypedModePanel`-Label in einer Lambda an
+   eine nicht-`inline`-Funktion), aber prüft naturgemäß nicht, ob die
+   recherchierte API-Form selbst stimmt.
+2. Erster echter CI-Lauf: schlug fehl, weil `genai-speech-recognition` selbst
+   transitiv ein deutlich neueres Kotlin verlangt als angenommen (siehe
+   Versionsmatrix unten) - ein reiner Versionskonflikt, keine Code-Änderung.
+3. Nach der Versionskorrektur schlug CI mit echten Kotlin-Compile-Fehlern
+   fehl: `ExposedDropdownMenu` (Compose) existiert in der aufgelösten
+   Material3-Version nicht, und `SpeechEngine.kt`s angenommene ML-Kit-API
+   (`checkFeatureStatus`, `downloadFeature`) stimmte nicht mit der echten
+   AAR überein. Ein temporärer Diagnose-Schritt im CI-Workflow hat die
+   tatsächlichen Klassen mit `javap -p` decompiliert (siehe Abschnitt oben) -
+   das lieferte die exakten echten Methodensignaturen.
+4. Mit diesen echten Signaturen gefixt, erneut per CI verifiziert: **grün.**
+   Der Diagnose-Schritt wurde danach wieder aus dem Workflow entfernt, da sein
+   Zweck erfüllt ist.
+
+Dieser Verlauf ist der Grund, warum der CI-Lauf die verbindliche
+Verifikation für dieses Projekt ist (wie in der Aufgabenstellung als
+Fallback vorgesehen) und keine rein lokale/Doku-basierte Prüfung ausreicht:
+mehrere reale Fehler (Versionskonflikt, zwei falsch angenommene APIs) wurden
+ausschließlich durch den echten Build mit echtem Netzzugriff sichtbar.
 
 ### Gradle-Wrapper nachträglich ergänzen
 
@@ -196,10 +209,8 @@ Finale Versionen:
 | minSdk | 26 (unverändert, hartes Requirement) |
 | JDK (Gradle/AGP) | 17 |
 
-Dieser Verlauf ist ein gutes Beispiel dafür, warum der CI-Lauf in
-`.github/workflows/build-apk.yml` die verbindliche Verifikation ist und die
-Versionsmatrix hier nur der Ausgangspunkt: Die endgültigen Zahlen stehen erst
-fest, wenn `gradle assembleDebug` tatsächlich grün ist.
+Diese Versionsmatrix ist mit dieser Kombination gegen einen echten, grünen
+`gradle assembleDebug`-Lauf in CI verifiziert (siehe "Build-Verifikation").
 
 ## Offene Punkte
 
@@ -210,8 +221,10 @@ fest, wenn `gradle assembleDebug` tatsächlich grün ist.
   liefert `false`), die App bleibt aber voll funktionsfähig im getippten
   Modus (`minSdk 26` deckt das ab). Sollte vor dem Rollout geklärt werden,
   falls Live-Spracherkennung an den Schaltern erwartet wird.
-- **SpeechRecognizerResponse-Feldnamen (Alpha-API):** siehe Abschnitt oben -
-  aus Suchmaschinen-Snippets der Google-Referenzdoku rekonstruiert, nicht
-  gegen die reale AAR geprüft. Sollte beim ersten Build mit Netzzugriff auf
-  `dl.google.com` verifiziert werden.
+- **`DownloadStatus`-Aufbau:** `SpeechRecognizer.download(): Flow<DownloadStatus>`
+  ist gegen die echte AAR verifiziert (siehe Abschnitt oben), der genaue
+  Aufbau von `DownloadStatus` selbst (für eine Fortschrittsanzeige) aber
+  nicht - `ensureModelDownloaded()` durchläuft den Flow aktuell nur bis zum
+  Abschluss. Kein Blocker (der Download funktioniert), aber offen für eine
+  spätere Fortschrittsanzeige beim Modell-Download.
 - **Package-Name:** `de.vip.liveuebersetzer` (unverändert, hartes Requirement).

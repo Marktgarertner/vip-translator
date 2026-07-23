@@ -45,34 +45,6 @@ jobs:
       - name: Debug-APK bauen
         run: gradle assembleDebug --stacktrace --no-daemon
 
-      # Diagnose fuer die Alpha-API (com.google.mlkit:genai-speech-recognition):
-      # da developers.google.com in der Entwicklungs-Sandbox blockiert war,
-      # dient dieser Schritt dazu, die echten Methodensignaturen direkt aus der
-      # aufgeloesten AAR zu lesen (javap), statt sie erneut zu erraten. Laeuft
-      # unabhaengig vom Erfolg des Builds oben.
-      - name: ML-Kit-GenAI-Speech-API introspizieren (Diagnose)
-        if: always()
-        run: |
-          gradle :app:dependencies --configuration debugRuntimeClasspath -q --no-daemon || true
-          mkdir -p /tmp/genai-introspect
-          JARS=$(find ~/.gradle/caches -type f \( -iname "genai-speech-recognition*.jar" -o -iname "genai-common*.jar" \) 2>/dev/null)
-          echo "Gefundene JARs:"
-          echo "$JARS"
-          for JAR in $JARS; do
-            echo "=== $JAR ==="
-            rm -rf /tmp/genai-introspect/extract
-            mkdir -p /tmp/genai-introspect/extract
-            unzip -oq "$JAR" -d /tmp/genai-introspect/extract
-            find /tmp/genai-introspect/extract -iname "*.class" \
-              | sed -E 's/\.class$//; s#^/tmp/genai-introspect/extract/##; s#/#.#g' \
-              | grep -iE 'speechrecognition|genai\.common' \
-              | sort -u \
-              | while read -r CLASS; do
-                  echo "--- $CLASS ---"
-                  javap -p -classpath "$JAR" "$CLASS" || true
-                done
-          done
-
       - name: APK hochladen
         uses: actions/upload-artifact@v4
         with:
