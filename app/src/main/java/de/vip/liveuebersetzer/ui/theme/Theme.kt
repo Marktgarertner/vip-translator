@@ -7,15 +7,15 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val LightColors = lightColorScheme(
-    primary = VipBlue,
-    secondary = VipAccent,
-    tertiary = VipBlueLight,
+    primary = VipGreen,
+    secondary = VipOrange,
+    tertiary = VipGreenLight,
 )
 
 private val DarkColors = darkColorScheme(
-    primary = VipBlueLight,
-    secondary = VipAccent,
-    tertiary = VipBlueDark,
+    primary = VipGreenLight,
+    secondary = VipOrange,
+    tertiary = VipGreenDark,
 )
 
 @Composable

@@ -7,20 +7,25 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
@@ -36,10 +41,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -49,8 +52,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.mlkit.genai.speechrecognition.SpeechRecognizer
@@ -64,8 +70,8 @@ private enum class TranslationMode { GETIPPT, LIVE }
 /**
  * Ein abgeschlossener Gesprächsbeitrag. Der Verlauf lebt bewusst nur im
  * Arbeitsspeicher (Datenschutz: nichts wird persistiert) und bleibt beim
- * Sprachwechsel bzw. Richtungstausch vollständig erhalten - jeder Eintrag
- * trägt sein eigenes Sprachpaar.
+ * Sprach- bzw. Richtungswechsel vollständig erhalten - jeder Eintrag trägt
+ * sein eigenes Sprachpaar.
  */
 private data class ConversationEntry(
     val id: Long,
@@ -73,7 +79,19 @@ private data class ConversationEntry(
     val targetLanguage: Language,
     val originalText: String,
     val translatedText: String,
-)
+) {
+    /** Text dieses Beitrags in der Sprache der jeweiligen Bildschirmhälfte. */
+    fun textFor(pane: Language): String = when (pane.code) {
+        sourceLanguage.code -> originalText
+        else -> translatedText
+    }
+
+    /** Das jeweils andere Gegenstück zu [textFor]. */
+    fun counterpartFor(pane: Language): String = when (pane.code) {
+        sourceLanguage.code -> translatedText
+        else -> originalText
+    }
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,8 +112,9 @@ private fun LiveUebersetzerScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var sourceLanguage by remember { mutableStateOf(LanguageCatalog.defaultSource) }
-    var targetLanguage by remember { mutableStateOf(LanguageCatalog.defaultTarget) }
+    var staffLanguage by remember { mutableStateOf(LanguageCatalog.defaultSource) }
+    var customerLanguage by remember { mutableStateOf(LanguageCatalog.defaultTarget) }
+    var customerSpeaks by remember { mutableStateOf(false) }
     var mode by remember { mutableStateOf(TranslationMode.GETIPPT) }
 
     var inputText by remember { mutableStateOf("") }
@@ -114,13 +133,22 @@ private fun LiveUebersetzerScreen() {
     val speechOutput = remember { SpeechOutput(context) }
     var speechOutputEnabled by remember { mutableStateOf(true) }
 
-    val liveSupported = SpeechEngine.isLiveSupported(sourceLanguage.code)
+    // Wer gerade spricht, bestimmt Quell- und Zielsprache der nächsten Beiträge.
+    val speakingLanguage = if (customerSpeaks) customerLanguage else staffLanguage
+    val answerLanguage = if (customerSpeaks) staffLanguage else customerLanguage
+    val liveSupported = SpeechEngine.isLiveSupported(speakingLanguage.code)
 
     fun addEntry(from: Language, to: Language, original: String, translated: String) {
-        // Neuester Eintrag an Index 0; die Liste rendert mit reverseLayout,
-        // sodass er wie in einem Chat unten erscheint.
+        // Neuester Eintrag an Index 0; die Listen rendern mit reverseLayout,
+        // sodass er auf beiden Bildschirmhälften wie in einem Chat "unten" steht.
         conversation.add(0, ConversationEntry(nextEntryId++, from, to, original, translated))
         if (speechOutputEnabled) speechOutput.speak(translated, to)
+    }
+
+    fun speakOrExplain(text: String, language: Language) {
+        if (!speechOutput.speak(text, language)) {
+            errorMessage = "Sprachausgabe für ${language.displayName} ist auf diesem Gerät nicht verfügbar."
+        }
     }
 
     fun stopLive() {
@@ -139,10 +167,10 @@ private fun LiveUebersetzerScreen() {
         if (!liveSupported || isListening) return
         errorMessage = null
         liveTranscript = ""
-        // Sprachpaar zum Startzeitpunkt festhalten: Ein Richtungstausch während
+        // Sprachpaar zum Startzeitpunkt festhalten: Ein Richtungswechsel während
         // der Aufnahme darf bereits laufende Beiträge nicht mehr umdrehen.
-        val from = sourceLanguage
-        val to = targetLanguage
+        val from = speakingLanguage
+        val to = answerLanguage
         val recognizer = SpeechEngine.createRecognizer(from.code)
         activeRecognizer = recognizer
         isListening = true
@@ -198,11 +226,11 @@ private fun LiveUebersetzerScreen() {
         if (hasPermission) startLive() else micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
-    // Quellsprachwechsel (auch durch Tauschen): laufende Aufnahme stoppen, denn
-    // der Recognizer ist fest auf die Startsprache gebunden. Ist die neue
-    // Sprache nicht live-fähig (uk/ar), zusätzlich sauber auf Getippt
+    // Jeder Sprach- oder Richtungswechsel stoppt eine laufende Aufnahme, denn
+    // der Recognizer ist fest auf seine Startsprache gebunden. Ist die neue
+    // Sprechsprache nicht live-fähig (uk/ar), zusätzlich sauber auf Getippt
     // zurückfallen. Der Konversationsverlauf bleibt dabei erhalten.
-    LaunchedEffect(sourceLanguage) {
+    LaunchedEffect(staffLanguage, customerLanguage, customerSpeaks) {
         if (isListening) stopLive()
         if (!liveSupported && mode == TranslationMode.LIVE) {
             mode = TranslationMode.GETIPPT
@@ -217,75 +245,154 @@ private fun LiveUebersetzerScreen() {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("ViP Live-Übersetzer") },
-                actions = {
-                    IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
-                        Icon(
-                            imageVector = if (speechOutputEnabled) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
-                            contentDescription = if (speechOutputEnabled) {
-                                "Sprachausgabe ausschalten"
-                            } else {
-                                "Sprachausgabe einschalten"
-                            },
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                            conversation.clear()
-                            liveTranscript = ""
-                            errorMessage = null
-                        },
-                        enabled = conversation.isNotEmpty(),
-                    ) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Konversation löschen")
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
+        // ===== Kundenseite: um 180° gedreht, damit das Gegenüber am Schalter =====
+        // ===== alles in seiner Leserichtung sieht.                          =====
+        CustomerPane(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .rotate(180f),
+            language = customerLanguage,
+            entries = conversation,
+            pendingTranscript = liveTranscript.takeIf { isListening && customerSpeaks && it.isNotBlank() },
+            onSpeakClick = { entry -> speakOrExplain(entry.textFor(customerLanguage), customerLanguage) },
+        )
+
+        // Trennlinie in ViP-Grün zwischen den beiden Hälften.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(MaterialTheme.colorScheme.primary),
+        )
+
+        // ===== Mitarbeiterseite: alle Bedienelemente. =====
         Column(
             modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .fillMaxWidth()
+                .weight(1.3f)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            LanguageSelectorRow(
-                source = sourceLanguage,
-                target = targetLanguage,
-                onSourceChange = { sourceLanguage = it },
-                onTargetChange = { targetLanguage = it },
-                onSwap = {
-                    val tmp = sourceLanguage
-                    sourceLanguage = targetLanguage
-                    targetLanguage = tmp
-                },
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.vip_logo),
+                    contentDescription = "ViP-Logo",
+                    modifier = Modifier.size(32.dp),
+                )
+                Text(
+                    text = "ViP Live-Übersetzer",
+                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
+                    Icon(
+                        imageVector = if (speechOutputEnabled) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
+                        contentDescription = if (speechOutputEnabled) {
+                            "Sprachausgabe ausschalten"
+                        } else {
+                            "Sprachausgabe einschalten"
+                        },
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        conversation.clear()
+                        liveTranscript = ""
+                        errorMessage = null
+                    },
+                    enabled = conversation.isNotEmpty(),
+                ) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Konversation löschen")
+                }
+            }
 
-            ModeSwitcher(
-                mode = mode,
-                liveSupported = liveSupported,
-                onModeChange = { newMode ->
-                    if (newMode == TranslationMode.GETIPPT) stopLive()
-                    mode = newMode
-                },
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                LanguageDropdown(
+                    modifier = Modifier.weight(1f),
+                    label = "Meine Sprache",
+                    selected = staffLanguage,
+                    onSelected = { staffLanguage = it },
+                )
+                LanguageDropdown(
+                    modifier = Modifier.weight(1f),
+                    label = "Kundensprache",
+                    selected = customerLanguage,
+                    onSelected = { customerLanguage = it },
+                )
+            }
 
-            ConversationList(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                entries = conversation,
-                onSpeakClick = { entry ->
-                    if (!speechOutput.speak(entry.translatedText, entry.targetLanguage)) {
-                        errorMessage =
-                            "Sprachausgabe für ${entry.targetLanguage.displayName} ist auf diesem Gerät nicht verfügbar."
+            // Große, selbsterklärende Richtungswahl statt eines Tausch-Icons.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = !customerSpeaks,
+                    onClick = { customerSpeaks = false },
+                    label = { Text("Ich spreche") },
+                )
+                FilterChip(
+                    selected = customerSpeaks,
+                    onClick = { customerSpeaks = true },
+                    label = { Text("Kunde spricht (${customerLanguage.displayName})") },
+                )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = mode == TranslationMode.GETIPPT,
+                    onClick = {
+                        stopLive()
+                        mode = TranslationMode.GETIPPT
+                    },
+                    label = { Text("Getippt") },
+                )
+                FilterChip(
+                    selected = mode == TranslationMode.LIVE,
+                    enabled = liveSupported,
+                    onClick = { mode = TranslationMode.LIVE },
+                    label = { Text(if (liveSupported) "Live" else "Live (für ${speakingLanguage.displayName} nicht verfügbar)") },
+                )
+            }
+
+            if (conversation.isEmpty()) {
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    text = "Noch keine Beiträge. Richtung wählen, dann Mikrofon antippen " +
+                        "oder Text eintippen - jede Übersetzung erscheint hier und beim " +
+                        "Kunden gedreht in Leserichtung, inklusive Vorlesen.",
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    reverseLayout = true,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(conversation, key = { it.id }) { entry ->
+                        StaffEntryCard(
+                            entry = entry,
+                            staffLanguage = staffLanguage,
+                            onSpeakClick = { speakOrExplain(entry.translatedText, entry.targetLanguage) },
+                        )
                     }
-                },
-            )
+                }
+            }
 
             errorMessage?.let { message ->
                 Text(text = message, color = MaterialTheme.colorScheme.error)
@@ -294,12 +401,13 @@ private fun LiveUebersetzerScreen() {
             when (mode) {
                 TranslationMode.GETIPPT -> TypedModePanel(
                     inputText = inputText,
+                    inputLabel = "Text eingeben (${speakingLanguage.displayName})",
                     onInputChange = { inputText = it },
                     isTranslating = isTranslating,
                     onTranslateClick = {
                         val textToTranslate = inputText
-                        val from = sourceLanguage
-                        val to = targetLanguage
+                        val from = speakingLanguage
+                        val to = answerLanguage
                         scope.launch {
                             isTranslating = true
                             errorMessage = null
@@ -318,6 +426,7 @@ private fun LiveUebersetzerScreen() {
                     isListening = isListening,
                     isPreparingSpeechModel = isPreparingSpeechModel,
                     liveTranscript = liveTranscript,
+                    speakingLanguageName = speakingLanguage.displayName,
                     onMicClick = ::onMicButtonClick,
                 )
             }
@@ -325,35 +434,126 @@ private fun LiveUebersetzerScreen() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LanguageSelectorRow(
-    source: Language,
-    target: Language,
-    onSourceChange: (Language) -> Unit,
-    onTargetChange: (Language) -> Unit,
-    onSwap: () -> Unit,
+private fun CustomerPane(
+    modifier: Modifier = Modifier,
+    language: Language,
+    entries: List<ConversationEntry>,
+    pendingTranscript: String?,
+    onSpeakClick: (ConversationEntry) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    Column(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        LanguageDropdown(
-            modifier = Modifier.weight(1f),
-            label = "Von",
-            selected = source,
-            onSelected = onSourceChange,
-        )
-        IconButton(onClick = onSwap) {
-            Icon(Icons.Filled.SwapHoriz, contentDescription = "Sprachen tauschen")
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Image(
+                painter = painterResource(R.drawable.vip_logo),
+                contentDescription = "ViP-Logo",
+                modifier = Modifier.size(40.dp),
+            )
+            Column {
+                Text(
+                    text = language.greeting,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Text(
+                    text = "Verkehrsbetrieb Potsdam",
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
         }
-        LanguageDropdown(
-            modifier = Modifier.weight(1f),
-            label = "Nach",
-            selected = target,
-            onSelected = onTargetChange,
-        )
+
+        pendingTranscript?.let { transcript ->
+            Text(text = transcript, color = MaterialTheme.colorScheme.tertiary)
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            reverseLayout = true,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(entries, key = { it.id }) { entry ->
+                CustomerEntryCard(
+                    entry = entry,
+                    language = language,
+                    onSpeakClick = { onSpeakClick(entry) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomerEntryCard(
+    entry: ConversationEntry,
+    language: Language,
+    onSpeakClick: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = entry.textFor(language),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = entry.counterpartFor(language),
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
+            IconButton(onClick = onSpeakClick) {
+                Icon(Icons.Filled.VolumeUp, contentDescription = "Vorlesen")
+            }
+        }
+    }
+}
+
+@Composable
+private fun StaffEntryCard(
+    entry: ConversationEntry,
+    staffLanguage: Language,
+    onSpeakClick: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = "${entry.sourceLanguage.displayName} → ${entry.targetLanguage.displayName}",
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+                Text(
+                    text = entry.textFor(staffLanguage),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = entry.counterpartFor(staffLanguage),
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
+            IconButton(onClick = onSpeakClick) {
+                Icon(Icons.Filled.VolumeUp, contentDescription = "Übersetzung erneut vorlesen")
+            }
+        }
     }
 }
 
@@ -398,82 +598,10 @@ private fun LanguageDropdown(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ModeSwitcher(
-    mode: TranslationMode,
-    liveSupported: Boolean,
-    onModeChange: (TranslationMode) -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = mode == TranslationMode.GETIPPT,
-            onClick = { onModeChange(TranslationMode.GETIPPT) },
-            label = { Text("Getippt") },
-        )
-        FilterChip(
-            selected = mode == TranslationMode.LIVE,
-            enabled = liveSupported,
-            onClick = { onModeChange(TranslationMode.LIVE) },
-            label = { Text(if (liveSupported) "Live" else "Live (nicht verfügbar)") },
-        )
-    }
-}
-
-@Composable
-private fun ConversationList(
-    modifier: Modifier = Modifier,
-    entries: List<ConversationEntry>,
-    onSpeakClick: (ConversationEntry) -> Unit,
-) {
-    if (entries.isEmpty()) {
-        Text(
-            modifier = modifier,
-            text = "Die Konversation erscheint hier. Der Verlauf bleibt beim Sprachwechsel erhalten.",
-        )
-        return
-    }
-    LazyColumn(
-        modifier = modifier,
-        // Neuester Eintrag (Index 0) unten, wie in einem Chat - ohne manuelles
-        // Scroll-Management bleibt der aktuellste Beitrag immer sichtbar.
-        reverseLayout = true,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(entries, key = { it.id }) { entry ->
-            ConversationEntryCard(entry = entry, onSpeakClick = { onSpeakClick(entry) })
-        }
-    }
-}
-
-@Composable
-private fun ConversationEntryCard(entry: ConversationEntry, onSpeakClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = "${entry.sourceLanguage.displayName} → ${entry.targetLanguage.displayName}",
-                    color = MaterialTheme.colorScheme.tertiary,
-                )
-                Text(text = entry.originalText)
-                Text(text = entry.translatedText, color = MaterialTheme.colorScheme.primary)
-            }
-            IconButton(onClick = onSpeakClick) {
-                Icon(Icons.Filled.VolumeUp, contentDescription = "Übersetzung vorlesen")
-            }
-        }
-    }
-}
-
 @Composable
 private fun TypedModePanel(
     inputText: String,
+    inputLabel: String,
     onInputChange: (String) -> Unit,
     isTranslating: Boolean,
     onTranslateClick: () -> Unit,
@@ -483,17 +611,18 @@ private fun TypedModePanel(
             modifier = Modifier.fillMaxWidth(),
             value = inputText,
             onValueChange = onInputChange,
-            label = { Text("Text eingeben") },
-            minLines = 3,
+            label = { Text(inputLabel) },
+            minLines = 2,
         )
         Button(
+            modifier = Modifier.fillMaxWidth(),
             onClick = onTranslateClick,
             enabled = !isTranslating && inputText.isNotBlank(),
         ) {
             if (isTranslating) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp))
             } else {
-                Text("Übersetzen")
+                Text("Übersetzen und vorlesen")
             }
         }
     }
@@ -504,23 +633,31 @@ private fun LiveModePanel(
     isListening: Boolean,
     isPreparingSpeechModel: Boolean,
     liveTranscript: String,
+    speakingLanguageName: String,
     onMicClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         IconButton(onClick = onMicClick) {
             Icon(
                 imageVector = if (isListening) Icons.Filled.MicOff else Icons.Filled.Mic,
                 contentDescription = if (isListening) "Aufnahme stoppen" else "Aufnahme starten",
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(56.dp),
                 tint = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             )
         }
+        Text(
+            text = if (isListening) {
+                "Aufnahme läuft - zum Beenden antippen"
+            } else {
+                "Zum Sprechen antippen ($speakingLanguageName)"
+            },
+        )
         if (isPreparingSpeechModel) {
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp))
                 Text(" Spracherkennungsmodell wird vorbereitet …")
             }

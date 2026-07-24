@@ -7,6 +7,8 @@ import com.google.mlkit.nl.translate.TranslateLanguage
  *
  * @param code ISO-639-1-Code, intern durchgängig als Schlüssel verwendet.
  * @param displayName Anzeigename in der (deutschsprachigen) UI.
+ * @param greeting Begrüßung in der Sprache selbst - wird auf der Kundenseite
+ *   des Splitscreens angezeigt.
  * @param mlKitLanguage ML-Kit-Translate-Sprachkonstante (siehe [TranslateLanguage]).
  * @param speechLocaleTag BCP-47-Tag für [SpeechEngine], oder `null` wenn diese
  *   Sprache im Live-Modus nicht unterstützt wird (dann nur getippter Modus).
@@ -14,6 +16,7 @@ import com.google.mlkit.nl.translate.TranslateLanguage
 data class Language(
     val code: String,
     val displayName: String,
+    val greeting: String,
     val mlKitLanguage: String,
     val speechLocaleTag: String?,
 ) {
@@ -41,17 +44,17 @@ data class Language(
 object LanguageCatalog {
 
     val all: List<Language> = listOf(
-        Language("de", "Deutsch", TranslateLanguage.GERMAN, "de-DE"),
-        Language("en", "Englisch", TranslateLanguage.ENGLISH, "en-US"),
-        Language("ru", "Russisch", TranslateLanguage.RUSSIAN, "ru-RU"),
-        Language("tr", "Türkisch", TranslateLanguage.TURKISH, "tr-TR"),
-        Language("pl", "Polnisch", TranslateLanguage.POLISH, "pl-PL"),
-        Language("vi", "Vietnamesisch", TranslateLanguage.VIETNAMESE, "vi-VN"),
-        Language("fr", "Französisch", TranslateLanguage.FRENCH, "fr-FR"),
-        Language("es", "Spanisch", TranslateLanguage.SPANISH, "es-ES"),
-        Language("it", "Italienisch", TranslateLanguage.ITALIAN, "it-IT"),
-        Language("uk", "Ukrainisch", TranslateLanguage.UKRAINIAN, null),
-        Language("ar", "Arabisch", TranslateLanguage.ARABIC, null),
+        Language("de", "Deutsch", "Herzlich willkommen!", TranslateLanguage.GERMAN, "de-DE"),
+        Language("en", "Englisch", "Welcome!", TranslateLanguage.ENGLISH, "en-US"),
+        Language("ru", "Russisch", "Добро пожаловать!", TranslateLanguage.RUSSIAN, "ru-RU"),
+        Language("tr", "Türkisch", "Hoş geldiniz!", TranslateLanguage.TURKISH, "tr-TR"),
+        Language("pl", "Polnisch", "Witamy!", TranslateLanguage.POLISH, "pl-PL"),
+        Language("vi", "Vietnamesisch", "Chào mừng quý khách!", TranslateLanguage.VIETNAMESE, "vi-VN"),
+        Language("fr", "Französisch", "Bienvenue !", TranslateLanguage.FRENCH, "fr-FR"),
+        Language("es", "Spanisch", "¡Bienvenido!", TranslateLanguage.SPANISH, "es-ES"),
+        Language("it", "Italienisch", "Benvenuti!", TranslateLanguage.ITALIAN, "it-IT"),
+        Language("uk", "Ukrainisch", "Ласкаво просимо!", TranslateLanguage.UKRAINIAN, null),
+        Language("ar", "Arabisch", "أهلاً وسهلاً!", TranslateLanguage.ARABIC, null),
     )
 
     val liveSupported: List<Language> = all.filter { it.liveSpeechSupported }

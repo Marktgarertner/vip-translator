@@ -31,7 +31,7 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | `TranslationEngine.kt` | Wrapper um ML Kit Translate (Translator-Cache pro Sprachpaar, Modell-Download, `translate()`) |
 | `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow, `isLiveSupported()`) |
 | `SpeechOutput.kt` | Sprachausgabe der Übersetzungen über die systemeigene Android-TTS-Engine (on-device) |
-| `MainActivity.kt` | Jetpack-Compose-UI: Sprachauswahl, getippter Modus, Live-Modus, Konversationsverlauf |
+| `MainActivity.kt` | Jetpack-Compose-UI: Splitscreen (Kundenseite 180° gedreht), Sprachauswahl, Richtungswahl, getippter Modus, Live-Modus, Konversationsverlauf |
 
 ## Sprachcoverage
 
@@ -65,6 +65,30 @@ and higher". `SpeechEngine.isLiveSupported()` prüft deshalb neben der
 Sprachliste auch `Build.VERSION.SDK_INT >= 31` und deaktiviert den
 Live-Button entsprechend - `minSdk 26` bleibt für den getippten Modus davon
 unberührt.
+
+## Splitscreen & ViP-Branding
+
+Im Kundencenter stehen sich Mitarbeiter:in und Kund:in frontal gegenüber -
+das UI ist deshalb ein **Splitscreen**:
+
+- **Obere Hälfte (Kundenseite):** um 180° gedreht, sodass das Gegenüber alles
+  in seiner Leserichtung sieht. Zeigt eine Begrüßung in der Kundensprache
+  (`Language.greeting`), das ViP-Logo, live mitlaufende Spracherkennung
+  (wenn der Kunde spricht) und den Konversationsverlauf mit der
+  Kundensprache prominent. Jeder Eintrag hat einen Vorlesen-Button.
+- **Untere Hälfte (Mitarbeiterseite):** alle Bedienelemente. Statt eines
+  abstrakten Tausch-Icons gibt es zwei große, selbsterklärende
+  Richtungs-Chips **"Ich spreche" / "Kunde spricht"** - gedacht für
+  Kolleg:innen, die nicht täglich mit Technik arbeiten. Dazu ein großer,
+  beschrifteter Mikrofon-Button ("Zum Sprechen antippen (…)").
+- **Farben:** Primärfarbe ist das ViP-Grün **#006A4D** (`ui/theme/Color.kt`),
+  Akzente orientieren sich am SWP/ViP-Windrad (Orange/Rot/Blau/Grün). Auch
+  der Launcher-Icon-Hintergrund ist ViP-Grün.
+- **Logo:** `res/drawable/vip_logo.xml` ist eine **stilisierte
+  Vektor-Annäherung** an das Windrad-Logo (vier Ringsegmente in den
+  Logofarben). Für das finale Branding bitte das offizielle Logo aus dem
+  SWP-Markenportal als Vector-Asset importieren (Android Studio: File > New >
+  Vector Asset) und diese Datei ersetzen.
 
 ## Konversationsverlauf, Sprachausgabe & Übersetzer-Lebenszyklus
 
