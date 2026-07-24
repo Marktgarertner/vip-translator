@@ -2,6 +2,8 @@ package de.vip.liveuebersetzer
 
 import android.util.LruCache
 import com.google.mlkit.common.model.DownloadConditions
+import com.google.mlkit.common.model.RemoteModelManager
+import com.google.mlkit.nl.translate.TranslateRemoteModel
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
@@ -51,6 +53,22 @@ object TranslationEngine {
         val translator = translatorFor(source, target)
         translator.downloadModelIfNeeded(DownloadConditions.Builder().build()).await()
         return translator.translate(text).await()
+    }
+
+    /** Prüft, ob das Übersetzungsmodell für [language] bereits lokal vorliegt. */
+    suspend fun isModelDownloaded(language: Language): Boolean =
+        RemoteModelManager.getInstance()
+            .isModelDownloaded(TranslateRemoteModel.Builder(language.mlKitLanguage).build())
+            .await()
+
+    /** Lädt das Übersetzungsmodell für [language] vorab herunter (Menü "Sprachpakete"). */
+    suspend fun downloadModel(language: Language) {
+        RemoteModelManager.getInstance()
+            .download(
+                TranslateRemoteModel.Builder(language.mlKitLanguage).build(),
+                DownloadConditions.Builder().build(),
+            )
+            .await()
     }
 
     /** Gibt alle gecachten Translator frei (beim Verlassen des Screens). */

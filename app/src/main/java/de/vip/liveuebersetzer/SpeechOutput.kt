@@ -36,6 +36,11 @@ class SpeechOutput(context: Context) {
         return tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID) == TextToSpeech.SUCCESS
     }
 
+    /** Bricht eine laufende Sprachausgabe ab (z. B. bevor das Mikrofon aufgeht). */
+    fun stop() {
+        tts.stop()
+    }
+
     fun shutdown() {
         tts.stop()
         tts.shutdown()

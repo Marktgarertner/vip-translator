@@ -22,10 +22,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
@@ -48,6 +51,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -66,6 +70,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 private enum class TranslationMode { GETIPPT, LIVE }
+
+/** Status eines Sprachpakets im "Sprachpakete"-Menü. */
+private enum class ModelStatus { PRUEFEN, FEHLT, LAEDT, GELADEN, FEHLER }
 
 /**
  * Ein abgeschlossener Gesprächsbeitrag. Der Verlauf lebt bewusst nur im
@@ -132,6 +139,13 @@ private fun LiveUebersetzerScreen() {
 
     val speechOutput = remember { SpeechOutput(context) }
     var speechOutputEnabled by remember { mutableStateOf(true) }
+    var showModelManager by remember { mutableStateOf(false) }
+
+    // Auto-Scroll zum neuesten Beitrag (Index 0, liegt bei reverseLayout "unten").
+    val staffListState = rememberLazyListState()
+    LaunchedEffect(conversation.size) {
+        if (conversation.isNotEmpty()) staffListState.animateScrollToItem(0)
+    }
 
     // Wer gerade spricht, bestimmt Quell- und Zielsprache der nächsten Beiträge.
     val speakingLanguage = if (customerSpeaks) customerLanguage else staffLanguage
@@ -142,7 +156,9 @@ private fun LiveUebersetzerScreen() {
         // Neuester Eintrag an Index 0; die Listen rendern mit reverseLayout,
         // sodass er auf beiden Bildschirmhälften wie in einem Chat "unten" steht.
         conversation.add(0, ConversationEntry(nextEntryId++, from, to, original, translated))
-        if (speechOutputEnabled) speechOutput.speak(translated, to)
+        // Nie sprechen, solange das Mikrofon offen ist - sonst erkennt die
+        // Erkennung die eigene Ausgabe als Eingabe (Rückkopplungsschleife).
+        if (speechOutputEnabled && !isListening) speechOutput.speak(translated, to)
     }
 
     fun speakOrExplain(text: String, language: Language) {
@@ -166,6 +182,8 @@ private fun LiveUebersetzerScreen() {
     fun startLive() {
         if (!liveSupported || isListening) return
         errorMessage = null
+        // Laufende Sprachausgabe abbrechen, bevor das Mikrofon aufgeht.
+        speechOutput.stop()
         liveTranscript = ""
         // Sprachpaar zum Startzeitpunkt festhalten: Ein Richtungswechsel während
         // der Aufnahme darf bereits laufende Beiträge nicht mehr umdrehen.
@@ -185,6 +203,12 @@ private fun LiveUebersetzerScreen() {
                     onPartial = { text -> liveTranscript = text },
                     onFinal = { text ->
                         liveTranscript = text
+                        // Tap-to-Talk: Nach dem ersten fertigen Satz stoppt die
+                        // Aufnahme automatisch, damit die anschließende
+                        // Sprachausgabe nicht wieder als Eingabe erkannt wird
+                        // (Rückkopplungsschleife). Für den nächsten Satz das
+                        // Mikrofon einfach erneut antippen.
+                        stopLive()
                         scope.launch {
                             runCatching {
                                 TranslationEngine.translate(from, to, text)
@@ -245,6 +269,11 @@ private fun LiveUebersetzerScreen() {
         }
     }
 
+    if (showModelManager) {
+        ModelManagerScreen(onClose = { showModelManager = false })
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -296,6 +325,14 @@ private fun LiveUebersetzerScreen() {
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleLarge,
                 )
+                IconButton(
+                    onClick = {
+                        stopLive()
+                        showModelManager = true
+                    },
+                ) {
+                    Icon(Icons.Filled.Settings, contentDescription = "Sprachpakete verwalten")
+                }
                 IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
                     Icon(
                         imageVector = if (speechOutputEnabled) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
@@ -381,6 +418,7 @@ private fun LiveUebersetzerScreen() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                    state = staffListState,
                     reverseLayout = true,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -442,6 +480,12 @@ private fun CustomerPane(
     pendingTranscript: String?,
     onSpeakClick: (ConversationEntry) -> Unit,
 ) {
+    // Auto-Scroll zum neuesten Beitrag auch auf der Kundenseite.
+    val listState = rememberLazyListState()
+    LaunchedEffect(entries.size) {
+        if (entries.isNotEmpty()) listState.animateScrollToItem(0)
+    }
+
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -476,6 +520,7 @@ private fun CustomerPane(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
+            state = listState,
             reverseLayout = true,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -651,7 +696,7 @@ private fun LiveModePanel(
         }
         Text(
             text = if (isListening) {
-                "Aufnahme läuft - zum Beenden antippen"
+                "Sprechen Sie jetzt - stoppt nach dem Satz automatisch"
             } else {
                 "Zum Sprechen antippen ($speakingLanguageName)"
             },
@@ -663,5 +708,118 @@ private fun LiveModePanel(
             }
         }
         Text(text = liveTranscript.ifBlank { "…" })
+    }
+}
+
+/**
+ * Vollbild-Menü "Sprachpakete": Übersetzungsmodelle (und Live-Erkennung, wo
+ * verfügbar) pro Sprache vorab herunterladen, damit am Schalter keine
+ * Wartezeit durch spontane Modell-Downloads entsteht.
+ */
+@Composable
+private fun ModelManagerScreen(onClose: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    val statuses = remember { mutableStateMapOf<String, ModelStatus>() }
+
+    LaunchedEffect(Unit) {
+        LanguageCatalog.all.forEach { language ->
+            statuses[language.code] = ModelStatus.PRUEFEN
+            statuses[language.code] = runCatching { TranslationEngine.isModelDownloaded(language) }
+                .fold(
+                    { downloaded -> if (downloaded) ModelStatus.GELADEN else ModelStatus.FEHLT },
+                    { ModelStatus.FEHLT },
+                )
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+            }
+            Text(
+                text = "Sprachpakete",
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+
+        Text(
+            text = "Einmalig mit Internet (am besten WLAN) vorbereiten - danach " +
+                "übersetzt und spricht die App komplett offline, ohne Wartezeit " +
+                "beim Kunden. Empfehlung: alle häufig gebrauchten Sprachen vorab laden.",
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(LanguageCatalog.all, key = { it.code }) { language ->
+                val status = statuses[language.code] ?: ModelStatus.PRUEFEN
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(text = language.displayName, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = when (status) {
+                                    ModelStatus.PRUEFEN -> "Prüfe …"
+                                    ModelStatus.FEHLT -> "Noch nicht geladen"
+                                    ModelStatus.LAEDT -> "Wird heruntergeladen …"
+                                    ModelStatus.GELADEN ->
+                                        if (language.liveSpeechSupported) {
+                                            "Bereit (inkl. Live-Erkennung)"
+                                        } else {
+                                            "Bereit (nur getippter Modus)"
+                                        }
+                                    ModelStatus.FEHLER -> "Download fehlgeschlagen - Internetverbindung prüfen"
+                                },
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                statuses[language.code] = ModelStatus.LAEDT
+                                scope.launch {
+                                    runCatching {
+                                        TranslationEngine.downloadModel(language)
+                                        SpeechEngine.prepareModel(language.code)
+                                    }.onSuccess { statuses[language.code] = ModelStatus.GELADEN }
+                                        .onFailure { statuses[language.code] = ModelStatus.FEHLER }
+                                }
+                            },
+                            enabled = status == ModelStatus.FEHLT || status == ModelStatus.FEHLER,
+                        ) {
+                            Text(
+                                when (status) {
+                                    ModelStatus.GELADEN -> "Geladen ✓"
+                                    ModelStatus.LAEDT -> "Lädt …"
+                                    else -> "Laden"
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

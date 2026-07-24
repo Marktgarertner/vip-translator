@@ -79,6 +79,20 @@ object SpeechEngine {
     }
 
     /**
+     * Lädt das Live-Erkennungsmodell für [languageCode] vorab herunter
+     * (Menü "Sprachpakete"). Für Sprachen ohne Live-Unterstützung ein No-Op.
+     */
+    suspend fun prepareModel(languageCode: String) {
+        if (!isLiveSupported(languageCode)) return
+        val recognizer = createRecognizer(languageCode)
+        try {
+            ensureModelDownloaded(recognizer)
+        } finally {
+            recognizer.close()
+        }
+    }
+
+    /**
      * Startet die Live-Erkennung über das Mikrofon und ruft [onPartial] für
      * vorläufigen und [onFinal] für endgültigen erkannten Text auf. Ersetzt den
      * früheren Platzhalter `response.toString()`: die eigentliche Nutzlast steckt

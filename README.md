@@ -90,6 +90,23 @@ das UI ist deshalb ein **Splitscreen**:
   SWP-Markenportal als Vector-Asset importieren (Android Studio: File > New >
   Vector Asset) und diese Datei ersetzen.
 
+## Tap-to-Talk & Sprachpakete-Menü
+
+- **Tap-to-Talk (Fix aus dem Praxistest):** Bei dauerhaft offenem Mikrofon
+  wurde die eigene Sprachausgabe wieder als Eingabe erkannt
+  (Rückkopplungsschleife). Deshalb stoppt die Aufnahme jetzt **automatisch
+  nach dem ersten fertigen Satz**, bevor die Übersetzung vorgelesen wird.
+  Zusätzlich: Beim Öffnen des Mikrofons wird eine laufende Sprachausgabe
+  abgebrochen, und gesprochen wird grundsätzlich nie, solange das Mikrofon
+  offen ist. Für den nächsten Satz das Mikrofon einfach erneut antippen.
+- **Sprachpakete-Menü (Zahnrad in der Titelleiste):** Pro Sprache lassen sich
+  Übersetzungsmodell und (wo verfügbar) Live-Erkennungsmodell **vorab
+  herunterladen** - einmalig mit Internet vorbereiten, danach entsteht am
+  Schalter keine Wartezeit durch spontane Modell-Downloads. Der Status pro
+  Sprache (geprüft über `RemoteModelManager`) wird angezeigt.
+- **Auto-Scroll:** Beide Verlaufslisten (Kunden- und Mitarbeiterseite)
+  scrollen bei jedem neuen Beitrag automatisch zum aktuellsten Eintrag.
+
 ## Konversationsverlauf, Sprachausgabe & Übersetzer-Lebenszyklus
 
 - **Konversationsverlauf:** Jeder abgeschlossene Beitrag (Original,
