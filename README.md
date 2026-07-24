@@ -31,7 +31,7 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | `TranslationEngine.kt` | Wrapper um ML Kit Translate (Translator-Cache pro Sprachpaar, Modell-Download, `translate()`) |
 | `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow, `isLiveSupported()`) |
 | `SpeechOutput.kt` | Sprachausgabe der Übersetzungen über die systemeigene Android-TTS-Engine (on-device) |
-| `MainActivity.kt` | Jetpack-Compose-UI: Splitscreen (Kundenseite 180° gedreht), Sprachauswahl, Richtungswahl, getippter Modus, Live-Modus, Konversationsverlauf |
+| `MainActivity.kt` | Jetpack-Compose-UI: Splitscreen (Kundenseite 180° gedreht), Sprachauswahl pro Seite direkt neben dem Logo, Live-Modus über je eine eigene Sprechtaste pro Seite, Konversationsverlauf. Kein getippter Modus mehr (siehe unten) |
 
 ## Sprachcoverage
 
@@ -72,21 +72,40 @@ Im Kundencenter stehen sich Mitarbeiter:in und Kund:in frontal gegenüber -
 das UI ist deshalb ein **Splitscreen**:
 
 - **Obere Hälfte (Kundenseite):** um 180° gedreht, sodass das Gegenüber alles
-  in seiner Leserichtung sieht. Zeigt eine Begrüßung in der Kundensprache
-  (`Language.greeting`), das ViP-Logo, live mitlaufende Spracherkennung
-  (wenn der Kunde spricht) und den Konversationsverlauf mit der
-  Kundensprache prominent. Jeder Eintrag hat einen Vorlesen-Button.
+  in seiner Leserichtung sieht. Zeigt oben ein kleines Logo (28dp) mit der
+  Sprachauswahl direkt daneben (siehe "Sprachauswahl pro Seite" unten), darunter
+  eine Begrüßung in der Kundensprache (`Language.greeting`), live mitlaufende
+  Spracherkennung (wenn der Kunde spricht) und den Konversationsverlauf mit
+  der Kundensprache prominent. Jeder Eintrag hat einen Vorlesen-Button. Die
+  Sprechtaste sitzt am unteren Rand dieser Hälfte, beschriftet in der
+  Kundensprache (`Language.tapToSpeak`).
+- **Sprachauswahl pro Seite, direkt neben dem Logo:** Statt eines zentralen
+  Dropdowns wählt jede Seite ihre eigene Sprache über einen kompakten Button,
+  der beim Antippen eine horizontal scrollbare Chip-Reihe mit allen 11
+  Sprachen einblendet (`LanguagePickerRow`). Auf der Kundenseite in den
+  jeweils **eigenen Sprachnamen** (`Language.nativeName`, z. B. "Türkçe",
+  "Русский"), auf der Mitarbeiterseite in den **deutschen Bezeichnungen**
+  (`Language.displayName`). Bewusst kein `DropdownMenu`/Popup: ein Popup
+  würde die 180°-Drehung der Kundenhälfte nicht mitmachen und stünde dort
+  verkehrt herum bzw. falsch positioniert.
+- **Logo = Einstellungen:** Ein Antippen des Logos (auf beiden Seiten) öffnet
+  direkt das Menü "Sprachpakete" - kein separates Zahnrad-Icon mehr nötig,
+  dadurch bleibt in der Kopfzeile mehr Platz für die Sprachauswahl.
 - **Jede Seite hat ihre eigene Sprechtaste** (Praxis-Feedback: ein zentraler
   Richtungs-Umschalter führte zu Fehlbedienung): Der Kunde tippt das
-  Mikrofon auf seiner Hälfte an - beschriftet in seiner Sprache
-  (`Language.tapToSpeak`) -, Mitarbeiter:innen ihres neben dem Textfeld.
-  **Die Übersetzungsrichtung ergibt sich automatisch daraus, wer gedrückt
-  hat** - niemand muss mehr umschalten. Bei Sprachen ohne Live-Modus
-  (Ukrainisch, Arabisch) wird die Kundenseiten-Sprechtaste ausgeblendet.
-- **Untere Hälfte (Mitarbeiterseite):** Sprachauswahl, Verlauf, Textfeld mit
-  eigener Sprechtaste sowie **zwei klar beschriftete Übersetzen-Tasten für
-  getippten Text** ("Ich → Kundensprache" / "Kunde → Meine Sprache") - der
-  Weg für Ukrainisch/Arabisch und laute Umgebungen.
+  Mikrofon auf seiner Hälfte an, Mitarbeiter:innen ihres unten rechts in der
+  Ecke ihrer Hälfte. **Die Übersetzungsrichtung ergibt sich automatisch
+  daraus, wer gedrückt hat** - niemand muss mehr umschalten. Bei Sprachen
+  ohne Live-Modus (Ukrainisch, Arabisch) wird die Kundenseiten-Sprechtaste
+  ausgeblendet, die Mitarbeiter-Sprechtaste bleibt sichtbar, aber deaktiviert.
+- **Untere Hälfte (Mitarbeiterseite):** Logo mit Sprachauswahl daneben,
+  Lautsprecher- und Papierkorb-Button, darunter der Konversationsverlauf über
+  die volle Breite/Höhe. Die Sprechtaste liegt **bewusst unten rechts in der
+  Ecke** statt in einer eigenen Zeile, damit oben mehr Platz für den
+  Gesprächsverlauf bleibt. **Kein Textfeld und keine Übersetzen-Tasten für
+  getippten Text mehr** ("Ich → Kundensprache" / "Kunde → Meine Sprache" sind
+  entfallen) - die App konzentriert sich bewusst aufs Sprechen. Konsequenz für
+  Ukrainisch/Arabisch siehe "Offene Punkte".
 - **Farben:** Primärfarbe ist das ViP-Grün **#006A4D** (`ui/theme/Color.kt`),
   Akzente orientieren sich am SWP/ViP-Windrad (Orange/Rot/Blau/Grün). Auch
   der Launcher-Icon-Hintergrund ist ViP-Grün.
@@ -105,7 +124,7 @@ das UI ist deshalb ein **Splitscreen**:
   Zusätzlich: Beim Öffnen des Mikrofons wird eine laufende Sprachausgabe
   abgebrochen, und gesprochen wird grundsätzlich nie, solange das Mikrofon
   offen ist. Für den nächsten Satz das Mikrofon einfach erneut antippen.
-- **Sprachpakete-Menü (Zahnrad in der Titelleiste):** Pro Sprache lassen sich
+- **Sprachpakete-Menü (per Logo-Klick erreichbar):** Pro Sprache lassen sich
   Übersetzungsmodell und (wo verfügbar) Live-Erkennungsmodell **vorab
   herunterladen** - einmalig mit Internet vorbereiten, danach entsteht am
   Schalter keine Wartezeit durch spontane Modell-Downloads. Der Status pro
@@ -300,6 +319,19 @@ wegen Signatur-Konflikt), ohne die alte Version vorher zu deinstallieren.
 
 ## Offene Punkte
 
+- **Ukrainisch/Arabisch ohne jede Eingabe möglich (neu seit dem Wegfall des
+  Textfelds):** Auf Wunsch ("Konzentrieren wir uns nur aufs Sprechen") wurden
+  das Texteingabefeld und die getippten Übersetzen-Tasten der
+  Mitarbeiterseite vollständig entfernt. Da Ukrainisch und Arabisch keine
+  Live-Spracherkennung unterstützen (siehe "Sprachcoverage"), gibt es für
+  diese beiden Sprachen aktuell **keinen Weg mehr, überhaupt einen
+  Gesprächsbeitrag zu erzeugen** - weder von Kunden- noch von
+  Mitarbeiterseite, in keiner Richtung. Die Mitarbeiter-Sprechtaste bleibt
+  zwar sichtbar, ist für diese beiden Sprachen aber dauerhaft deaktiviert.
+  Vor dem früheren getippten Modus war das noch der Fallback-Weg für genau
+  diesen Fall. Sollte am Schalter Bedarf für Ukrainisch/Arabisch bestehen,
+  müsste hierfür eine Lösung nachgerüstet werden (z. B. ein minimales,
+  ausschließlich für diese zwei Sprachen eingeblendetes Texteingabefeld).
 - **ViP-Schalter-Hardware:** Die Android-Version der im Einsatz befindlichen
   Schalter-Hardware ist nicht bekannt. Kein Blocker für diesen Build, aber
   relevant für den Live-Modus: Läuft die Hardware unter API < 31, bleibt der

@@ -74,8 +74,20 @@ object SpeechEngine {
      * von `DownloadStatus` ist nicht verifiziert, daher aktuell ohne Fortschrittsanzeige.
      */
     suspend fun ensureModelDownloaded(recognizer: SpeechRecognizer) {
-        if (checkFeatureStatus(recognizer) != FeatureStatus.DOWNLOADABLE) return
-        recognizer.download().collect { /* DownloadStatus: Fortschritt aktuell nicht ausgewertet */ }
+        when (checkFeatureStatus(recognizer)) {
+            FeatureStatus.AVAILABLE -> return
+            FeatureStatus.DOWNLOADABLE, FeatureStatus.DOWNLOADING ->
+                recognizer.download().collect { /* Fortschritt aktuell nicht ausgewertet */ }
+            // UNAVAILABLE: z. B. fehlendes Offline-Sprachpaket der
+            // System-Spracherkennung (Basic-Modus nutzt den Systemdienst).
+            // Verständliche Meldung statt kryptischem Laufzeitfehler.
+            else -> throw IllegalStateException(
+                "Live-Erkennung ist für diese Sprache auf diesem Gerät nicht " +
+                    "verfügbar. Bitte im Menü \"Sprachpakete\" laden - hilft das " +
+                    "nicht, in den Android-Einstellungen die Offline-Spracheingabe " +
+                    "für diese Sprache installieren.",
+            )
+        }
     }
 
     /**
