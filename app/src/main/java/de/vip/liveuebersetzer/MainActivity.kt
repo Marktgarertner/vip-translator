@@ -8,19 +8,21 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,10 +55,25 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.mlkit.genai.speechrecognition.SpeechRecognizer
 import de.vip.liveuebersetzer.ui.theme.VipLiveUebersetzerTheme
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 private enum class TranslationMode { GETIPPT, LIVE }
+
+/**
+ * Ein abgeschlossener Gesprächsbeitrag. Der Verlauf lebt bewusst nur im
+ * Arbeitsspeicher (Datenschutz: nichts wird persistiert) und bleibt beim
+ * Sprachwechsel bzw. Richtungstausch vollständig erhalten - jeder Eintrag
+ * trägt sein eigenes Sprachpaar.
+ */
+private data class ConversationEntry(
+    val id: Long,
+    val sourceLanguage: Language,
+    val targetLanguage: Language,
+    val originalText: String,
+    val translatedText: String,
+)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,9 +99,11 @@ private fun LiveUebersetzerScreen() {
     var mode by remember { mutableStateOf(TranslationMode.GETIPPT) }
 
     var inputText by remember { mutableStateOf("") }
-    var translatedText by remember { mutableStateOf("") }
     var isTranslating by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val conversation = remember { mutableStateListOf<ConversationEntry>() }
+    var nextEntryId by remember { mutableStateOf(0L) }
 
     var liveTranscript by remember { mutableStateOf("") }
     var isListening by remember { mutableStateOf(false) }
@@ -91,13 +111,16 @@ private fun LiveUebersetzerScreen() {
     var recognizerJob by remember { mutableStateOf<Job?>(null) }
     var activeRecognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
 
+    val speechOutput = remember { SpeechOutput(context) }
+    var speechOutputEnabled by remember { mutableStateOf(true) }
+
     val liveSupported = SpeechEngine.isLiveSupported(sourceLanguage.code)
 
-    val translator = remember(sourceLanguage, targetLanguage) {
-        TranslationEngine.createTranslator(sourceLanguage, targetLanguage)
-    }
-    DisposableEffect(translator) {
-        onDispose { TranslationEngine.close(translator) }
+    fun addEntry(from: Language, to: Language, original: String, translated: String) {
+        // Neuester Eintrag an Index 0; die Liste rendert mit reverseLayout,
+        // sodass er wie in einem Chat unten erscheint.
+        conversation.add(0, ConversationEntry(nextEntryId++, from, to, original, translated))
+        if (speechOutputEnabled) speechOutput.speak(translated, to)
     }
 
     fun stopLive() {
@@ -116,7 +139,11 @@ private fun LiveUebersetzerScreen() {
         if (!liveSupported || isListening) return
         errorMessage = null
         liveTranscript = ""
-        val recognizer = SpeechEngine.createRecognizer(sourceLanguage.code)
+        // Sprachpaar zum Startzeitpunkt festhalten: Ein Richtungstausch während
+        // der Aufnahme darf bereits laufende Beiträge nicht mehr umdrehen.
+        val from = sourceLanguage
+        val to = targetLanguage
+        val recognizer = SpeechEngine.createRecognizer(from.code)
         activeRecognizer = recognizer
         isListening = true
         recognizerJob = scope.launch {
@@ -132,9 +159,8 @@ private fun LiveUebersetzerScreen() {
                         liveTranscript = text
                         scope.launch {
                             runCatching {
-                                TranslationEngine.ensureModelDownloaded(translator)
-                                TranslationEngine.translate(translator, text)
-                            }.onSuccess { translatedText = it }
+                                TranslationEngine.translate(from, to, text)
+                            }.onSuccess { addEntry(from, to, text, it) }
                                 .onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
                         }
                     },
@@ -143,6 +169,8 @@ private fun LiveUebersetzerScreen() {
                     },
                 )
                 listenJob.join()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Fehler bei der Live-Spracherkennung."
             } finally {
@@ -170,29 +198,58 @@ private fun LiveUebersetzerScreen() {
         if (hasPermission) startLive() else micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
-    // Wechselt der Nutzer die Quellsprache auf Ukrainisch/Arabisch während des
-    // Live-Modus, ist Live nicht mehr verfügbar - sauber auf Getippt zurückfallen.
+    // Quellsprachwechsel (auch durch Tauschen): laufende Aufnahme stoppen, denn
+    // der Recognizer ist fest auf die Startsprache gebunden. Ist die neue
+    // Sprache nicht live-fähig (uk/ar), zusätzlich sauber auf Getippt
+    // zurückfallen. Der Konversationsverlauf bleibt dabei erhalten.
     LaunchedEffect(sourceLanguage) {
+        if (isListening) stopLive()
         if (!liveSupported && mode == TranslationMode.LIVE) {
-            stopLive()
             mode = TranslationMode.GETIPPT
         }
     }
 
     DisposableEffect(Unit) {
-        onDispose { stopLive() }
+        onDispose {
+            stopLive()
+            speechOutput.shutdown()
+            TranslationEngine.closeAll()
+        }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("ViP Live-Übersetzer") })
+            TopAppBar(
+                title = { Text("ViP Live-Übersetzer") },
+                actions = {
+                    IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
+                        Icon(
+                            imageVector = if (speechOutputEnabled) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
+                            contentDescription = if (speechOutputEnabled) {
+                                "Sprachausgabe ausschalten"
+                            } else {
+                                "Sprachausgabe einschalten"
+                            },
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            conversation.clear()
+                            liveTranscript = ""
+                            errorMessage = null
+                        },
+                        enabled = conversation.isNotEmpty(),
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Konversation löschen")
+                    }
+                },
+            )
         },
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState())
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -217,6 +274,23 @@ private fun LiveUebersetzerScreen() {
                 },
             )
 
+            ConversationList(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                entries = conversation,
+                onSpeakClick = { entry ->
+                    if (!speechOutput.speak(entry.translatedText, entry.targetLanguage)) {
+                        errorMessage =
+                            "Sprachausgabe für ${entry.targetLanguage.displayName} ist auf diesem Gerät nicht verfügbar."
+                    }
+                },
+            )
+
+            errorMessage?.let { message ->
+                Text(text = message, color = MaterialTheme.colorScheme.error)
+            }
+
             when (mode) {
                 TranslationMode.GETIPPT -> TypedModePanel(
                     inputText = inputText,
@@ -224,14 +298,17 @@ private fun LiveUebersetzerScreen() {
                     isTranslating = isTranslating,
                     onTranslateClick = {
                         val textToTranslate = inputText
+                        val from = sourceLanguage
+                        val to = targetLanguage
                         scope.launch {
                             isTranslating = true
                             errorMessage = null
                             runCatching {
-                                TranslationEngine.ensureModelDownloaded(translator)
-                                TranslationEngine.translate(translator, textToTranslate)
-                            }.onSuccess { translatedText = it }
-                                .onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
+                                TranslationEngine.translate(from, to, textToTranslate)
+                            }.onSuccess {
+                                addEntry(from, to, textToTranslate, it)
+                                inputText = ""
+                            }.onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
                             isTranslating = false
                         }
                     },
@@ -243,12 +320,6 @@ private fun LiveUebersetzerScreen() {
                     liveTranscript = liveTranscript,
                     onMicClick = ::onMicButtonClick,
                 )
-            }
-
-            TranslationOutputCard(text = translatedText)
-
-            errorMessage?.let { message ->
-                Text(text = message, color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -350,6 +421,57 @@ private fun ModeSwitcher(
 }
 
 @Composable
+private fun ConversationList(
+    modifier: Modifier = Modifier,
+    entries: List<ConversationEntry>,
+    onSpeakClick: (ConversationEntry) -> Unit,
+) {
+    if (entries.isEmpty()) {
+        Text(
+            modifier = modifier,
+            text = "Die Konversation erscheint hier. Der Verlauf bleibt beim Sprachwechsel erhalten.",
+        )
+        return
+    }
+    LazyColumn(
+        modifier = modifier,
+        // Neuester Eintrag (Index 0) unten, wie in einem Chat - ohne manuelles
+        // Scroll-Management bleibt der aktuellste Beitrag immer sichtbar.
+        reverseLayout = true,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(entries, key = { it.id }) { entry ->
+            ConversationEntryCard(entry = entry, onSpeakClick = { onSpeakClick(entry) })
+        }
+    }
+}
+
+@Composable
+private fun ConversationEntryCard(entry: ConversationEntry, onSpeakClick: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = "${entry.sourceLanguage.displayName} → ${entry.targetLanguage.displayName}",
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+                Text(text = entry.originalText)
+                Text(text = entry.translatedText, color = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = onSpeakClick) {
+                Icon(Icons.Filled.VolumeUp, contentDescription = "Übersetzung vorlesen")
+            }
+        }
+    }
+}
+
+@Composable
 private fun TypedModePanel(
     inputText: String,
     onInputChange: (String) -> Unit,
@@ -404,14 +526,5 @@ private fun LiveModePanel(
             }
         }
         Text(text = liveTranscript.ifBlank { "…" })
-    }
-}
-
-@Composable
-private fun TranslationOutputCard(text: String) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.padding(16.dp)) {
-            Text(text = text.ifBlank { "Übersetzung erscheint hier." })
-        }
     }
 }

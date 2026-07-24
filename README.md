@@ -28,9 +28,10 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | Datei | Zweck |
 |---|---|
 | `LanguageCatalog.kt` | Die 11 unterstützten Sprachen, Anzeigenamen, ML-Kit-Sprachkonstanten, Live-Speech-Unterstützung pro Sprache |
-| `TranslationEngine.kt` | Wrapper um ML Kit Translate (Translator-Erstellung, Modell-Download, `translate()`) |
+| `TranslationEngine.kt` | Wrapper um ML Kit Translate (Translator-Cache pro Sprachpaar, Modell-Download, `translate()`) |
 | `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow, `isLiveSupported()`) |
-| `MainActivity.kt` | Jetpack-Compose-UI: Sprachauswahl, getippter Modus, Live-Modus |
+| `SpeechOutput.kt` | Sprachausgabe der Übersetzungen über die systemeigene Android-TTS-Engine (on-device) |
+| `MainActivity.kt` | Jetpack-Compose-UI: Sprachauswahl, getippter Modus, Live-Modus, Konversationsverlauf |
 
 ## Sprachcoverage
 
@@ -64,6 +65,34 @@ and higher". `SpeechEngine.isLiveSupported()` prüft deshalb neben der
 Sprachliste auch `Build.VERSION.SDK_INT >= 31` und deaktiviert den
 Live-Button entsprechend - `minSdk 26` bleibt für den getippten Modus davon
 unberührt.
+
+## Konversationsverlauf, Sprachausgabe & Übersetzer-Lebenszyklus
+
+- **Konversationsverlauf:** Jeder abgeschlossene Beitrag (Original,
+  Übersetzung, Sprachrichtung) wandert in eine Chat-artige Liste und bleibt
+  beim Sprachwechsel bzw. Richtungstausch vollständig erhalten - jeder
+  Eintrag trägt sein eigenes Sprachpaar. Der Verlauf lebt bewusst **nur im
+  Arbeitsspeicher** (nichts wird persistiert) und lässt sich über den
+  Papierkorb-Button in der Titelleiste leeren - am Schalter vor dem nächsten
+  Kunden zu empfehlen.
+- **Sprachausgabe:** Übersetzungen werden über die **systemeigene
+  Android-TTS-Engine** (`android.speech.tts`, siehe `SpeechOutput.kt`)
+  vorgelesen - ein lokaler Systemdienst, keine Dritt-Cloud-API aus der App
+  heraus. Der Lautsprecher-Button in der Titelleiste schaltet die
+  automatische Ausgabe um; jeder Verlaufseintrag hat zusätzlich einen
+  eigenen Vorlesen-Button. Ob eine Stimme für eine Sprache verfügbar ist,
+  hängt von der auf dem Gerät installierten TTS-Engine ab; für garantiert
+  netzunabhängige Ausgabe die Offline-Sprachpakete der TTS-Engine in den
+  Android-Einstellungen installieren.
+- **Übersetzer-Lebenszyklus (Fix "Translation closed"):** Ursprünglich wurde
+  der ML-Kit-Translator bei jedem Sprachwechsel sofort geschlossen - lief
+  dabei noch eine Übersetzung (oder der Live-Modus benutzte ihn noch),
+  schlug sie mit "Translation closed" fehl. `TranslationEngine` hält
+  Translator jetzt in einem kleinen `LruCache` pro Sprachpaar (das von der
+  ML-Kit-Doku empfohlene Muster) und schließt sie erst bei Verdrängung bzw.
+  beim Verlassen des Screens (`closeAll()`). Ein Quellsprachwechsel während
+  einer laufenden Live-Aufnahme stoppt die Aufnahme jetzt außerdem sauber,
+  da der Recognizer fest auf seine Startsprache gebunden ist.
 
 ## Der frühere Platzhalter `response.toString()`
 
