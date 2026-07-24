@@ -76,11 +76,17 @@ das UI ist deshalb ein **Splitscreen**:
   (`Language.greeting`), das ViP-Logo, live mitlaufende Spracherkennung
   (wenn der Kunde spricht) und den Konversationsverlauf mit der
   Kundensprache prominent. Jeder Eintrag hat einen Vorlesen-Button.
-- **Untere Hälfte (Mitarbeiterseite):** alle Bedienelemente. Statt eines
-  abstrakten Tausch-Icons gibt es zwei große, selbsterklärende
-  Richtungs-Chips **"Ich spreche" / "Kunde spricht"** - gedacht für
-  Kolleg:innen, die nicht täglich mit Technik arbeiten. Dazu ein großer,
-  beschrifteter Mikrofon-Button ("Zum Sprechen antippen (…)").
+- **Jede Seite hat ihre eigene Sprechtaste** (Praxis-Feedback: ein zentraler
+  Richtungs-Umschalter führte zu Fehlbedienung): Der Kunde tippt das
+  Mikrofon auf seiner Hälfte an - beschriftet in seiner Sprache
+  (`Language.tapToSpeak`) -, Mitarbeiter:innen ihres neben dem Textfeld.
+  **Die Übersetzungsrichtung ergibt sich automatisch daraus, wer gedrückt
+  hat** - niemand muss mehr umschalten. Bei Sprachen ohne Live-Modus
+  (Ukrainisch, Arabisch) wird die Kundenseiten-Sprechtaste ausgeblendet.
+- **Untere Hälfte (Mitarbeiterseite):** Sprachauswahl, Verlauf, Textfeld mit
+  eigener Sprechtaste sowie **zwei klar beschriftete Übersetzen-Tasten für
+  getippten Text** ("Ich → Kundensprache" / "Kunde → Meine Sprache") - der
+  Weg für Ukrainisch/Arabisch und laute Umgebungen.
 - **Farben:** Primärfarbe ist das ViP-Grün **#006A4D** (`ui/theme/Color.kt`),
   Akzente orientieren sich am SWP/ViP-Windrad (Orange/Rot/Blau/Grün). Auch
   der Launcher-Icon-Hintergrund ist ViP-Grün.

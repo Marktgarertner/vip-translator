@@ -39,7 +39,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,16 +68,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-private enum class TranslationMode { GETIPPT, LIVE }
-
 /** Status eines Sprachpakets im "Sprachpakete"-Menü. */
 private enum class ModelStatus { PRUEFEN, FEHLT, LAEDT, GELADEN, FEHLER }
 
 /**
  * Ein abgeschlossener Gesprächsbeitrag. Der Verlauf lebt bewusst nur im
  * Arbeitsspeicher (Datenschutz: nichts wird persistiert) und bleibt beim
- * Sprach- bzw. Richtungswechsel vollständig erhalten - jeder Eintrag trägt
- * sein eigenes Sprachpaar.
+ * Sprachwechsel vollständig erhalten - jeder Eintrag trägt sein eigenes
+ * Sprachpaar.
  */
 private data class ConversationEntry(
     val id: Long,
@@ -113,7 +110,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LiveUebersetzerScreen() {
     val context = LocalContext.current
@@ -121,8 +117,6 @@ private fun LiveUebersetzerScreen() {
 
     var staffLanguage by remember { mutableStateOf(LanguageCatalog.defaultSource) }
     var customerLanguage by remember { mutableStateOf(LanguageCatalog.defaultTarget) }
-    var customerSpeaks by remember { mutableStateOf(false) }
-    var mode by remember { mutableStateOf(TranslationMode.GETIPPT) }
 
     var inputText by remember { mutableStateOf("") }
     var isTranslating by remember { mutableStateOf(false) }
@@ -133,6 +127,9 @@ private fun LiveUebersetzerScreen() {
 
     var liveTranscript by remember { mutableStateOf("") }
     var isListening by remember { mutableStateOf(false) }
+    // Welche Seite gerade aufnimmt: Wer seine Sprechtaste drückt, bestimmt die
+    // Übersetzungsrichtung - es gibt bewusst keinen Richtungs-Umschalter mehr.
+    var recordingFromCustomer by remember { mutableStateOf(false) }
     var isPreparingSpeechModel by remember { mutableStateOf(false) }
     var recognizerJob by remember { mutableStateOf<Job?>(null) }
     var activeRecognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
@@ -146,11 +143,6 @@ private fun LiveUebersetzerScreen() {
     LaunchedEffect(conversation.size) {
         if (conversation.isNotEmpty()) staffListState.animateScrollToItem(0)
     }
-
-    // Wer gerade spricht, bestimmt Quell- und Zielsprache der nächsten Beiträge.
-    val speakingLanguage = if (customerSpeaks) customerLanguage else staffLanguage
-    val answerLanguage = if (customerSpeaks) staffLanguage else customerLanguage
-    val liveSupported = SpeechEngine.isLiveSupported(speakingLanguage.code)
 
     fun addEntry(from: Language, to: Language, original: String, translated: String) {
         // Neuester Eintrag an Index 0; die Listen rendern mit reverseLayout,
@@ -179,16 +171,17 @@ private fun LiveUebersetzerScreen() {
         isPreparingSpeechModel = false
     }
 
-    fun startLive() {
-        if (!liveSupported || isListening) return
+    fun startLive(fromCustomer: Boolean) {
+        // Sprachpaar zum Startzeitpunkt festhalten: Die gedrückte Sprechtaste
+        // bestimmt die Richtung dieses Beitrags.
+        val from = if (fromCustomer) customerLanguage else staffLanguage
+        val to = if (fromCustomer) staffLanguage else customerLanguage
+        if (!SpeechEngine.isLiveSupported(from.code) || isListening) return
         errorMessage = null
         // Laufende Sprachausgabe abbrechen, bevor das Mikrofon aufgeht.
         speechOutput.stop()
         liveTranscript = ""
-        // Sprachpaar zum Startzeitpunkt festhalten: Ein Richtungswechsel während
-        // der Aufnahme darf bereits laufende Beiträge nicht mehr umdrehen.
-        val from = speakingLanguage
-        val to = answerLanguage
+        recordingFromCustomer = fromCustomer
         val recognizer = SpeechEngine.createRecognizer(from.code)
         activeRecognizer = recognizer
         isListening = true
@@ -206,8 +199,8 @@ private fun LiveUebersetzerScreen() {
                         // Tap-to-Talk: Nach dem ersten fertigen Satz stoppt die
                         // Aufnahme automatisch, damit die anschließende
                         // Sprachausgabe nicht wieder als Eingabe erkannt wird
-                        // (Rückkopplungsschleife). Für den nächsten Satz das
-                        // Mikrofon einfach erneut antippen.
+                        // (Rückkopplungsschleife). Für den nächsten Satz die
+                        // Sprechtaste einfach erneut antippen.
                         stopLive()
                         scope.launch {
                             runCatching {
@@ -232,33 +225,57 @@ private fun LiveUebersetzerScreen() {
         }
     }
 
+    var pendingFromCustomer by remember { mutableStateOf(false) }
     val micPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        if (granted) startLive() else errorMessage = "Ohne Mikrofonzugriff ist der Live-Modus nicht möglich."
+        if (granted) {
+            startLive(pendingFromCustomer)
+        } else {
+            errorMessage = "Ohne Mikrofonzugriff ist der Live-Modus nicht möglich."
+        }
     }
 
-    fun onMicButtonClick() {
+    fun onMicButtonClick(fromCustomer: Boolean) {
         if (isListening) {
-            stopLive()
+            // Nur die Seite, die gerade aufnimmt, kann die Aufnahme stoppen.
+            if (recordingFromCustomer == fromCustomer) stopLive()
             return
         }
         val hasPermission = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.RECORD_AUDIO,
         ) == PackageManager.PERMISSION_GRANTED
-        if (hasPermission) startLive() else micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        if (hasPermission) {
+            startLive(fromCustomer)
+        } else {
+            pendingFromCustomer = fromCustomer
+            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
     }
 
-    // Jeder Sprach- oder Richtungswechsel stoppt eine laufende Aufnahme, denn
-    // der Recognizer ist fest auf seine Startsprache gebunden. Ist die neue
-    // Sprechsprache nicht live-fähig (uk/ar), zusätzlich sauber auf Getippt
-    // zurückfallen. Der Konversationsverlauf bleibt dabei erhalten.
-    LaunchedEffect(staffLanguage, customerLanguage, customerSpeaks) {
-        if (isListening) stopLive()
-        if (!liveSupported && mode == TranslationMode.LIVE) {
-            mode = TranslationMode.GETIPPT
+    fun translateTyped(fromCustomer: Boolean) {
+        val textToTranslate = inputText
+        if (textToTranslate.isBlank()) return
+        val from = if (fromCustomer) customerLanguage else staffLanguage
+        val to = if (fromCustomer) staffLanguage else customerLanguage
+        scope.launch {
+            isTranslating = true
+            errorMessage = null
+            runCatching {
+                TranslationEngine.translate(from, to, textToTranslate)
+            }.onSuccess {
+                addEntry(from, to, textToTranslate, it)
+                inputText = ""
+            }.onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
+            isTranslating = false
         }
+    }
+
+    // Jeder Sprachwechsel stoppt eine laufende Aufnahme, denn der Recognizer
+    // ist fest auf seine Startsprache gebunden. Der Verlauf bleibt erhalten.
+    LaunchedEffect(staffLanguage, customerLanguage) {
+        if (isListening) stopLive()
     }
 
     DisposableEffect(Unit) {
@@ -281,7 +298,7 @@ private fun LiveUebersetzerScreen() {
             .navigationBarsPadding(),
     ) {
         // ===== Kundenseite: um 180° gedreht, damit das Gegenüber am Schalter =====
-        // ===== alles in seiner Leserichtung sieht.                          =====
+        // ===== alles in seiner Leserichtung sieht - mit eigener Sprechtaste. =====
         CustomerPane(
             modifier = Modifier
                 .fillMaxWidth()
@@ -289,7 +306,11 @@ private fun LiveUebersetzerScreen() {
                 .rotate(180f),
             language = customerLanguage,
             entries = conversation,
-            pendingTranscript = liveTranscript.takeIf { isListening && customerSpeaks && it.isNotBlank() },
+            pendingTranscript = liveTranscript.takeIf { isListening && recordingFromCustomer && it.isNotBlank() },
+            micVisible = SpeechEngine.isLiveSupported(customerLanguage.code),
+            isRecording = isListening && recordingFromCustomer,
+            isPreparing = isPreparingSpeechModel && recordingFromCustomer,
+            onMicClick = { onMicButtonClick(true) },
             onSpeakClick = { entry -> speakOrExplain(entry.textFor(customerLanguage), customerLanguage) },
         )
 
@@ -301,7 +322,7 @@ private fun LiveUebersetzerScreen() {
                 .background(MaterialTheme.colorScheme.primary),
         )
 
-        // ===== Mitarbeiterseite: alle Bedienelemente. =====
+        // ===== Mitarbeiterseite: eigene Sprechtaste + getippte Eingabe. =====
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -373,45 +394,15 @@ private fun LiveUebersetzerScreen() {
                 )
             }
 
-            // Große, selbsterklärende Richtungswahl statt eines Tausch-Icons.
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = !customerSpeaks,
-                    onClick = { customerSpeaks = false },
-                    label = { Text("Ich spreche") },
-                )
-                FilterChip(
-                    selected = customerSpeaks,
-                    onClick = { customerSpeaks = true },
-                    label = { Text("Kunde spricht (${customerLanguage.displayName})") },
-                )
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = mode == TranslationMode.GETIPPT,
-                    onClick = {
-                        stopLive()
-                        mode = TranslationMode.GETIPPT
-                    },
-                    label = { Text("Getippt") },
-                )
-                FilterChip(
-                    selected = mode == TranslationMode.LIVE,
-                    enabled = liveSupported,
-                    onClick = { mode = TranslationMode.LIVE },
-                    label = { Text(if (liveSupported) "Live" else "Live (für ${speakingLanguage.displayName} nicht verfügbar)") },
-                )
-            }
-
             if (conversation.isEmpty()) {
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    text = "Noch keine Beiträge. Richtung wählen, dann Mikrofon antippen " +
-                        "oder Text eintippen - jede Übersetzung erscheint hier und beim " +
-                        "Kunden gedreht in Leserichtung, inklusive Vorlesen.",
+                    text = "Noch keine Beiträge. Einfach das Mikrofon antippen und " +
+                        "sprechen - der Kunde hat auf seiner Seite eine eigene " +
+                        "Sprechtaste. Oder unten Text eintippen und die passende " +
+                        "Richtung wählen.",
                 )
             } else {
                 LazyColumn(
@@ -436,37 +427,80 @@ private fun LiveUebersetzerScreen() {
                 Text(text = message, color = MaterialTheme.colorScheme.error)
             }
 
-            when (mode) {
-                TranslationMode.GETIPPT -> TypedModePanel(
-                    inputText = inputText,
-                    inputLabel = "Text eingeben (${speakingLanguage.displayName})",
-                    onInputChange = { inputText = it },
-                    isTranslating = isTranslating,
-                    onTranslateClick = {
-                        val textToTranslate = inputText
-                        val from = speakingLanguage
-                        val to = answerLanguage
-                        scope.launch {
-                            isTranslating = true
-                            errorMessage = null
-                            runCatching {
-                                TranslationEngine.translate(from, to, textToTranslate)
-                            }.onSuccess {
-                                addEntry(from, to, textToTranslate, it)
-                                inputText = ""
-                            }.onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
-                            isTranslating = false
-                        }
+            if (isListening) {
+                Text(
+                    text = if (recordingFromCustomer) {
+                        "Kunde spricht gerade …"
+                    } else {
+                        "Sprechen Sie jetzt - stoppt nach dem Satz automatisch"
                     },
+                    color = MaterialTheme.colorScheme.primary,
                 )
+                if (!recordingFromCustomer && liveTranscript.isNotBlank()) {
+                    Text(text = liveTranscript)
+                }
+            }
+            if (isPreparingSpeechModel && !recordingFromCustomer) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                    Text(" Spracherkennungsmodell wird vorbereitet …")
+                }
+            }
+            if (isTranslating) {
+                Text(text = "Übersetze …", color = MaterialTheme.colorScheme.tertiary)
+            }
 
-                TranslationMode.LIVE -> LiveModePanel(
-                    isListening = isListening,
-                    isPreparingSpeechModel = isPreparingSpeechModel,
-                    liveTranscript = liveTranscript,
-                    speakingLanguageName = speakingLanguage.displayName,
-                    onMicClick = ::onMicButtonClick,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier.weight(1f),
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    label = { Text("Text eingeben") },
+                    minLines = 1,
                 )
+                // Sprechtaste der Mitarbeiterseite.
+                IconButton(
+                    onClick = { onMicButtonClick(false) },
+                    enabled = SpeechEngine.isLiveSupported(staffLanguage.code) &&
+                        !(isListening && recordingFromCustomer),
+                ) {
+                    Icon(
+                        imageVector = if (isListening && !recordingFromCustomer) Icons.Filled.MicOff else Icons.Filled.Mic,
+                        contentDescription = "Zum Sprechen antippen (${staffLanguage.displayName})",
+                        modifier = Modifier.size(40.dp),
+                        tint = if (isListening && !recordingFromCustomer) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                    )
+                }
+            }
+
+            // Getippter Text: Richtung über zwei klar beschriftete Tasten -
+            // wichtig für Sprachen ohne Live-Modus (Ukrainisch, Arabisch).
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { translateTyped(false) },
+                    enabled = !isTranslating && inputText.isNotBlank(),
+                ) {
+                    Text("Ich → ${customerLanguage.displayName}")
+                }
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { translateTyped(true) },
+                    enabled = !isTranslating && inputText.isNotBlank(),
+                ) {
+                    Text("Kunde → ${staffLanguage.displayName}")
+                }
             }
         }
     }
@@ -478,6 +512,10 @@ private fun CustomerPane(
     language: Language,
     entries: List<ConversationEntry>,
     pendingTranscript: String?,
+    micVisible: Boolean,
+    isRecording: Boolean,
+    isPreparing: Boolean,
+    onMicClick: () -> Unit,
     onSpeakClick: (ConversationEntry) -> Unit,
 ) {
     // Auto-Scroll zum neuesten Beitrag auch auf der Kundenseite.
@@ -530,6 +568,31 @@ private fun CustomerPane(
                     language = language,
                     onSpeakClick = { onSpeakClick(entry) },
                 )
+            }
+        }
+
+        // Sprechtaste der Kundenseite, beschriftet in der Kundensprache.
+        // Für Sprachen ohne Live-Modus (Ukrainisch, Arabisch) ausgeblendet -
+        // dort läuft die Eingabe über die getippten Richtungs-Tasten der
+        // Mitarbeiterseite.
+        if (micVisible) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (isPreparing) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                }
+                IconButton(onClick = onMicClick) {
+                    Icon(
+                        imageVector = if (isRecording) Icons.Filled.MicOff else Icons.Filled.Mic,
+                        contentDescription = language.tapToSpeak,
+                        modifier = Modifier.size(56.dp),
+                        tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Text(text = language.tapToSpeak, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -640,74 +703,6 @@ private fun LanguageDropdown(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun TypedModePanel(
-    inputText: String,
-    inputLabel: String,
-    onInputChange: (String) -> Unit,
-    isTranslating: Boolean,
-    onTranslateClick: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(
-            modifier = Modifier.fillMaxWidth(),
-            value = inputText,
-            onValueChange = onInputChange,
-            label = { Text(inputLabel) },
-            minLines = 2,
-        )
-        Button(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onTranslateClick,
-            enabled = !isTranslating && inputText.isNotBlank(),
-        ) {
-            if (isTranslating) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp))
-            } else {
-                Text("Übersetzen und vorlesen")
-            }
-        }
-    }
-}
-
-@Composable
-private fun LiveModePanel(
-    isListening: Boolean,
-    isPreparingSpeechModel: Boolean,
-    liveTranscript: String,
-    speakingLanguageName: String,
-    onMicClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        IconButton(onClick = onMicClick) {
-            Icon(
-                imageVector = if (isListening) Icons.Filled.MicOff else Icons.Filled.Mic,
-                contentDescription = if (isListening) "Aufnahme stoppen" else "Aufnahme starten",
-                modifier = Modifier.size(56.dp),
-                tint = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            )
-        }
-        Text(
-            text = if (isListening) {
-                "Sprechen Sie jetzt - stoppt nach dem Satz automatisch"
-            } else {
-                "Zum Sprechen antippen ($speakingLanguageName)"
-            },
-        )
-        if (isPreparingSpeechModel) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                Text(" Spracherkennungsmodell wird vorbereitet …")
-            }
-        }
-        Text(text = liveTranscript.ifBlank { "…" })
     }
 }
 
