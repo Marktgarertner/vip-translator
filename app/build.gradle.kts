@@ -19,6 +19,20 @@ android {
         versionName = "1.0"
     }
 
+    // Fester, eingecheckter Debug-Keystore (Standard-Praxis fuer Debug-APKs, die
+    // wiederholt an Tester verteilt werden): ohne diesen erzeugt jede frische
+    // CI-Umgebung einen eigenen zufaelligen Debug-Key, wodurch neuere Builds nicht
+    // ueber aeltere installiert werden koennen ("App nicht installiert" wegen
+    // Signatur-Konflikt), solange die alte Version nicht erst deinstalliert wird.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

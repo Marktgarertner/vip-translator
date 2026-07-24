@@ -212,6 +212,16 @@ Finale Versionen:
 Diese Versionsmatrix ist mit dieser Kombination gegen einen echten, grünen
 `gradle assembleDebug`-Lauf in CI verifiziert (siehe "Build-Verifikation").
 
+## Debug-Signierung
+
+`app/debug.keystore` ist bewusst eingecheckt (kein Secret - Debug-Keystores
+sind für genau diesen Zweck gedacht, geteilt zu werden) und in
+`app/build.gradle.kts` als fester `signingConfigs.debug` verdrahtet. Ohne das
+würde jede frische CI-Umgebung (jeder Workflow-Lauf startet in einer leeren
+VM) einen eigenen zufälligen Debug-Key erzeugen - Tester könnten dann eine
+neuere Debug-APK nicht über eine ältere installieren ("App nicht installiert"
+wegen Signatur-Konflikt), ohne die alte Version vorher zu deinstallieren.
+
 ## Offene Punkte
 
 - **ViP-Schalter-Hardware:** Die Android-Version der im Einsatz befindlichen
