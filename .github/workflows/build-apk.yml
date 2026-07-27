@@ -21,41 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # TEMPORÄR: Diese Sandbox kann alphacephei.com nicht erreichen (Egress-
-      # Policy blockiert den Host), daher hier verifizieren, welche Vosk-
-      # Offline-Modell-URLs für Ukrainisch/Arabisch tatsächlich existieren,
-      # bevor sie in VoskSpeechEngine.kt hartkodiert werden. Wird entfernt,
-      # sobald das Ergebnis feststeht (siehe README, analog zum früheren
-      # ML-Kit-javap-Diagnoseschritt).
-      - name: Vosk-Modell-URLs prüfen (Diagnose, wird wieder entfernt)
-        run: |
-          echo "=== Arabisch ==="
-          for url in \
-            "https://alphacephei.com/vosk/models/vosk-model-ar-mgb2-0.4.zip" \
-            "https://alphacephei.com/vosk/models/vosk-model-ar-0.22-linto.zip" \
-            "https://alphacephei.com/vosk/models/vosk-model-small-ar-0.4-linto.zip" \
-            "https://alphacephei.com/vosk/models/vosk-model-small-ar-0.3.zip" \
-            "https://alphacephei.com/vosk/models/vosk-model-ar-0.4.zip" \
-            ; do
-            code=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 20 "$url" || echo "FEHLER")
-            len=$(curl -sI --max-time 20 "$url" | grep -i content-length || echo "n/a")
-            echo "$code  $url  ($len)"
-          done
-          echo "=== Ukrainisch ==="
-          for url in \
-            "https://alphacephei.com/vosk/models/vosk-model-small-uk-v3-small.zip" \
-            "https://alphacephei.com/vosk/models/vosk-model-small-uk-v3-nano.zip" \
-            "https://alphacephei.com/vosk/models/vosk-model-uk-v3.zip" \
-            "https://alphacephei.com/vosk/models/vosk-model-uk-v3-small.zip" \
-            "https://alphacephei.com/vosk/models/vosk-model-small-uk-v3.zip" \
-            ; do
-            code=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 20 "$url" || echo "FEHLER")
-            len=$(curl -sI --max-time 20 "$url" | grep -i content-length || echo "n/a")
-            echo "$code  $url  ($len)"
-          done
-          echo "=== Modell-Katalog-JSON (falls erreichbar) ==="
-          curl -sS --max-time 20 "https://alphacephei.com/vosk/models/model-list.json" | head -c 6000 || echo "nicht erreichbar"
-
       - name: JDK 17 einrichten
         uses: actions/setup-java@v4
         with:

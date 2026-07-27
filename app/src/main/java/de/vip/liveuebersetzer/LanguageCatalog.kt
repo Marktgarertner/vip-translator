@@ -15,12 +15,11 @@ import com.google.mlkit.nl.translate.TranslateLanguage
  *   der Sprechtaste auf der Kundenseite.
  * @param mlKitLanguage ML-Kit-Translate-Sprachkonstante (siehe [TranslateLanguage]).
  * @param speechLocaleTag BCP-47-Tag für die Spracherkennung ([SpeechEngine] /
- *   [SystemSpeechEngine]) und die Stimmenwahl der Sprachausgabe ([SpeechOutput]).
+ *   [VoskSpeechEngine]) und die Stimmenwahl der Sprachausgabe ([SpeechOutput]).
  * @param mlKitLiveSpeech `true`, wenn ML Kit GenAI Speech Recognition (Basic-Modus)
  *   diese Sprache abdeckt. Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch)
- *   laufen stattdessen über die garantiert geräteinterne Android-Systemerkennung
- *   ([SystemSpeechEngine]), sofern das Gerät sie anbietet - siehe
- *   [SpeechEngine.engineFor].
+ *   laufen stattdessen über die gebündelte Offline-Erkennung [VoskSpeechEngine] -
+ *   siehe [SpeechEngine.engineFor].
  */
 data class Language(
     val code: String,
@@ -42,13 +41,13 @@ data class Language(
  * on-device (siehe README, Abschnitt "Datenschutz"):
  *  - 9 Sprachen über ML Kit GenAI Speech Recognition (Basic-Modus, Alpha,
  *    `com.google.mlkit:genai-speech-recognition:1.0.0-alpha1`).
- *  - Ukrainisch und Arabisch über die Android-Systemerkennung
- *    ([SystemSpeechEngine], `SpeechRecognizer.createOnDeviceSpeechRecognizer`,
- *    Android 12+), sofern das jeweilige Offline-Sprachpaket auf dem Gerät
- *    installiert ist. Hintergrund: Ukrainisch fehlt im Basic-Modus der
- *    ML-Kit-API, Arabisch gibt es dort nur im "Advanced"-Modus, der exklusiv
- *    auf Pixel-10-Geräten läuft (Stand Google-Doku, Juli 2026). Ein
- *    Cloud-Fallback kommt weiterhin nicht infrage.
+ *  - Ukrainisch und Arabisch über [VoskSpeechEngine] (Vosk, Apache-2.0,
+ *    gebündelt statt über einen Android-Systemdienst - ein Praxistest zeigte,
+ *    dass die geräteinterne Systemerkennung diese beiden Sprachen nicht
+ *    unterstützt). Hintergrund für die fehlende ML-Kit-Abdeckung: Ukrainisch
+ *    fehlt im Basic-Modus der ML-Kit-API, Arabisch gibt es dort nur im
+ *    "Advanced"-Modus, der exklusiv auf Pixel-10-Geräten läuft (Stand
+ *    Google-Doku, Juli 2026). Ein Cloud-Fallback kommt weiterhin nicht infrage.
  */
 object LanguageCatalog {
 

@@ -19,14 +19,13 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /** Welche Live-Erkennungs-Engine für eine Sprache auf diesem Gerät zuständig ist. */
-enum class LiveEngine { MLKIT, SYSTEM, NONE }
+enum class LiveEngine { MLKIT, VOSK, NONE }
 
 /**
  * Dünner Wrapper um ML Kit GenAI Speech Recognition
  * (`com.google.mlkit:genai-speech-recognition:1.0.0-alpha1`, Alpha-Status,
  * Paket `com.google.mlkit.genai.speechrecognition`) plus die Weiche
- * [engineFor], die pro Sprache zwischen ML Kit und der
- * Android-Systemerkennung ([SystemSpeechEngine]) entscheidet.
+ * [engineFor], die pro Sprache zwischen ML Kit und [VoskSpeechEngine] entscheidet.
  *
  * Bewusste Entscheidungen (siehe README, bitte nicht ohne Rücksprache ändern):
  *  - Es wird ausschließlich der "Basic"-Modus verwendet. Der "Advanced"-Modus
@@ -34,33 +33,39 @@ enum class LiveEngine { MLKIT, SYSTEM, NONE }
  *    laut Google-Doku (Stand 07/2026) exklusiv auf Pixel-10-Geräten - die App
  *    soll aber auf der gesamten ViP-Gerätefotte lauffähig sein.
  *  - Kein Cloud-Fallback. Sprachen ohne ML-Kit-Live (Ukrainisch, Arabisch)
- *    laufen über die garantiert geräteinterne Systemerkennung, oder gar nicht.
+ *    laufen über die gebündelte Offline-Erkennung [VoskSpeechEngine]. Ein
+ *    Praxistest hat gezeigt, dass die geräteinterne Android-Systemerkennung
+ *    (`SpeechRecognizer.checkRecognitionSupport`) auf realer Hardware
+ *    "nicht unterstützt" für Ukrainisch/Arabisch zurückliefert - dieser
+ *    zunächst naheliegende Weg (siehe frühere `SystemSpeechEngine`, mittlerweile
+ *    entfernt) war also kein verlässlicher Ersatz und wurde durch Vosk abgelöst.
  */
 object SpeechEngine {
 
     /**
-     * Beide Live-Engines setzen Android 12 (API 31) voraus: ML Kit GenAI Speech
-     * Recognition Basic-Modus ist laut Google-Doku "generally available on most
-     * Android devices with API level 31 and higher", und
-     * `SpeechRecognizer.createOnDeviceSpeechRecognizer` (der einzige garantiert
-     * geräteinterne Weg der Systemerkennung) existiert erst ab API 31. Unterhalb
-     * dieser Schwelle bleibt der Live-Button deaktiviert, obwohl minSdk=26 die
-     * App selbst dort lauffähig hält.
+     * ML Kit GenAI Speech Recognition Basic-Modus ist laut Google-Doku "generally
+     * available on most Android devices with API level 31 and higher". Unterhalb
+     * dieser Schwelle bleibt der Live-Button für die ML-Kit-Sprachen deaktiviert,
+     * obwohl minSdk=26 die App selbst dort lauffähig hält. Vosk hat diese
+     * Einschränkung nicht (reine Kotlin/JNA-Bibliothek ohne Android-Systemdienst)
+     * und läuft bereits ab minSdk.
      */
     private const val MIN_LIVE_SDK_INT = Build.VERSION_CODES.S // API 31
 
     /**
      * Zuständige Live-Engine für [languageCode] auf diesem Gerät:
-     * [LiveEngine.MLKIT] für die 9 ML-Kit-Sprachen, [LiveEngine.SYSTEM] für
-     * Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch), sofern das Gerät
-     * die geräteinterne Systemerkennung anbietet, sonst [LiveEngine.NONE].
+     * [LiveEngine.MLKIT] für die 9 ML-Kit-Sprachen (ab API 31), [LiveEngine.VOSK]
+     * für Ukrainisch/Arabisch, sobald das Vosk-Modell heruntergeladen ist
+     * (siehe Menü "Sprachpakete" - anders als bei ML Kit wird hier NICHT beim
+     * ersten Mikro-Tap spontan nachgeladen, die Modelle sind dafür zu groß),
+     * sonst [LiveEngine.NONE].
      */
     fun engineFor(context: Context, languageCode: String): LiveEngine {
-        if (Build.VERSION.SDK_INT < MIN_LIVE_SDK_INT) return LiveEngine.NONE
         val language = LanguageCatalog.byCode(languageCode)
         return when {
-            language.mlKitLiveSpeech -> LiveEngine.MLKIT
-            SystemSpeechEngine.isAvailable(context) -> LiveEngine.SYSTEM
+            language.mlKitLiveSpeech ->
+                if (Build.VERSION.SDK_INT >= MIN_LIVE_SDK_INT) LiveEngine.MLKIT else LiveEngine.NONE
+            VoskSpeechEngine.isModelReady(context, languageCode) -> LiveEngine.VOSK
             else -> LiveEngine.NONE
         }
     }
@@ -113,25 +118,26 @@ object SpeechEngine {
     }
 
     /**
-     * Lädt das Live-Erkennungsmodell für [languageCode] vorab herunter
-     * (Menü "Sprachpakete") - je nach zuständiger Engine über ML Kit oder die
-     * Systemerkennung. Für Sprachen ganz ohne Live-Unterstützung ein No-Op.
+     * Lädt das Live-Erkennungsmodell für [languageCode] vorab herunter (Menü
+     * "Sprachpakete"). Für die ML-Kit-Sprachen über ML Kit; für Ukrainisch/
+     * Arabisch über [VoskSpeechEngine.downloadAndUnpack] (großer Download,
+     * [onProgress] liefert geladene/gesamte Bytes für eine Fortschrittsanzeige).
      */
-    suspend fun prepareModel(context: Context, languageCode: String) {
-        when (engineFor(context, languageCode)) {
-            LiveEngine.MLKIT -> {
-                val recognizer = createRecognizer(languageCode)
-                try {
-                    ensureModelDownloaded(recognizer)
-                } finally {
-                    recognizer.close()
-                }
+    suspend fun prepareModel(
+        context: Context,
+        languageCode: String,
+        onProgress: (downloaded: Long, total: Long?) -> Unit = { _, _ -> },
+    ) {
+        val language = LanguageCatalog.byCode(languageCode)
+        if (language.mlKitLiveSpeech) {
+            val recognizer = createRecognizer(languageCode)
+            try {
+                ensureModelDownloaded(recognizer)
+            } finally {
+                recognizer.close()
             }
-            LiveEngine.SYSTEM -> SystemSpeechEngine.triggerModelDownload(
-                context,
-                LanguageCatalog.byCode(languageCode).speechLocaleTag,
-            )
-            LiveEngine.NONE -> Unit
+        } else if (VoskSpeechEngine.isSupported(languageCode)) {
+            VoskSpeechEngine.downloadAndUnpack(context, languageCode, onProgress)
         }
     }
 

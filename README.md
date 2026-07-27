@@ -13,11 +13,15 @@ Richtung eines Drittanbieters verlassen. Deshalb:
   (`com.google.mlkit:translate`, stabil/GA). Nach einmaligem Download des
   Sprachmodellpaars läuft die Übersetzung komplett offline.
 - **Live-Spracherkennung** läuft über [ML Kit GenAI Speech Recognition](https://developers.google.com/ml-kit/genai/speech-recognition/android)
-  (`com.google.mlkit:genai-speech-recognition:1.0.0-alpha1`, **Alpha-Status**).
-  Auch hier: einmaliger Modell-Download, danach reine On-Device-Inferenz.
+  (`com.google.mlkit:genai-speech-recognition:1.0.0-alpha1`, **Alpha-Status**)
+  für 9 der 11 Sprachen, für Ukrainisch/Arabisch über die gebündelte
+  Offline-Erkennung [Vosk](https://alphacephei.com/vosk) (Apache-2.0, siehe
+  Abschnitt "Vosk-Modelle"). In beiden Fällen: einmaliger Modell-Download,
+  danach reine On-Device-Inferenz.
 - Es gibt **bewusst keinen Cloud-Fallback**, auch nicht für Sprachen ohne
   Live-Unterstützung. Die einzige Internetnutzung der App ist der einmalige
-  Download der on-device-Modelle (`INTERNET`-/`ACCESS_NETWORK_STATE`-
+  Download der on-device-Modelle - von Googles ML-Kit-Servern bzw. von
+  alphacephei.com für die Vosk-Modelle (`INTERNET`-/`ACCESS_NETWORK_STATE`-
   Berechtigung in `AndroidManifest.xml`) - nie die Übertragung von
   Kunden-Text oder -Audio.
 
@@ -29,8 +33,8 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 |---|---|
 | `LanguageCatalog.kt` | Die 11 unterstützten Sprachen, Anzeigenamen, ML-Kit-Sprachkonstanten, Live-Speech-Unterstützung pro Sprache |
 | `TranslationEngine.kt` | Wrapper um ML Kit Translate (Translator-Cache pro Sprachpaar, Modell-Download, `translate()`) |
-| `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow) plus die Engine-Weiche `engineFor()`: entscheidet pro Sprache zwischen ML Kit, Android-Systemerkennung und "kein Live" |
-| `SystemSpeechEngine.kt` | Zweite Live-Engine: garantiert geräteinterne Android-Systemerkennung (`SpeechRecognizer.createOnDeviceSpeechRecognizer`, Android 12+) für Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch) |
+| `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow) plus die Engine-Weiche `engineFor()`: entscheidet pro Sprache zwischen ML Kit, Vosk und "kein Live" |
+| `VoskSpeechEngine.kt` | Zweite Live-Engine: [Vosk](https://alphacephei.com/vosk) (Apache-2.0), direkt in die App gebündelt statt über einen Android-Systemdienst - für Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch). Modell-Download/-Entpacken, Recognizer-Erstellung, `SpeechService`-Listener |
 | `SpeechOutput.kt` | Sprachausgabe über die systemeigene Android-TTS-Engine (on-device): wählt automatisch die beste installierte Offline-Stimme pro Sprache, leicht reduziertes Sprechtempo, Absprung in die TTS-Einstellungen bei fehlender Stimme |
 | `MainActivity.kt` | Jetpack-Compose-UI: Splitscreen (Kundenseite 180° gedreht), Sprachauswahl pro Seite direkt neben dem Logo, Live-Modus über je eine eigene Sprechtaste pro Seite, Konversationsverlauf. Kein getippter Modus mehr (siehe unten) |
 
@@ -50,35 +54,38 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | Französisch | `fr` | ✅ | ML Kit |
 | Spanisch | `es` | ✅ | ML Kit |
 | Italienisch | `it` | ✅ | ML Kit |
-| Ukrainisch | `uk` | ✅ | Android-Systemerkennung* |
-| Arabisch | `ar` | ✅ | Android-Systemerkennung* |
+| Ukrainisch | `uk` | ✅ | Vosk (gebündelt)* |
+| Arabisch | `ar` | ✅ | Vosk (gebündelt)* |
 
-\* Die Android-Systemerkennung (`SystemSpeechEngine.kt`) setzt voraus, dass
-das Gerät `SpeechRecognizer.createOnDeviceSpeechRecognizer` anbietet
-(Android 12+) und das jeweilige **Offline-Sprachpaket** installiert ist
-(Menü "Sprachpakete" stößt den Download auf Android 13+ an, darunter über
-Android-Einstellungen > Offline-Spracheingabe). Ob Ukrainisch/Arabisch dort
-verfügbar sind, hängt vom Gerät ab.
+\* Anders als bei den 9 ML-Kit-Sprachen wird hier NICHT beim ersten
+Mikro-Tap spontan nachgeladen - das Vosk-Modell (~100-140 MB) muss vorher
+im Menü "Sprachpakete" heruntergeladen worden sein, siehe Abschnitt
+"Vosk-Modelle" unten.
 
 **Warum zwei Engines (bewusste Entscheidung, siehe Kommentare in
-`LanguageCatalog.kt`/`SpeechEngine.kt`/`SystemSpeechEngine.kt`):** ML Kit
+`LanguageCatalog.kt`/`SpeechEngine.kt`/`VoskSpeechEngine.kt`):** ML Kit
 GenAI Speech Recognition listet im "Basic"-Modus kein Ukrainisch; Arabisch
 ist dort nur im "Advanced"-Modus verfügbar, der laut Google-Doku (Stand Juli
-2026) exklusiv auf Pixel-10-Geräten läuft. Statt eines (ausgeschlossenen)
-Cloud-Fallbacks übernimmt für diese beiden Sprachen die Systemerkennung des
-Geräts - aber **ausschließlich über den garantiert geräteinternen Weg**:
-`createOnDeviceSpeechRecognizer` (Android 12+). Der ältere Weg
-(`createSpeechRecognizer` + `EXTRA_PREFER_OFFLINE`) würde auch unter
-Android < 12 funktionieren, "bevorzugt" offline aber nur - Audio könnte
-trotzdem an einen Cloud-Dienst gehen und würde das Datenschutz-Requirement
-verletzen. Deshalb bewusst nicht verwendet.
+2026) exklusiv auf Pixel-10-Geräten läuft. Naheliegend wäre für diese beiden
+Sprachen die **geräteinterne Android-Systemerkennung**
+(`SpeechRecognizer.createOnDeviceSpeechRecognizer`, Android 12+) gewesen -
+der einzige Weg dorthin, der eine geräteinterne Verarbeitung garantiert
+(der ältere `createSpeechRecognizer` + `EXTRA_PREFER_OFFLINE` "bevorzugt"
+offline nur und könnte Audio doch an einen Cloud-Dienst schicken, was das
+Datenschutz-Requirement verletzen würde). Ein **Praxistest** hat aber
+gezeigt, dass die Systemerkennung des Testgeräts für Ukrainisch/Arabisch per
+`checkRecognitionSupport` explizit "nicht unterstützt" zurückliefert - dieser
+Weg war also kein verlässlicher Ersatz. Die Lösung ist [Vosk](https://alphacephei.com/vosk)
+(Apache-2.0, `com.alphacephei:vosk-android`): eine direkt in die App
+gebündelte Offline-Erkennung, die unabhängig vom Gerätehersteller
+funktioniert, solange das Modell einmal heruntergeladen wurde.
 
-Zusätzlich gilt: Beide Live-Engines setzen Android 12 (API 31) voraus - ML
-Kit laut Google-Doku ("generally available on most Android devices with API
-level 31 and higher"), die geräteinterne Systemerkennung per API-Definition.
-`SpeechEngine.isLiveSupported()` prüft das zentral und deaktiviert die
-Sprechtasten entsprechend; `minSdk 26` hält die App selbst (Übersetzung,
-Verlauf, Sprachausgabe) auch darunter lauffähig.
+Zusätzlich gilt: ML Kit GenAI Speech Recognition Basic-Modus ist laut
+Google-Doku "generally available on most Android devices with API level 31
+and higher" - `SpeechEngine.isLiveSupported()` prüft das und deaktiviert die
+Sprechtasten für die ML-Kit-Sprachen unterhalb davon. Vosk hat diese
+Einschränkung nicht (reine Kotlin/JNA-Bibliothek ohne Android-Systemdienst)
+und läuft bereits ab `minSdk 26`.
 
 ## Splitscreen & ViP-Branding
 
@@ -153,6 +160,37 @@ das UI ist deshalb ein **Splitscreen**:
   Sprache (geprüft über `RemoteModelManager`) wird angezeigt.
 - **Auto-Scroll:** Beide Verlaufslisten (Kunden- und Mitarbeiterseite)
   scrollen bei jedem neuen Beitrag automatisch zum aktuellsten Eintrag.
+
+## Vosk-Modelle (Ukrainisch/Arabisch)
+
+Die Live-Erkennung für Ukrainisch und Arabisch läuft über
+[Vosk](https://alphacephei.com/vosk) (`com.alphacephei:vosk-android:0.3.75`,
+Apache-2.0), direkt in die App gebündelt statt über einen
+Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung.
+
+- **Modelle werden nicht in der APK mitgeliefert** (würde Debug-Builds
+  unhandlich groß machen), sondern im Menü "Sprachpakete" heruntergeladen:
+  Ukrainisch [`vosk-model-small-uk-v3-small`](https://alphacephei.com/vosk/models)
+  (~137 MB), Arabisch `vosk-model-small-ar-0.3` (~100 MB) - jeweils die
+  "small"-Variante, gedacht für den mobilen Einsatz. Beide URLs sind per
+  HTTP-HEAD gegen die echten, von alphacephei.com ausgelieferten Dateien
+  verifiziert (der Host selbst war aus der Entwicklungs-Sandbox nicht direkt
+  erreichbar, siehe "Build-Verifikation" unten - die Prüfung lief über einen
+  temporären Schritt im echten CI-Workflow).
+- **Größerer, einmaliger Download:** Die Statuszeile "Live-Erkennung: ..." im
+  Sprachpakete-Menü zeigt den Fortschritt in Prozent; am besten über WLAN
+  vorbereiten, bevor die Sprache am Schalter gebraucht wird. Anders als bei
+  den ML-Kit-Sprachen wird hier **nicht** beim ersten Mikro-Tap spontan
+  nachgeladen - dafür sind die Modelle zu groß, die Sprechtaste bleibt bis
+  zum Abschluss des Downloads deaktiviert.
+- **Bleibt vollständig on-device:** Nach dem einmaligen Download läuft die
+  Erkennung komplett offline auf dem Gerät (Kaldi-Engine über JNA/native
+  Bibliothek, in der AAR enthalten) - kein Unterschied zum
+  Datenschutz-Anspruch der anderen 9 Sprachen.
+- **Warum nicht die großen Referenzmodelle:** `vosk-model-ar-mgb2-0.4`
+  (~318 MB) und `vosk-model-uk-v3` (~354 MB) sind genauer, aber für einen
+  spontanen Download am Schalter zu groß - die "small"-Varianten sind der
+  bewusste Kompromiss zwischen Genauigkeit und Downloadgröße.
 
 ## Konversationsverlauf, Sprachausgabe & Übersetzer-Lebenszyklus
 
@@ -358,45 +396,34 @@ wegen Signatur-Konflikt), ohne die alte Version vorher zu deinstallieren.
 
 ## Offene Punkte
 
-- **Ukrainisch/Arabisch-EINGABE hängt an der Systemerkennung des Geräts:**
-  Seit dem Wegfall des Textfelds ist die Live-Erkennung der einzige
-  Eingabeweg. Für Ukrainisch/Arabisch übernimmt die Android-Systemerkennung
-  (siehe "Sprachcoverage") - das funktioniert nur auf Geräten mit
-  Android 12+, geräteinterner Systemerkennung und installiertem
-  Offline-Sprachpaket für die jeweilige Sprache. Praxistest-Befund
-  (07/2026): Die **Ausgabe** (TTS-Stimmen) für beide Sprachen funktioniert
-  auf dem Testgerät, die **Eingabe** nicht. Das Menü "Sprachpakete" zeigt
-  deshalb jetzt pro Sprache eine Zeile "Live-Erkennung: ..." mit der exakten
-  Ursache (Android zu alt / kein Systemdienst / Paket ladbar / Paket
-  installiert / **von der Systemerkennung dieses Geräts nicht unterstützt**,
-  Abfrage über `SpeechRecognizer.checkRecognitionSupport`, ab Android 13).
-  Meldet das Gerät "nicht unterstützt", gibt es dort keinen
-  datenschutzkonformen Weg über Systemdienste. Die dokumentierte
-  Ausbaustufe wäre dann eine **in die App gebündelte
-  Offline-Spracherkennung** (z. B. Vosk, Apache-2.0, Modelle für Ukrainisch
-  und Arabisch je ~50 MB, oder sherpa-onnx) - komplett on-device, aber ein
-  größerer Umbau (native Bibliothek, Modell-Downloads, eigene
-  Audio-Pipeline). Alternativ bleibt der kleine Fallback eines nur für
-  diese zwei Sprachen eingeblendeten Texteingabefelds.
+- **Ukrainisch/Arabisch-Eingabe: noch nicht am echten Gerät bestätigt.**
+  Praxistest-Historie: Die Android-Systemerkennung war der zunächst
+  naheliegende Weg, meldete auf dem Testgerät per
+  `SpeechRecognizer.checkRecognitionSupport` aber explizit "nicht
+  unterstützt" für beide Sprachen - kein verlässlicher Weg. Die App nutzt
+  jetzt stattdessen die gebündelte Offline-Erkennung Vosk (siehe Abschnitt
+  "Vosk-Modelle"), die geräteunabhängig funktionieren sollte. Die Vosk-URLs
+  und Dateigrößen sind gegen die echten, von alphacephei.com ausgelieferten
+  Dateien verifiziert, das Zusammenspiel aus Modell-Download, Entpacken und
+  Live-Erkennung über die native Kaldi-Engine aber noch nicht an einem
+  echten Gerät getestet (die Entwicklungs-Sandbox kann keine echten
+  Android-Geräte betreiben, siehe "Build-Verifikation"). Nächster Schritt:
+  im Sprachpakete-Menü das Ukrainisch/Arabisch-Modell laden und die
+  Sprechtaste ausprobieren.
 - **Sprachausgabe für Ukrainisch/Arabisch hängt an den installierten
   TTS-Stimmen:** Die App kann nur Stimmen nutzen, die die TTS-Engine des
   Geräts anbietet (bei Google Speech Services lassen sich Offline-Stimmen
-  pro Sprache nachinstallieren - Arabisch ist dort üblicherweise verfügbar,
-  Ukrainisch je nach Version/Gerät). Das Sprachpakete-Menü macht die Lage
-  pro Sprache sichtbar (Probehören/Installieren). Sollte die
-  Schalter-Hardware für eine benötigte Sprache dauerhaft keine
-  Offline-Stimme anbieten, wäre die Ausbaustufe eine **in die App
-  gebündelte Offline-TTS-Engine** (z. B. sherpa-onnx mit Piper-Stimmen,
-  Apache-2.0; Ukrainisch und Arabisch verfügbar, ~20-60 MB pro Sprache) -
-  bewusst noch nicht umgesetzt, um App-Größe und native Abhängigkeiten
-  klein zu halten, solange die Systemstimmen reichen.
+  pro Sprache nachinstallieren). Laut Praxistest funktioniert das für beide
+  Sprachen auf dem Testgerät bereits. Das Sprachpakete-Menü macht die Lage
+  pro Sprache sichtbar (Probehören/Installieren), falls es auf anderer
+  Hardware doch fehlt.
 - **ViP-Schalter-Hardware:** Die Android-Version der im Einsatz befindlichen
-  Schalter-Hardware ist nicht bekannt. Kein Blocker für diesen Build, aber
-  relevant für den Live-Modus: Läuft die Hardware unter API < 31, bleibt der
-  Live-Button dort automatisch deaktiviert (`SpeechEngine.isLiveSupported()`
-  liefert `false`), die App bleibt aber voll funktionsfähig im getippten
-  Modus (`minSdk 26` deckt das ab). Sollte vor dem Rollout geklärt werden,
-  falls Live-Spracherkennung an den Schaltern erwartet wird.
+  Schalter-Hardware ist nicht bekannt. Relevant, weil ML Kit (9 Sprachen)
+  Android 12 (API 31) voraussetzt, Vosk (Ukrainisch/Arabisch) dagegen bereits
+  ab `minSdk 26` läuft (siehe "Sprachcoverage"). Auf einem Gerät unter
+  API 31 hätten also - solange kein Textfeld mehr existiert - ausgerechnet
+  **nur** Ukrainisch/Arabisch eine Live-Eingabemöglichkeit, die anderen 9
+  Sprachen keine. Sollte vor dem Rollout geklärt werden.
 - **`DownloadStatus`-Aufbau:** `SpeechRecognizer.download(): Flow<DownloadStatus>`
   ist gegen die echte AAR verifiziert (siehe Abschnitt oben), der genaue
   Aufbau von `DownloadStatus` selbst (für eine Fortschrittsanzeige) aber

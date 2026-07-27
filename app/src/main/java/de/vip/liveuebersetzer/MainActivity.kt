@@ -133,7 +133,7 @@ private fun LiveUebersetzerScreen() {
     var isPreparingSpeechModel by remember { mutableStateOf(false) }
     var recognizerJob by remember { mutableStateOf<Job?>(null) }
     var activeRecognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
-    var activeSystemSession by remember { mutableStateOf<SystemSpeechSession?>(null) }
+    var activeVoskSession by remember { mutableStateOf<VoskSpeechSession?>(null) }
 
     val speechOutput = remember { SpeechOutput(context) }
     var speechOutputEnabled by remember { mutableStateOf(true) }
@@ -172,8 +172,8 @@ private fun LiveUebersetzerScreen() {
             SpeechEngine.release(recognizer)
         }
         activeRecognizer = null
-        activeSystemSession?.cancel()
-        activeSystemSession = null
+        activeVoskSession?.cancel()
+        activeVoskSession = null
         isListening = false
         isPreparingSpeechModel = false
     }
@@ -203,25 +203,27 @@ private fun LiveUebersetzerScreen() {
         recordingFromCustomer = fromCustomer
         isListening = true
 
-        if (engine == LiveEngine.SYSTEM) {
-            // Android-Systemerkennung (Ukrainisch/Arabisch): stoppt nach dem
+        if (engine == LiveEngine.VOSK) {
+            // Gebündelte Vosk-Erkennung (Ukrainisch/Arabisch): stoppt nach dem
             // Satz von selbst - dasselbe Tap-to-Talk-Verhalten wie unten.
-            activeSystemSession = SystemSpeechEngine.listen(
-                context = context,
-                languageTag = from.speechLocaleTag,
-                onPartial = { text -> liveTranscript = text },
-                onFinal = { text ->
-                    liveTranscript = text
-                    activeSystemSession = null
-                    isListening = false
-                    translateAndAdd(from, to, text)
-                },
-                onError = { message ->
-                    activeSystemSession = null
-                    isListening = false
-                    errorMessage = message
-                },
-            )
+            scope.launch {
+                activeVoskSession = VoskSpeechEngine.listen(
+                    context = context,
+                    languageCode = from.code,
+                    onPartial = { text -> liveTranscript = text },
+                    onFinal = { text ->
+                        liveTranscript = text
+                        activeVoskSession = null
+                        isListening = false
+                        translateAndAdd(from, to, text)
+                    },
+                    onError = { message ->
+                        activeVoskSession = null
+                        isListening = false
+                        errorMessage = message
+                    },
+                )
+            }
             return
         }
 
@@ -302,6 +304,7 @@ private fun LiveUebersetzerScreen() {
             stopLive()
             speechOutput.shutdown()
             TranslationEngine.closeAll()
+            VoskSpeechEngine.closeAll()
         }
     }
 
@@ -785,20 +788,18 @@ private fun ModelManagerScreen(
     val scope = rememberCoroutineScope()
     val statuses = remember { mutableStateMapOf<String, ModelStatus>() }
     val voiceStatuses = remember { mutableStateMapOf<String, SpeechOutput.VoiceStatus>() }
-    val systemLiveStatuses = remember { mutableStateMapOf<String, SystemLiveStatus>() }
-
-    fun refreshSystemLiveStatus(language: Language) {
-        if (language.mlKitLiveSpeech) return
-        SystemSpeechEngine.checkSupport(context, language.speechLocaleTag) { status ->
-            systemLiveStatuses[language.code] = status
-        }
-    }
+    // Nur fuer Sprachen ohne ML-Kit-Live relevant (Ukrainisch/Arabisch).
+    val voskStatuses = remember { mutableStateMapOf<String, ModelStatus>() }
+    val voskProgress = remember { mutableStateMapOf<String, Int>() }
 
     LaunchedEffect(Unit) {
         LanguageCatalog.all.forEach { language ->
             statuses[language.code] = ModelStatus.PRUEFEN
             voiceStatuses[language.code] = speechOutput.voiceStatus(language)
-            refreshSystemLiveStatus(language)
+            if (!language.mlKitLiveSpeech) {
+                voskStatuses[language.code] =
+                    if (VoskSpeechEngine.isModelReady(context, language.code)) ModelStatus.GELADEN else ModelStatus.FEHLT
+            }
             statuses[language.code] = runCatching { TranslationEngine.isModelDownloaded(language) }
                 .fold(
                     { downloaded -> if (downloaded) ModelStatus.GELADEN else ModelStatus.FEHLT },
@@ -878,8 +879,8 @@ private fun ModelManagerScreen(
                                             if (language.mlKitLiveSpeech) {
                                                 "Übersetzung bereit (inkl. Live-Erkennung)"
                                             } else {
-                                                "Übersetzung bereit - Live-Erkennung über die " +
-                                                    "Android-Systemerkennung (Offline-Sprachpaket nötig)"
+                                                "Übersetzung bereit - Live-Erkennung über eigenes " +
+                                                    "Sprachmodell (siehe unten)"
                                             }
                                         ModelStatus.FEHLER -> "Übersetzung: Download fehlgeschlagen - Internetverbindung prüfen"
                                     },
@@ -904,38 +905,29 @@ private fun ModelManagerScreen(
                                     },
                                 )
                                 if (!language.mlKitLiveSpeech) {
-                                    val liveStatus = systemLiveStatuses[language.code]
+                                    val voskStatus = voskStatuses[language.code] ?: ModelStatus.PRUEFEN
+                                    val progress = voskProgress[language.code]
                                     Text(
-                                        text = when (liveStatus) {
-                                            null -> "Live-Erkennung: prüfe …"
-                                            SystemLiveStatus.ANDROID_ZU_ALT ->
-                                                "Live-Erkennung: benötigt Android 12 oder neuer"
-                                            SystemLiveStatus.KEIN_SYSTEMDIENST ->
-                                                "Live-Erkennung: dieses Gerät bietet keine " +
-                                                    "geräteinterne Systemerkennung an"
-                                            SystemLiveStatus.UNBEKANNT ->
-                                                "Live-Erkennung: Status erst ab Android 13 abfragbar - " +
-                                                    "einfach die Sprechtaste ausprobieren"
-                                            SystemLiveStatus.PAKET_INSTALLIERT ->
-                                                "Live-Erkennung: Sprachpaket installiert ✓"
-                                            SystemLiveStatus.PAKET_LAEDT ->
-                                                "Live-Erkennung: Sprachpaket wird geladen …"
-                                            SystemLiveStatus.PAKET_LADBAR ->
-                                                "Live-Erkennung: Sprachpaket verfügbar - über " +
-                                                    "\"Laden\" installieren"
-                                            SystemLiveStatus.NICHT_UNTERSTUETZT ->
-                                                "Live-Erkennung: wird von der Systemerkennung dieses " +
-                                                    "Geräts nicht unterstützt - Eingabe für diese " +
-                                                    "Sprache hier nicht möglich"
+                                        text = when (voskStatus) {
+                                            ModelStatus.PRUEFEN -> "Live-Erkennung: prüfe …"
+                                            ModelStatus.FEHLT ->
+                                                "Live-Erkennung: eigenes Sprachmodell noch nicht " +
+                                                    "geladen (größerer Download, am besten über WLAN)"
+                                            ModelStatus.LAEDT ->
+                                                if (progress != null) {
+                                                    "Live-Erkennung: Sprachmodell wird geladen … $progress %"
+                                                } else {
+                                                    "Live-Erkennung: Sprachmodell wird geladen …"
+                                                }
+                                            ModelStatus.GELADEN -> "Live-Erkennung: Sprachmodell bereit ✓"
+                                            ModelStatus.FEHLER ->
+                                                "Live-Erkennung: Download fehlgeschlagen - " +
+                                                    "Internetverbindung prüfen"
                                         },
-                                        color = when (liveStatus) {
-                                            SystemLiveStatus.PAKET_INSTALLIERT,
-                                            SystemLiveStatus.PAKET_LAEDT,
-                                            SystemLiveStatus.PAKET_LADBAR,
-                                            SystemLiveStatus.UNBEKANNT,
-                                            null,
-                                            -> MaterialTheme.colorScheme.tertiary
-                                            else -> MaterialTheme.colorScheme.error
+                                        color = if (voskStatus == ModelStatus.GELADEN) {
+                                            MaterialTheme.colorScheme.tertiary
+                                        } else {
+                                            MaterialTheme.colorScheme.error
                                         },
                                     )
                                 }
@@ -943,16 +935,26 @@ private fun ModelManagerScreen(
                             Button(
                                 onClick = {
                                     statuses[language.code] = ModelStatus.LAEDT
+                                    if (!language.mlKitLiveSpeech) voskStatuses[language.code] = ModelStatus.LAEDT
                                     scope.launch {
                                         runCatching {
                                             TranslationEngine.downloadModel(language)
-                                            SpeechEngine.prepareModel(context, language.code)
+                                            SpeechEngine.prepareModel(context, language.code) { downloaded, total ->
+                                                if (total != null && total > 0) {
+                                                    voskProgress[language.code] = (downloaded * 100 / total).toInt()
+                                                }
+                                            }
                                         }.onSuccess {
                                             statuses[language.code] = ModelStatus.GELADEN
-                                            // Der System-Paketdownload läuft asynchron im
-                                            // Systemdienst weiter - Status neu abfragen.
-                                            refreshSystemLiveStatus(language)
-                                        }.onFailure { statuses[language.code] = ModelStatus.FEHLER }
+                                            if (!language.mlKitLiveSpeech) {
+                                                voskStatuses[language.code] = ModelStatus.GELADEN
+                                            }
+                                        }.onFailure {
+                                            statuses[language.code] = ModelStatus.FEHLER
+                                            if (!language.mlKitLiveSpeech) {
+                                                voskStatuses[language.code] = ModelStatus.FEHLER
+                                            }
+                                        }
                                     }
                                 },
                                 enabled = status == ModelStatus.FEHLT || status == ModelStatus.FEHLER,

@@ -82,6 +82,12 @@ dependencies {
     // ML Kit GenAI Speech Recognition - Alpha, rein on-device (Basic-Modus).
     implementation("com.google.mlkit:genai-speech-recognition:1.0.0-alpha1")
 
+    // Vosk (Apache-2.0) - gebuendelte Offline-Spracherkennung fuer Ukrainisch/
+    // Arabisch, da weder ML Kit noch die Android-Systemerkennung diese beiden
+    // Sprachen zuverlaessig abdecken (siehe VoskSpeechEngine-Kdoc). Zieht
+    // net.java.dev.jna:jna:5.18.1 (aar) transitiv ueber die eigene POM.
+    implementation("com.alphacephei:vosk-android:0.3.75")
+
     // Bruecke zwischen Play-Services-Task und Kotlin-Coroutines fuer
     // TranslationEngine/SpeechEngine (Task.await()).
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
