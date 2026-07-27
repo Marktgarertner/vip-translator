@@ -63,6 +63,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.mlkit.genai.speechrecognition.SpeechRecognizer
+import de.vip.liveuebersetzer.ui.theme.VipDisabled
 import de.vip.liveuebersetzer.ui.theme.VipLiveUebersetzerTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -673,7 +674,7 @@ private fun MicButton(
                     color = when {
                         isRecording -> MaterialTheme.colorScheme.error
                         enabled -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.tertiary
+                        else -> VipDisabled
                     },
                     shape = CircleShape,
                 )

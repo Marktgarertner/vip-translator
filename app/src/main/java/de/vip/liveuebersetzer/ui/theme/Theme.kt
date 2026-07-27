@@ -6,24 +6,30 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
+/**
+ * Farbrollen aus der offiziellen ViP-Palette (siehe [Color.kt]):
+ * Waldgrün als Primärfarbe (Kopfleisten, Sprechtasten), Aquamarin als
+ * heller Flächenhintergrund, Seegrün als heller Kontrast (Akzente,
+ * Sekundärtexte), Dunkelgrün als dunkler Kontrast (Fließtext auf Karten).
+ */
 private val LightColors = lightColorScheme(
-    primary = VipGreen,
-    onPrimary = VipSurface,
-    secondary = VipOrange,
-    tertiary = VipTextMuted,
-    background = VipMist,
-    surface = VipSurface,
-    onSurface = VipInk,
+    primary = VipWaldgruen,
+    onPrimary = VipWhite,
+    secondary = VipSeegruen,
+    tertiary = VipSeegruen,
+    background = VipAquamarine,
+    surface = VipWhite,
+    onSurface = VipDunkelgruen,
 )
 
 private val DarkColors = darkColorScheme(
-    primary = VipGreenLight,
-    onPrimary = VipOnPrimaryDark,
-    secondary = VipOrange,
+    primary = VipSeegruen,
+    onPrimary = VipWhite,
+    secondary = VipSeegruen,
     tertiary = VipNightMuted,
-    background = VipNight,
-    surface = VipNightSurface,
-    onSurface = VipNightInk,
+    background = VipNightBackground,
+    surface = VipDunkelgruen,
+    onSurface = VipAquamarine,
 )
 
 @Composable

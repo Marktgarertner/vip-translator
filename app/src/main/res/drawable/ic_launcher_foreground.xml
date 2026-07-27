@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Weißes Windrad (wie vip_logo.xml, einfarbig) auf ViP-grünem
-     Launcher-Hintergrund; skaliert in die Safe-Zone des Adaptive Icons. -->
+<!-- Weißes Windrad (gleiche Geometrie wie vip_logo.xml, einfarbig) auf
+     ViP-grünem Launcher-Hintergrund; skaliert in die Safe-Zone des
+     Adaptive Icons. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -9,28 +10,27 @@
     <group
         android:scaleX="0.55"
         android:scaleY="0.55"
-        android:rotation="12"
         android:pivotX="54"
         android:pivotY="54">
         <group android:rotation="0" android:pivotX="54" android:pivotY="54">
             <path
                 android:fillColor="#FFFFFF"
-                android:pathData="M54,54 C54,26 40,8 12,8 C12,36 26,54 54,54 Z" />
+                android:pathData="M57.8,10.2 A44,44 0 0 1 97.8,50.2 L79.9,51.7 A26,26 0 0 0 56.3,28.1 Z" />
         </group>
         <group android:rotation="90" android:pivotX="54" android:pivotY="54">
             <path
                 android:fillColor="#FFFFFF"
-                android:pathData="M54,54 C54,26 40,8 12,8 C12,36 26,54 54,54 Z" />
+                android:pathData="M57.8,10.2 A44,44 0 0 1 97.8,50.2 L79.9,51.7 A26,26 0 0 0 56.3,28.1 Z" />
         </group>
         <group android:rotation="180" android:pivotX="54" android:pivotY="54">
             <path
                 android:fillColor="#FFFFFF"
-                android:pathData="M54,54 C54,26 40,8 12,8 C12,36 26,54 54,54 Z" />
+                android:pathData="M57.8,10.2 A44,44 0 0 1 97.8,50.2 L79.9,51.7 A26,26 0 0 0 56.3,28.1 Z" />
         </group>
         <group android:rotation="270" android:pivotX="54" android:pivotY="54">
             <path
                 android:fillColor="#FFFFFF"
-                android:pathData="M54,54 C54,26 40,8 12,8 C12,36 26,54 54,54 Z" />
+                android:pathData="M57.8,10.2 A44,44 0 0 1 97.8,50.2 L79.9,51.7 A26,26 0 0 0 56.3,28.1 Z" />
         </group>
     </group>
 </vector>

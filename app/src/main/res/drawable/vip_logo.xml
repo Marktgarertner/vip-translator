@@ -1,43 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Stilisierte Vektor-Annäherung an das SWP/ViP-Windrad: vier geschwungene
-  Windrad-Flügel in den Logofarben, die sich in der Mitte treffen. Für das
-  finale Branding bitte durch das offizielle Logo aus dem Markenportal
-  ersetzen (Android Studio: File > New > Vector Asset, dann diese Datei
-  überschreiben) - siehe README, Abschnitt "Splitscreen & Branding".
+  Stilisierte Vektor-Annäherung an das SWP/ViP-Windrad nach der offiziellen
+  Vorlage: vier gebogene Ringsegmente mit Lücken dazwischen - Rot (oben
+  links), Blau (oben rechts), Orange (unten rechts), Grün (unten links).
+  Weiterhin eine Annäherung (das Original hat geschwungene Lücken und
+  Farbverläufe) - für das finale Branding bitte das offizielle Logo aus dem
+  Markenportal als Vector-Asset importieren und diese Datei ersetzen,
+  siehe README, Abschnitt "Splitscreen & Branding".
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group
-        android:rotation="12"
-        android:pivotX="54"
-        android:pivotY="54">
-        <!-- oben links: Rot -->
-        <group android:rotation="0" android:pivotX="54" android:pivotY="54">
-            <path
-                android:fillColor="#D5232A"
-                android:pathData="M54,54 C54,26 40,8 12,8 C12,36 26,54 54,54 Z" />
-        </group>
-        <!-- oben rechts: Blau -->
-        <group android:rotation="90" android:pivotX="54" android:pivotY="54">
-            <path
-                android:fillColor="#1467A8"
-                android:pathData="M54,54 C54,26 40,8 12,8 C12,36 26,54 54,54 Z" />
-        </group>
-        <!-- unten rechts: Orange -->
-        <group android:rotation="180" android:pivotX="54" android:pivotY="54">
-            <path
-                android:fillColor="#F39200"
-                android:pathData="M54,54 C54,26 40,8 12,8 C12,36 26,54 54,54 Z" />
-        </group>
-        <!-- unten links: Grün -->
-        <group android:rotation="270" android:pivotX="54" android:pivotY="54">
-            <path
-                android:fillColor="#41A62A"
-                android:pathData="M54,54 C54,26 40,8 12,8 C12,36 26,54 54,54 Z" />
-        </group>
+    <!-- oben rechts: Blau -->
+    <group android:rotation="0" android:pivotX="54" android:pivotY="54">
+        <path
+            android:fillColor="#1467A8"
+            android:pathData="M57.8,10.2 A44,44 0 0 1 97.8,50.2 L79.9,51.7 A26,26 0 0 0 56.3,28.1 Z" />
+    </group>
+    <!-- unten rechts: Orange -->
+    <group android:rotation="90" android:pivotX="54" android:pivotY="54">
+        <path
+            android:fillColor="#F39200"
+            android:pathData="M57.8,10.2 A44,44 0 0 1 97.8,50.2 L79.9,51.7 A26,26 0 0 0 56.3,28.1 Z" />
+    </group>
+    <!-- unten links: Grün -->
+    <group android:rotation="180" android:pivotX="54" android:pivotY="54">
+        <path
+            android:fillColor="#41A62A"
+            android:pathData="M57.8,10.2 A44,44 0 0 1 97.8,50.2 L79.9,51.7 A26,26 0 0 0 56.3,28.1 Z" />
+    </group>
+    <!-- oben links: Rot -->
+    <group android:rotation="270" android:pivotX="54" android:pivotY="54">
+        <path
+            android:fillColor="#D5232A"
+            android:pathData="M57.8,10.2 A44,44 0 0 1 97.8,50.2 L79.9,51.7 A26,26 0 0 0 56.3,28.1 Z" />
     </group>
 </vector>

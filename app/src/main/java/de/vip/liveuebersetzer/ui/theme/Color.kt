@@ -2,26 +2,33 @@ package de.vip.liveuebersetzer.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-/** ViP-Corporate-Hauptfarbe (Vorgabe: #006A4D). */
-val VipGreen = Color(0xFF006A4D)
-val VipGreenLight = Color(0xFF4C9B82)
-val VipGreenDark = Color(0xFF004A36)
+/**
+ * Offizielle ViP-Farbpalette "Verkehr (ViP)" aus dem SWP-Markenportal
+ * (Namen wie dort vergeben - bitte nicht "verschönern"):
+ */
+/** `$waldgruen` - Leistungsbereich, Primärfarbe. */
+val VipWaldgruen = Color(0xFF006A4D)
 
-/** Akzentfarben, angelehnt an das SWP/ViP-Windrad-Logo. */
-val VipOrange = Color(0xFFF39200)
-val VipRed = Color(0xFFD5232A)
-val VipBlue = Color(0xFF1467A8)
-val VipLogoGreen = Color(0xFF41A62A)
+/** `$dunkelgruen` - Dunkel Kontrast. */
+val VipDunkelgruen = Color(0xFF09503D)
 
-/** Flächenfarben (helles Theme): sanfter Grün-Wash statt sterilem Weiß. */
-val VipMist = Color(0xFFE7F2ED)
-val VipSurface = Color(0xFFFFFFFF)
-val VipInk = Color(0xFF17251F)
-val VipTextMuted = Color(0xFF48685C)
+/** `$seegruen` - Hell Kontrast. */
+val VipSeegruen = Color(0xFF008963)
 
-/** Flächenfarben (dunkles Theme). */
-val VipNight = Color(0xFF0F1713)
-val VipNightSurface = Color(0xFF1B2721)
-val VipNightInk = Color(0xFFD9E7E0)
-val VipNightMuted = Color(0xFF9CB6AB)
-val VipOnPrimaryDark = Color(0xFF00281D)
+/** `$aquamarine` - Sonderfarbe, helle Fläche. */
+val VipAquamarine = Color(0xFFDEF3F0)
+
+/**
+ * Abgeleitete Farben (NICHT Teil der offiziellen Palette, nur Ergänzungen
+ * für Zustände, die die Palette nicht abdeckt):
+ */
+val VipWhite = Color(0xFFFFFFFF)
+
+/** Gedämpftes Grün für deaktivierte Bedienelemente. */
+val VipDisabled = Color(0xFF9DBFB4)
+
+/** Dunkles Theme: sehr dunkler Grünton als Hintergrund. */
+val VipNightBackground = Color(0xFF071F18)
+
+/** Dunkles Theme: gedämpfte helle Textfarbe. */
+val VipNightMuted = Color(0xFF9CC8BA)

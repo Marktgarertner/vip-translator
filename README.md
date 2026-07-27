@@ -118,20 +118,24 @@ das UI ist deshalb ein **Splitscreen**:
 - **Mitarbeiterseite zusätzlich:** Lautsprecher- (Sprachausgabe an/aus) und
   Papierkorb-Button (Verlauf leeren) als weiße Icons in der Kopfleiste;
   Status- und Fehlermeldungen erscheinen direkt unter der Kopfleiste.
-- **Farben:** Primärfarbe ist das ViP-Grün **#006A4D** (`ui/theme/Color.kt`),
-  großflächig eingesetzt: Kopfleisten und Sprechtasten in ViP-Grün, der
-  Bildschirmhintergrund als sanfter heller Grün-Wash (`VipMist`, im dunklen
-  Theme entsprechend dunkelgrün), Karten in Weiß. Akzente orientieren sich
-  am SWP/ViP-Windrad (Orange/Rot/Blau/Grün). Auch der
-  Launcher-Icon-Hintergrund ist ViP-Grün, das Launcher-Symbol ein weißes
-  Windrad.
+- **Farben:** Die App nutzt die **offizielle ViP-Palette "Verkehr (ViP)"**
+  aus dem SWP-Markenportal (`ui/theme/Color.kt`, Namen wie dort vergeben):
+  `$waldgruen` **#006A4D** (Leistungsbereich → Primärfarbe: Kopfleisten,
+  Sprechtasten), `$seegruen` **#008963** (Hell Kontrast → Akzente,
+  Sekundärtexte), `$dunkelgruen` **#09503D** (Dunkel Kontrast → Fließtext
+  auf Karten), `$aquamarine` **#DEF3F0** (Sonderfarbe →
+  Bildschirmhintergrund). Karten in Weiß; das dunkle Theme leitet seine
+  Flächen aus Dunkelgrün ab. Der Launcher-Icon-Hintergrund ist Waldgrün,
+  das Launcher-Symbol ein weißes Windrad.
 - **Logo:** `res/drawable/vip_logo.xml` ist eine **stilisierte
-  Vektor-Annäherung** an das Windrad-Logo: vier geschwungene Windrad-Flügel
-  in den Logofarben, die sich in der Mitte treffen. Für das finale Branding
-  bitte das offizielle Logo aus dem SWP-Markenportal als Vector-Asset
-  importieren (Android Studio: File > New > Vector Asset) und diese Datei
-  ersetzen - dabei auch `ic_launcher_foreground.xml` (weiße Variante fürs
-  App-Icon) angleichen.
+  Vektor-Annäherung** an das offizielle Windrad, nach der
+  Original-Vorlage aufgebaut: vier gebogene Ringsegmente mit Lücken -
+  Rot (oben links), Blau (oben rechts), Orange (unten rechts), Grün
+  (unten links). Das Original hat zusätzlich geschwungene Lücken und
+  Farbverläufe - für das finale Branding bitte das offizielle Logo aus dem
+  SWP-Markenportal als Vector-Asset importieren (Android Studio: File >
+  New > Vector Asset) und diese Datei ersetzen - dabei auch
+  `ic_launcher_foreground.xml` (weiße Variante fürs App-Icon) angleichen.
 
 ## Tap-to-Talk & Sprachpakete-Menü
 
