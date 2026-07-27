@@ -26,6 +26,25 @@ import java.util.Locale
  */
 class SpeechOutput(context: Context) {
 
+    /** Stimmen-Lage für eine Sprache auf diesem Gerät (Menü "Sprachpakete"). */
+    enum class VoiceStatus {
+        /** TTS-Engine initialisiert noch. */
+        NICHT_BEREIT,
+
+        /** Offline-Stimme vorhanden - Ausgabe funktioniert netzunabhängig. */
+        OFFLINE_BEREIT,
+
+        /**
+         * Nur Netz-Stimmen installiert. Die App nutzt sie bewusst nicht
+         * (der zu sprechende Text würde das Gerät verlassen - Datenschutz),
+         * die Ausgabe bleibt stumm, bis eine Offline-Stimme installiert ist.
+         */
+        NUR_ONLINE,
+
+        /** Keine Stimme für diese Sprache installiert. */
+        FEHLT,
+    }
+
     private var ready = false
     private var rateApplied = false
 
@@ -38,8 +57,8 @@ class SpeechOutput(context: Context) {
 
     /**
      * Spricht [text] in [language]. Liefert `false`, wenn die Engine (noch)
-     * nicht bereit ist oder auf diesem Gerät keine Stimme für die Sprache
-     * verfügbar ist - dann bietet die UI [openTtsSettings] an.
+     * nicht bereit ist oder auf diesem Gerät keine **Offline**-Stimme für die
+     * Sprache verfügbar ist - dann bietet die UI [openTtsSettings] an.
      */
     fun speak(text: String, language: Language): Boolean {
         if (!ready || text.isBlank()) return false
@@ -54,8 +73,36 @@ class SpeechOutput(context: Context) {
             runCatching { tts.setSpeechRate(SPEECH_RATE) }
             rateApplied = true
         }
-        applyBestOfflineVoice(language.code, locale)
+        if (!ensureOfflineVoice(language.code, locale)) return false
         return tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID) == TextToSpeech.SUCCESS
+    }
+
+    /**
+     * Stimmen-Lage für [language] - Grundlage der Statuszeile im Menü
+     * "Sprachpakete", damit fehlende Stimmen VOR dem Kundengespräch auffallen.
+     */
+    fun voiceStatus(language: Language): VoiceStatus {
+        if (!ready) return VoiceStatus.NICHT_BEREIT
+        val locale = Locale.forLanguageTag(language.speechLocaleTag)
+        val voices = runCatching { tts.voices }.getOrNull()
+        val candidates = voices.orEmpty().filter { it.locale.language == locale.language }
+        return when {
+            candidates.any { !it.isNetworkConnectionRequired } -> VoiceStatus.OFFLINE_BEREIT
+            candidates.isNotEmpty() -> VoiceStatus.NUR_ONLINE
+            else -> {
+                // Manche Engines pflegen die Voice-API nicht - dann entscheidet
+                // die klassische Verfügbarkeitsabfrage.
+                val avail = runCatching { tts.isLanguageAvailable(locale) }
+                    .getOrDefault(TextToSpeech.LANG_NOT_SUPPORTED)
+                if (avail == TextToSpeech.LANG_MISSING_DATA ||
+                    avail == TextToSpeech.LANG_NOT_SUPPORTED
+                ) {
+                    VoiceStatus.FEHLT
+                } else {
+                    VoiceStatus.OFFLINE_BEREIT
+                }
+            }
+        }
     }
 
     /** Bricht eine laufende Sprachausgabe ab (z. B. bevor das Mikrofon aufgeht). */
@@ -69,24 +116,31 @@ class SpeechOutput(context: Context) {
     }
 
     /**
-     * Wählt die beste installierte Offline-Stimme für die Sprache. Alles in
-     * `runCatching`, weil manche TTS-Engines bei der Stimmen-Abfrage
-     * Laufzeitfehler werfen - dann bleibt es einfach bei der Standardstimme
-     * von [TextToSpeech.setLanguage].
+     * Wählt die beste installierte Offline-Stimme für die Sprache. Liefert
+     * `false`, wenn es für die Sprache **ausschließlich Netz-Stimmen** gibt -
+     * die werden aus Datenschutzgründen nie verwendet (der zu sprechende
+     * Text würde das Gerät verlassen). Listet die Engine gar keine Stimmen
+     * (manche pflegen die Voice-API nicht), bleibt es bei der Standardstimme
+     * von [TextToSpeech.setLanguage]. Alles in `runCatching`, weil manche
+     * Engines bei der Stimmen-Abfrage Laufzeitfehler werfen.
      */
-    private fun applyBestOfflineVoice(languageCode: String, locale: Locale) {
+    private fun ensureOfflineVoice(languageCode: String, locale: Locale): Boolean {
         val cached = voiceCache[languageCode]
         if (cached != null) {
             runCatching { tts.voice = cached }
-            return
+            return true
         }
-        val best = runCatching {
-            tts.voices
-                ?.filter { it.locale.language == locale.language && !it.isNetworkConnectionRequired }
-                ?.maxByOrNull { it.quality }
-        }.getOrNull() ?: return
-        voiceCache[languageCode] = best
-        runCatching { tts.voice = best }
+        val voices = runCatching { tts.voices }.getOrNull() ?: return true
+        val candidates = voices.filter { it.locale.language == locale.language }
+        val best = candidates
+            .filter { !it.isNetworkConnectionRequired }
+            .maxByOrNull { it.quality }
+        if (best != null) {
+            voiceCache[languageCode] = best
+            runCatching { tts.voice = best }
+            return true
+        }
+        return candidates.isEmpty()
     }
 
     companion object {

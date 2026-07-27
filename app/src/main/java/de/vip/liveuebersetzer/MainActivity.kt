@@ -305,7 +305,10 @@ private fun LiveUebersetzerScreen() {
     }
 
     if (showModelManager) {
-        ModelManagerScreen(onClose = { showModelManager = false })
+        ModelManagerScreen(
+            onClose = { showModelManager = false },
+            speechOutput = speechOutput,
+        )
         return
     }
 
@@ -766,18 +769,26 @@ private fun StaffEntryCard(
 /**
  * Vollbild-Menü "Sprachpakete": Übersetzungsmodelle (und Live-Erkennung, wo
  * verfügbar) pro Sprache vorab herunterladen, damit am Schalter keine
- * Wartezeit durch spontane Modell-Downloads entsteht. Erreichbar über einen
- * Klick auf das ViP-Logo (auf beiden Bildschirmhälften).
+ * Wartezeit durch spontane Modell-Downloads entsteht. Zeigt außerdem pro
+ * Sprache die Lage der **Sprachausgabe-Stimmen** (offline bereit / nur
+ * online / fehlt) mit Probehören- und Installations-Button - so fällt eine
+ * fehlende Stimme (typisch: Ukrainisch/Arabisch) VOR dem Kundengespräch auf.
+ * Erreichbar über einen Klick auf das ViP-Logo (auf beiden Bildschirmhälften).
  */
 @Composable
-private fun ModelManagerScreen(onClose: () -> Unit) {
+private fun ModelManagerScreen(
+    onClose: () -> Unit,
+    speechOutput: SpeechOutput,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val statuses = remember { mutableStateMapOf<String, ModelStatus>() }
+    val voiceStatuses = remember { mutableStateMapOf<String, SpeechOutput.VoiceStatus>() }
 
     LaunchedEffect(Unit) {
         LanguageCatalog.all.forEach { language ->
             statuses[language.code] = ModelStatus.PRUEFEN
+            voiceStatuses[language.code] = speechOutput.voiceStatus(language)
             statuses[language.code] = runCatching { TranslationEngine.isModelDownloaded(language) }
                 .fold(
                     { downloaded -> if (downloaded) ModelStatus.GELADEN else ModelStatus.FEHLT },
@@ -820,7 +831,11 @@ private fun ModelManagerScreen(onClose: () -> Unit) {
             modifier = Modifier.padding(horizontal = 16.dp),
             text = "Einmalig mit Internet (am besten WLAN) vorbereiten - danach " +
                 "übersetzt und spricht die App komplett offline, ohne Wartezeit " +
-                "beim Kunden. Empfehlung: alle häufig gebrauchten Sprachen vorab laden.",
+                "beim Kunden. Empfehlung: alle häufig gebrauchten Sprachen vorab " +
+                "laden und per Probehören prüfen, ob die Stimme da ist. Fehlende " +
+                "Stimmen lassen sich über \"Stimme installieren\" in den Android-" +
+                "Einstellungen nachladen (dort: Google Speech Services > " +
+                "Sprachdaten installieren).",
         )
 
         LazyColumn(
@@ -832,53 +847,98 @@ private fun ModelManagerScreen(onClose: () -> Unit) {
         ) {
             items(LanguageCatalog.all, key = { it.code }) { language ->
                 val status = statuses[language.code] ?: ModelStatus.PRUEFEN
+                val voiceStatus = voiceStatuses[language.code] ?: SpeechOutput.VoiceStatus.NICHT_BEREIT
                 Card(modifier = Modifier.fillMaxWidth()) {
-                    Row(
+                    Column(
                         modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Text(text = language.displayName, style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                text = when (status) {
-                                    ModelStatus.PRUEFEN -> "Prüfe …"
-                                    ModelStatus.FEHLT -> "Noch nicht geladen"
-                                    ModelStatus.LAEDT -> "Wird heruntergeladen …"
-                                    ModelStatus.GELADEN ->
-                                        if (language.mlKitLiveSpeech) {
-                                            "Bereit (inkl. Live-Erkennung)"
-                                        } else {
-                                            "Übersetzung bereit - Live-Erkennung läuft über die " +
-                                                "Android-Systemerkennung (Offline-Sprachpaket nötig)"
-                                        }
-                                    ModelStatus.FEHLER -> "Download fehlgeschlagen - Internetverbindung prüfen"
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Text(text = language.displayName, style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    text = when (status) {
+                                        ModelStatus.PRUEFEN -> "Übersetzung: prüfe …"
+                                        ModelStatus.FEHLT -> "Übersetzung: noch nicht geladen"
+                                        ModelStatus.LAEDT -> "Übersetzung: wird heruntergeladen …"
+                                        ModelStatus.GELADEN ->
+                                            if (language.mlKitLiveSpeech) {
+                                                "Übersetzung bereit (inkl. Live-Erkennung)"
+                                            } else {
+                                                "Übersetzung bereit - Live-Erkennung über die " +
+                                                    "Android-Systemerkennung (Offline-Sprachpaket nötig)"
+                                            }
+                                        ModelStatus.FEHLER -> "Übersetzung: Download fehlgeschlagen - Internetverbindung prüfen"
+                                    },
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                )
+                                Text(
+                                    text = when (voiceStatus) {
+                                        SpeechOutput.VoiceStatus.NICHT_BEREIT ->
+                                            "Sprachausgabe: wird vorbereitet …"
+                                        SpeechOutput.VoiceStatus.OFFLINE_BEREIT ->
+                                            "Sprachausgabe: Offline-Stimme bereit"
+                                        SpeechOutput.VoiceStatus.NUR_ONLINE ->
+                                            "Sprachausgabe: nur Online-Stimme installiert - wird aus " +
+                                                "Datenschutzgründen nicht genutzt, bitte Offline-Stimme laden"
+                                        SpeechOutput.VoiceStatus.FEHLT ->
+                                            "Sprachausgabe: keine Stimme installiert"
+                                    },
+                                    color = if (voiceStatus == SpeechOutput.VoiceStatus.OFFLINE_BEREIT) {
+                                        MaterialTheme.colorScheme.tertiary
+                                    } else {
+                                        MaterialTheme.colorScheme.error
+                                    },
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    statuses[language.code] = ModelStatus.LAEDT
+                                    scope.launch {
+                                        runCatching {
+                                            TranslationEngine.downloadModel(language)
+                                            SpeechEngine.prepareModel(context, language.code)
+                                        }.onSuccess { statuses[language.code] = ModelStatus.GELADEN }
+                                            .onFailure { statuses[language.code] = ModelStatus.FEHLER }
+                                    }
                                 },
-                                color = MaterialTheme.colorScheme.tertiary,
-                            )
+                                enabled = status == ModelStatus.FEHLT || status == ModelStatus.FEHLER,
+                            ) {
+                                Text(
+                                    when (status) {
+                                        ModelStatus.GELADEN -> "Geladen ✓"
+                                        ModelStatus.LAEDT -> "Lädt …"
+                                        else -> "Laden"
+                                    },
+                                )
+                            }
                         }
-                        Button(
-                            onClick = {
-                                statuses[language.code] = ModelStatus.LAEDT
-                                scope.launch {
-                                    runCatching {
-                                        TranslationEngine.downloadModel(language)
-                                        SpeechEngine.prepareModel(context, language.code)
-                                    }.onSuccess { statuses[language.code] = ModelStatus.GELADEN }
-                                        .onFailure { statuses[language.code] = ModelStatus.FEHLER }
-                                }
-                            },
-                            enabled = status == ModelStatus.FEHLT || status == ModelStatus.FEHLER,
-                        ) {
-                            Text(
-                                when (status) {
-                                    ModelStatus.GELADEN -> "Geladen ✓"
-                                    ModelStatus.LAEDT -> "Lädt …"
-                                    else -> "Laden"
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Probehören spricht die Begrüßung - so lässt sich die
+                            // Stimme VOR dem Kundengespräch prüfen. Schlägt es fehl,
+                            // direkt in die Stimmen-Einstellungen springen.
+                            Button(
+                                onClick = {
+                                    if (!speechOutput.speak(language.greeting, language)) {
+                                        SpeechOutput.openTtsSettings(context)
+                                    }
+                                    voiceStatuses[language.code] = speechOutput.voiceStatus(language)
                                 },
-                            )
+                            ) {
+                                Text("Probehören")
+                            }
+                            if (voiceStatus == SpeechOutput.VoiceStatus.NUR_ONLINE ||
+                                voiceStatus == SpeechOutput.VoiceStatus.FEHLT
+                            ) {
+                                Button(
+                                    onClick = { SpeechOutput.openTtsSettings(context) },
+                                ) {
+                                    Text("Stimme installieren")
+                                }
+                            }
                         }
                     }
                 }

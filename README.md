@@ -172,6 +172,19 @@ das UI ist deshalb ein **Splitscreen**:
   Fehlt für eine Sprache jede Stimme, bietet die Mitarbeiterseite einen
   Button **"Sprachausgabe-Einstellungen öffnen"** an, der direkt zu den
   Android-TTS-Einstellungen führt (dort Offline-Stimmen nachinstallieren).
+  **Datenschutz-Absicherung:** Sind für eine Sprache ausschließlich
+  Netz-Stimmen installiert, bleibt die Ausgabe bewusst stumm - eine
+  Netz-Stimme würde den zu sprechenden Text (also Gesprächsinhalte) an den
+  TTS-Cloud-Dienst übertragen. Das Menü "Sprachpakete" zeigt diesen Fall
+  explizit an.
+- **Stimmen-Check im Sprachpakete-Menü:** Pro Sprache zeigt das Menü neben
+  dem Übersetzungs-Status auch die **Stimmen-Lage der Sprachausgabe**
+  (Offline-Stimme bereit / nur Online-Stimme / keine Stimme), einen
+  **Probehören**-Button (spricht die Begrüßung in der Sprache - so lässt
+  sich die Ausgabe vor dem Kundengespräch testen) und bei fehlender Stimme
+  einen **"Stimme installieren"**-Button direkt in die
+  Android-TTS-Einstellungen. Gedacht als Einrichtungs-Checkliste: einmal
+  durchgehen, alle 11 Zeilen grün bekommen.
 - **Übersetzer-Lebenszyklus (Fix "Translation closed"):** Ursprünglich wurde
   der ML-Kit-Translator bei jedem Sprachwechsel sofort geschlossen - lief
   dabei noch eine Übersetzung (oder der Live-Modus benutzte ihn noch),
@@ -354,6 +367,18 @@ wegen Signatur-Konflikt), ohne die alte Version vorher zu deinstallieren.
   Rollout einmal am echten Gerät geprüft werden - falls nicht, wäre der
   Fallback ein minimales, nur für diese zwei Sprachen eingeblendetes
   Texteingabefeld.
+- **Sprachausgabe für Ukrainisch/Arabisch hängt an den installierten
+  TTS-Stimmen:** Die App kann nur Stimmen nutzen, die die TTS-Engine des
+  Geräts anbietet (bei Google Speech Services lassen sich Offline-Stimmen
+  pro Sprache nachinstallieren - Arabisch ist dort üblicherweise verfügbar,
+  Ukrainisch je nach Version/Gerät). Das Sprachpakete-Menü macht die Lage
+  pro Sprache sichtbar (Probehören/Installieren). Sollte die
+  Schalter-Hardware für eine benötigte Sprache dauerhaft keine
+  Offline-Stimme anbieten, wäre die Ausbaustufe eine **in die App
+  gebündelte Offline-TTS-Engine** (z. B. sherpa-onnx mit Piper-Stimmen,
+  Apache-2.0; Ukrainisch und Arabisch verfügbar, ~20-60 MB pro Sprache) -
+  bewusst noch nicht umgesetzt, um App-Größe und native Abhängigkeiten
+  klein zu halten, solange die Systemstimmen reichen.
 - **ViP-Schalter-Hardware:** Die Android-Version der im Einsatz befindlichen
   Schalter-Hardware ist nicht bekannt. Kein Blocker für diesen Build, aber
   relevant für den Live-Modus: Läuft die Hardware unter API < 31, bleibt der
