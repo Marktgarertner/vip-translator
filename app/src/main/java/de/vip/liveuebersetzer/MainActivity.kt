@@ -785,11 +785,20 @@ private fun ModelManagerScreen(
     val scope = rememberCoroutineScope()
     val statuses = remember { mutableStateMapOf<String, ModelStatus>() }
     val voiceStatuses = remember { mutableStateMapOf<String, SpeechOutput.VoiceStatus>() }
+    val systemLiveStatuses = remember { mutableStateMapOf<String, SystemLiveStatus>() }
+
+    fun refreshSystemLiveStatus(language: Language) {
+        if (language.mlKitLiveSpeech) return
+        SystemSpeechEngine.checkSupport(context, language.speechLocaleTag) { status ->
+            systemLiveStatuses[language.code] = status
+        }
+    }
 
     LaunchedEffect(Unit) {
         LanguageCatalog.all.forEach { language ->
             statuses[language.code] = ModelStatus.PRUEFEN
             voiceStatuses[language.code] = speechOutput.voiceStatus(language)
+            refreshSystemLiveStatus(language)
             statuses[language.code] = runCatching { TranslationEngine.isModelDownloaded(language) }
                 .fold(
                     { downloaded -> if (downloaded) ModelStatus.GELADEN else ModelStatus.FEHLT },
@@ -894,6 +903,42 @@ private fun ModelManagerScreen(
                                         MaterialTheme.colorScheme.error
                                     },
                                 )
+                                if (!language.mlKitLiveSpeech) {
+                                    val liveStatus = systemLiveStatuses[language.code]
+                                    Text(
+                                        text = when (liveStatus) {
+                                            null -> "Live-Erkennung: prüfe …"
+                                            SystemLiveStatus.ANDROID_ZU_ALT ->
+                                                "Live-Erkennung: benötigt Android 12 oder neuer"
+                                            SystemLiveStatus.KEIN_SYSTEMDIENST ->
+                                                "Live-Erkennung: dieses Gerät bietet keine " +
+                                                    "geräteinterne Systemerkennung an"
+                                            SystemLiveStatus.UNBEKANNT ->
+                                                "Live-Erkennung: Status erst ab Android 13 abfragbar - " +
+                                                    "einfach die Sprechtaste ausprobieren"
+                                            SystemLiveStatus.PAKET_INSTALLIERT ->
+                                                "Live-Erkennung: Sprachpaket installiert ✓"
+                                            SystemLiveStatus.PAKET_LAEDT ->
+                                                "Live-Erkennung: Sprachpaket wird geladen …"
+                                            SystemLiveStatus.PAKET_LADBAR ->
+                                                "Live-Erkennung: Sprachpaket verfügbar - über " +
+                                                    "\"Laden\" installieren"
+                                            SystemLiveStatus.NICHT_UNTERSTUETZT ->
+                                                "Live-Erkennung: wird von der Systemerkennung dieses " +
+                                                    "Geräts nicht unterstützt - Eingabe für diese " +
+                                                    "Sprache hier nicht möglich"
+                                        },
+                                        color = when (liveStatus) {
+                                            SystemLiveStatus.PAKET_INSTALLIERT,
+                                            SystemLiveStatus.PAKET_LAEDT,
+                                            SystemLiveStatus.PAKET_LADBAR,
+                                            SystemLiveStatus.UNBEKANNT,
+                                            null,
+                                            -> MaterialTheme.colorScheme.tertiary
+                                            else -> MaterialTheme.colorScheme.error
+                                        },
+                                    )
+                                }
                             }
                             Button(
                                 onClick = {
@@ -902,8 +947,12 @@ private fun ModelManagerScreen(
                                         runCatching {
                                             TranslationEngine.downloadModel(language)
                                             SpeechEngine.prepareModel(context, language.code)
-                                        }.onSuccess { statuses[language.code] = ModelStatus.GELADEN }
-                                            .onFailure { statuses[language.code] = ModelStatus.FEHLER }
+                                        }.onSuccess {
+                                            statuses[language.code] = ModelStatus.GELADEN
+                                            // Der System-Paketdownload läuft asynchron im
+                                            // Systemdienst weiter - Status neu abfragen.
+                                            refreshSystemLiveStatus(language)
+                                        }.onFailure { statuses[language.code] = ModelStatus.FEHLER }
                                     }
                                 },
                                 enabled = status == ModelStatus.FEHLT || status == ModelStatus.FEHLER,

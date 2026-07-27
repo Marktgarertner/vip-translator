@@ -358,19 +358,26 @@ wegen Signatur-Konflikt), ohne die alte Version vorher zu deinstallieren.
 
 ## Offene Punkte
 
-- **Ukrainisch/Arabisch hängen an der Systemerkennung des Geräts:** Seit dem
-  Wegfall des Textfelds ("Konzentrieren wir uns nur aufs Sprechen") ist die
-  Live-Erkennung der einzige Eingabeweg. Für Ukrainisch/Arabisch übernimmt
-  die Android-Systemerkennung (siehe "Sprachcoverage") - das funktioniert
-  aber nur auf Geräten mit Android 12+, geräteinterner Systemerkennung und
-  installiertem Offline-Sprachpaket für die jeweilige Sprache. Auf Geräten,
-  die eine dieser Bedingungen nicht erfüllen, gibt es für diese beiden
-  Sprachen weiterhin keinen Weg, einen Gesprächsbeitrag zu erzeugen (die
-  Sprechtasten sind dann ausgeblendet bzw. deaktiviert). Ob die
-  ViP-Schalter-Hardware Ukrainisch/Arabisch offline anbietet, sollte vor dem
-  Rollout einmal am echten Gerät geprüft werden - falls nicht, wäre der
-  Fallback ein minimales, nur für diese zwei Sprachen eingeblendetes
-  Texteingabefeld.
+- **Ukrainisch/Arabisch-EINGABE hängt an der Systemerkennung des Geräts:**
+  Seit dem Wegfall des Textfelds ist die Live-Erkennung der einzige
+  Eingabeweg. Für Ukrainisch/Arabisch übernimmt die Android-Systemerkennung
+  (siehe "Sprachcoverage") - das funktioniert nur auf Geräten mit
+  Android 12+, geräteinterner Systemerkennung und installiertem
+  Offline-Sprachpaket für die jeweilige Sprache. Praxistest-Befund
+  (07/2026): Die **Ausgabe** (TTS-Stimmen) für beide Sprachen funktioniert
+  auf dem Testgerät, die **Eingabe** nicht. Das Menü "Sprachpakete" zeigt
+  deshalb jetzt pro Sprache eine Zeile "Live-Erkennung: ..." mit der exakten
+  Ursache (Android zu alt / kein Systemdienst / Paket ladbar / Paket
+  installiert / **von der Systemerkennung dieses Geräts nicht unterstützt**,
+  Abfrage über `SpeechRecognizer.checkRecognitionSupport`, ab Android 13).
+  Meldet das Gerät "nicht unterstützt", gibt es dort keinen
+  datenschutzkonformen Weg über Systemdienste. Die dokumentierte
+  Ausbaustufe wäre dann eine **in die App gebündelte
+  Offline-Spracherkennung** (z. B. Vosk, Apache-2.0, Modelle für Ukrainisch
+  und Arabisch je ~50 MB, oder sherpa-onnx) - komplett on-device, aber ein
+  größerer Umbau (native Bibliothek, Modell-Downloads, eigene
+  Audio-Pipeline). Alternativ bleibt der kleine Fallback eines nur für
+  diese zwei Sprachen eingeblendeten Texteingabefelds.
 - **Sprachausgabe für Ukrainisch/Arabisch hängt an den installierten
   TTS-Stimmen:** Die App kann nur Stimmen nutzen, die die TTS-Engine des
   Geräts anbietet (bei Google Speech Services lassen sich Offline-Stimmen
