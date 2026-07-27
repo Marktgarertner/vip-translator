@@ -71,49 +71,53 @@ unberührt.
 Im Kundencenter stehen sich Mitarbeiter:in und Kund:in frontal gegenüber -
 das UI ist deshalb ein **Splitscreen**:
 
+- **Beide Hälften sind identisch aufgebaut** (Optik-Feedback aus dem
+  Praxistest eingearbeitet): oben eine **grüne Kopfleiste** mit dem ViP-Logo
+  links (in einem weißen Kreis - ein Antippen öffnet das Menü
+  "Sprachpakete") und der **Sprachauswahl oben rechts**; unten links die
+  **große runde Sprechtaste** in ViP-Grün. Wer eine Taste sucht, findet sie
+  auf beiden Seiten an derselben Stelle.
 - **Obere Hälfte (Kundenseite):** um 180° gedreht, sodass das Gegenüber alles
-  in seiner Leserichtung sieht. Zeigt oben ein kleines Logo (28dp) mit der
-  Sprachauswahl direkt daneben (siehe "Sprachauswahl pro Seite" unten), darunter
-  eine Begrüßung in der Kundensprache (`Language.greeting`), live mitlaufende
-  Spracherkennung (wenn der Kunde spricht) und den Konversationsverlauf mit
-  der Kundensprache prominent. Jeder Eintrag hat einen Vorlesen-Button. Die
-  Sprechtaste sitzt am unteren Rand dieser Hälfte, beschriftet in der
-  Kundensprache (`Language.tapToSpeak`).
-- **Sprachauswahl pro Seite, direkt neben dem Logo:** Statt eines zentralen
-  Dropdowns wählt jede Seite ihre eigene Sprache über einen kompakten Button,
-  der beim Antippen eine horizontal scrollbare Chip-Reihe mit allen 11
-  Sprachen einblendet (`LanguagePickerRow`). Auf der Kundenseite in den
-  jeweils **eigenen Sprachnamen** (`Language.nativeName`, z. B. "Türkçe",
+  in seiner Leserichtung sieht ("unten links" heißt hier: aus Kundensicht).
+  Unter der Kopfleiste eine Begrüßung in der Kundensprache
+  (`Language.greeting`), live mitlaufende Spracherkennung (wenn der Kunde
+  spricht) und der Konversationsverlauf mit der Kundensprache prominent.
+  Jeder Eintrag hat einen Vorlesen-Button. Die Sprechtaste ist in der
+  Kundensprache beschriftet (`Language.tapToSpeak`).
+- **Sprachauswahl oben rechts, pro Seite:** Ein kompakter weißer Button in
+  der Kopfleiste; Antippen blendet darunter eine horizontal scrollbare
+  Chip-Reihe mit allen 11 Sprachen ein (`PaneHeader`). Auf der Kundenseite in
+  den jeweils **eigenen Sprachnamen** (`Language.nativeName`, z. B. "Türkçe",
   "Русский"), auf der Mitarbeiterseite in den **deutschen Bezeichnungen**
   (`Language.displayName`). Bewusst kein `DropdownMenu`/Popup: ein Popup
   würde die 180°-Drehung der Kundenhälfte nicht mitmachen und stünde dort
   verkehrt herum bzw. falsch positioniert.
-- **Logo = Einstellungen:** Ein Antippen des Logos (auf beiden Seiten) öffnet
-  direkt das Menü "Sprachpakete" - kein separates Zahnrad-Icon mehr nötig,
-  dadurch bleibt in der Kopfzeile mehr Platz für die Sprachauswahl.
-- **Jede Seite hat ihre eigene Sprechtaste** (Praxis-Feedback: ein zentraler
-  Richtungs-Umschalter führte zu Fehlbedienung): Der Kunde tippt das
-  Mikrofon auf seiner Hälfte an, Mitarbeiter:innen ihres unten rechts in der
-  Ecke ihrer Hälfte. **Die Übersetzungsrichtung ergibt sich automatisch
-  daraus, wer gedrückt hat** - niemand muss mehr umschalten. Bei Sprachen
-  ohne Live-Modus (Ukrainisch, Arabisch) wird die Kundenseiten-Sprechtaste
-  ausgeblendet, die Mitarbeiter-Sprechtaste bleibt sichtbar, aber deaktiviert.
-- **Untere Hälfte (Mitarbeiterseite):** Logo mit Sprachauswahl daneben,
-  Lautsprecher- und Papierkorb-Button, darunter der Konversationsverlauf über
-  die volle Breite/Höhe. Die Sprechtaste liegt **bewusst unten rechts in der
-  Ecke** statt in einer eigenen Zeile, damit oben mehr Platz für den
-  Gesprächsverlauf bleibt. **Kein Textfeld und keine Übersetzen-Tasten für
-  getippten Text mehr** ("Ich → Kundensprache" / "Kunde → Meine Sprache" sind
-  entfallen) - die App konzentriert sich bewusst aufs Sprechen. Konsequenz für
-  Ukrainisch/Arabisch siehe "Offene Punkte".
+- **Sprechtaste unten links auf beiden Seiten** (Praxis-Feedback: ein
+  zentraler Richtungs-Umschalter führte zu Fehlbedienung): Wer seine Taste
+  drückt, bestimmt die Übersetzungsrichtung - niemand muss umschalten.
+  Während der Aufnahme färbt sich die Taste rot. Bei Sprachen ohne
+  Live-Modus (Ukrainisch, Arabisch) wird die Kundenseiten-Sprechtaste
+  ausgeblendet, die Mitarbeiter-Sprechtaste bleibt sichtbar, aber gedämpft
+  dargestellt und deaktiviert. **Kein Textfeld und keine Übersetzen-Tasten
+  für getippten Text** - die App konzentriert sich bewusst aufs Sprechen;
+  Konsequenz für Ukrainisch/Arabisch siehe "Offene Punkte".
+- **Mitarbeiterseite zusätzlich:** Lautsprecher- (Sprachausgabe an/aus) und
+  Papierkorb-Button (Verlauf leeren) als weiße Icons in der Kopfleiste;
+  Status- und Fehlermeldungen erscheinen direkt unter der Kopfleiste.
 - **Farben:** Primärfarbe ist das ViP-Grün **#006A4D** (`ui/theme/Color.kt`),
-  Akzente orientieren sich am SWP/ViP-Windrad (Orange/Rot/Blau/Grün). Auch
-  der Launcher-Icon-Hintergrund ist ViP-Grün.
+  großflächig eingesetzt: Kopfleisten und Sprechtasten in ViP-Grün, der
+  Bildschirmhintergrund als sanfter heller Grün-Wash (`VipMist`, im dunklen
+  Theme entsprechend dunkelgrün), Karten in Weiß. Akzente orientieren sich
+  am SWP/ViP-Windrad (Orange/Rot/Blau/Grün). Auch der
+  Launcher-Icon-Hintergrund ist ViP-Grün, das Launcher-Symbol ein weißes
+  Windrad.
 - **Logo:** `res/drawable/vip_logo.xml` ist eine **stilisierte
-  Vektor-Annäherung** an das Windrad-Logo (vier Ringsegmente in den
-  Logofarben). Für das finale Branding bitte das offizielle Logo aus dem
-  SWP-Markenportal als Vector-Asset importieren (Android Studio: File > New >
-  Vector Asset) und diese Datei ersetzen.
+  Vektor-Annäherung** an das Windrad-Logo: vier geschwungene Windrad-Flügel
+  in den Logofarben, die sich in der Mitte treffen. Für das finale Branding
+  bitte das offizielle Logo aus dem SWP-Markenportal als Vector-Asset
+  importieren (Android Studio: File > New > Vector Asset) und diese Datei
+  ersetzen - dabei auch `ic_launcher_foreground.xml` (weiße Variante fürs
+  App-Icon) angleichen.
 
 ## Tap-to-Talk & Sprachpakete-Menü
 

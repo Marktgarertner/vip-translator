@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -33,6 +36,7 @@ import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -123,7 +127,7 @@ private fun LiveUebersetzerScreen() {
     var isListening by remember { mutableStateOf(false) }
     // Welche Seite gerade aufnimmt: Wer seine Sprechtaste drückt, bestimmt die
     // Übersetzungsrichtung - es gibt bewusst keinen Richtungs-Umschalter und
-    // keine Texteingabe mehr, die App konzentriert sich aufs Sprechen.
+    // keine Texteingabe, die App konzentriert sich aufs Sprechen.
     var recordingFromCustomer by remember { mutableStateOf(false) }
     var isPreparingSpeechModel by remember { mutableStateOf(false) }
     var recognizerJob by remember { mutableStateOf<Job?>(null) }
@@ -301,55 +305,73 @@ private fun LiveUebersetzerScreen() {
                 .background(MaterialTheme.colorScheme.primary),
         )
 
-        // ===== Mitarbeiterseite: eigene Sprach- und Sprechtaste (Ecke). =====
+        // ===== Mitarbeiterseite: eigene Sprach- und Sprechtaste (unten links). =====
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1.3f),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.vip_logo),
-                        contentDescription = "Einstellungen (Sprachpakete)",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clickable { showModelManager = true },
-                    )
-                    LanguagePickerRow(
-                        modifier = Modifier.weight(1f),
-                        selected = staffLanguage,
-                        labelFor = { it.displayName },
-                        onSelected = { staffLanguage = it },
-                    )
-                    IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
-                        Icon(
-                            imageVector = if (speechOutputEnabled) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
-                            contentDescription = if (speechOutputEnabled) {
-                                "Sprachausgabe ausschalten"
-                            } else {
-                                "Sprachausgabe einschalten"
+                PaneHeader(
+                    selected = staffLanguage,
+                    labelFor = { it.displayName },
+                    onSelected = { staffLanguage = it },
+                    onLogoClick = { showModelManager = true },
+                    extras = {
+                        IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
+                            Icon(
+                                imageVector = if (speechOutputEnabled) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
+                                contentDescription = if (speechOutputEnabled) {
+                                    "Sprachausgabe ausschalten"
+                                } else {
+                                    "Sprachausgabe einschalten"
+                                },
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                conversation.clear()
+                                liveTranscript = ""
+                                errorMessage = null
                             },
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                            conversation.clear()
-                            liveTranscript = ""
-                            errorMessage = null
+                            enabled = conversation.isNotEmpty(),
+                        ) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = "Konversation löschen",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                    },
+                )
+
+                errorMessage?.let { message ->
+                    Text(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                if (isListening) {
+                    Text(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        text = if (recordingFromCustomer) {
+                            "Kunde spricht gerade …"
+                        } else {
+                            "Sprechen Sie jetzt - stoppt nach dem Satz automatisch"
                         },
-                        enabled = conversation.isNotEmpty(),
-                    ) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Konversation löschen")
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    if (!recordingFromCustomer && liveTranscript.isNotBlank()) {
+                        Text(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            text = liveTranscript,
+                        )
                     }
                 }
 
@@ -357,16 +379,19 @@ private fun LiveUebersetzerScreen() {
                     Text(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
-                        text = "Noch keine Beiträge. Einfach das Mikrofon unten rechts " +
-                            "antippen und sprechen - der Kunde hat auf seiner Seite " +
-                            "eine eigene Sprech- und Sprachtaste.",
+                            .weight(1f)
+                            .padding(horizontal = 16.dp),
+                        text = "Noch keine Beiträge. Einfach das grüne Mikrofon unten " +
+                            "links antippen und sprechen - der Kunde hat auf seiner " +
+                            "Seite eine eigene Sprechtaste.",
+                        color = MaterialTheme.colorScheme.tertiary,
                     )
                 } else {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
+                            .weight(1f)
+                            .padding(start = 16.dp, end = 16.dp, bottom = 88.dp),
                         state = staffListState,
                         reverseLayout = true,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -380,54 +405,22 @@ private fun LiveUebersetzerScreen() {
                         }
                     }
                 }
-
-                errorMessage?.let { message ->
-                    Text(text = message, color = MaterialTheme.colorScheme.error)
-                }
-
-                if (isListening) {
-                    Text(
-                        text = if (recordingFromCustomer) {
-                            "Kunde spricht gerade …"
-                        } else {
-                            "Sprechen Sie jetzt - stoppt nach dem Satz automatisch"
-                        },
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    if (!recordingFromCustomer && liveTranscript.isNotBlank()) {
-                        Text(text = liveTranscript)
-                    }
-                }
-                if (isPreparingSpeechModel && !recordingFromCustomer) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                        Text(" Spracherkennungsmodell wird vorbereitet …")
-                    }
-                }
             }
 
-            // Sprechtaste der Mitarbeiterseite: bewusst in die Ecke statt in
-            // eine volle Zeile, damit oben mehr Platz für den Gesprächsverlauf
-            // bleibt.
-            IconButton(
-                onClick = { onMicButtonClick(false) },
+            // Sprechtaste der Mitarbeiterseite: unten links, wie auf der
+            // Kundenseite - beide Seiten bedienen sich identisch.
+            MicButton(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp),
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp),
+                isRecording = isListening && !recordingFromCustomer,
+                isPreparing = isPreparingSpeechModel && !recordingFromCustomer,
                 enabled = SpeechEngine.isLiveSupported(staffLanguage.code) &&
                     !(isListening && recordingFromCustomer),
-            ) {
-                Icon(
-                    imageVector = if (isListening && !recordingFromCustomer) Icons.Filled.MicOff else Icons.Filled.Mic,
-                    contentDescription = "Zum Sprechen antippen (${staffLanguage.displayName})",
-                    modifier = Modifier.size(48.dp),
-                    tint = if (isListening && !recordingFromCustomer) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                )
-            }
+                label = "Sprechen",
+                contentDescription = "Zum Sprechen antippen (${staffLanguage.displayName})",
+                onClick = { onMicButtonClick(false) },
+            )
         }
     }
 }
@@ -452,105 +445,135 @@ private fun CustomerPane(
         if (entries.isNotEmpty()) listState.animateScrollToItem(0)
     }
 
-    Column(
-        modifier = modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Image(
-                painter = painterResource(R.drawable.vip_logo),
-                contentDescription = "Einstellungen (Sprachpakete)",
-                modifier = Modifier
-                    .size(28.dp)
-                    .clickable(onClick = onLogoClick),
-            )
-            LanguagePickerRow(
-                modifier = Modifier.weight(1f),
+            PaneHeader(
                 selected = language,
                 labelFor = { it.nativeName },
                 onSelected = onLanguageSelected,
+                onLogoClick = onLogoClick,
             )
-        }
 
-        Text(
-            text = language.greeting,
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.titleLarge,
-        )
+            Text(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                text = language.greeting,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleLarge,
+            )
 
-        pendingTranscript?.let { transcript ->
-            Text(text = transcript, color = MaterialTheme.colorScheme.tertiary)
-        }
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            state = listState,
-            reverseLayout = true,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(entries, key = { it.id }) { entry ->
-                CustomerEntryCard(
-                    entry = entry,
-                    language = language,
-                    onSpeakClick = { onSpeakClick(entry) },
+            pendingTranscript?.let { transcript ->
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = transcript,
+                    color = MaterialTheme.colorScheme.tertiary,
                 )
             }
-        }
 
-        // Sprechtaste der Kundenseite, beschriftet in der Kundensprache. Für
-        // Sprachen ohne Live-Modus (Ukrainisch, Arabisch) ausgeblendet - siehe
-        // README ("Offene Punkte"): ohne Texteingabe ist die Kommunikation für
-        // diese beiden Sprachen aktuell eine Einbahnstraße.
-        if (micVisible) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = if (micVisible) 88.dp else 8.dp,
+                    ),
+                state = listState,
+                reverseLayout = true,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (isPreparing) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                }
-                IconButton(onClick = onMicClick) {
-                    Icon(
-                        imageVector = if (isRecording) Icons.Filled.MicOff else Icons.Filled.Mic,
-                        contentDescription = language.tapToSpeak,
-                        modifier = Modifier.size(56.dp),
-                        tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                items(entries, key = { it.id }) { entry ->
+                    CustomerEntryCard(
+                        entry = entry,
+                        language = language,
+                        onSpeakClick = { onSpeakClick(entry) },
                     )
                 }
-                Text(text = language.tapToSpeak, color = MaterialTheme.colorScheme.primary)
             }
+        }
+
+        // Sprechtaste der Kundenseite: unten links (aus Kundensicht),
+        // beschriftet in der Kundensprache. Für Sprachen ohne Live-Modus
+        // (Ukrainisch, Arabisch) ausgeblendet - siehe README, "Offene Punkte".
+        if (micVisible) {
+            MicButton(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp),
+                isRecording = isRecording,
+                isPreparing = isPreparing,
+                enabled = true,
+                label = language.tapToSpeak,
+                contentDescription = language.tapToSpeak,
+                onClick = onMicClick,
+            )
         }
     }
 }
 
 /**
- * Kompakte Sprachauswahl: Ein Button zeigt die aktuell gewählte Sprache
- * (Beschriftung über [labelFor]); ein Antippen blendet eine horizontal
- * scrollbare Reihe aller 11 Sprachen ein. Bewusst ohne Popup-Menü (das würde
- * in der um 180° gedrehten Kundenhälfte falsch positioniert/orientiert
- * erscheinen) - stattdessen normales Layout, das mit der Elternhälfte
- * mitrotiert.
+ * Grüne Kopfleiste einer Bildschirmhälfte: links das ViP-Logo in einem weißen
+ * Kreis (Klick öffnet die Sprachpakete), rechts die Sprachauswahl - dazwischen
+ * optionale Aktionen ([extras], z. B. Lautsprecher/Papierkorb der
+ * Mitarbeiterseite). Ein Antippen der Sprachauswahl blendet darunter eine
+ * horizontal scrollbare Chip-Reihe aller 11 Sprachen ein. Bewusst ohne
+ * Popup-Menü (das würde in der um 180° gedrehten Kundenhälfte falsch
+ * positioniert/orientiert erscheinen) - stattdessen normales Layout, das mit
+ * der Elternhälfte mitrotiert.
  */
 @Composable
-private fun LanguagePickerRow(
-    modifier: Modifier = Modifier,
+private fun PaneHeader(
     selected: Language,
     labelFor: (Language) -> String,
     onSelected: (Language) -> Unit,
+    onLogoClick: () -> Unit,
+    extras: @Composable RowScope.() -> Unit = {},
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Column(modifier = modifier) {
-        Button(onClick = { expanded = !expanded }) {
-            Text(labelFor(selected))
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .clickable(onClick = onLogoClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.vip_logo),
+                    contentDescription = "Einstellungen (Sprachpakete)",
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+            extras()
+            Spacer(modifier = Modifier.weight(1f))
+            Button(
+                onClick = { expanded = !expanded },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
+            ) {
+                Text(labelFor(selected))
+            }
         }
         if (expanded) {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 items(LanguageCatalog.all, key = { it.code }) { language ->
                     FilterChip(
                         selected = language.code == selected.code,
@@ -563,6 +586,54 @@ private fun LanguagePickerRow(
                 }
             }
         }
+    }
+}
+
+/**
+ * Große runde Sprechtaste in ViP-Grün (rot während der Aufnahme, gedämpft
+ * wenn deaktiviert) mit Beschriftung darunter - auf beiden Bildschirmhälften
+ * unten links.
+ */
+@Composable
+private fun MicButton(
+    modifier: Modifier = Modifier,
+    isRecording: Boolean,
+    isPreparing: Boolean,
+    enabled: Boolean,
+    label: String,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (isPreparing) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+        }
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .background(
+                    color = when {
+                        isRecording -> MaterialTheme.colorScheme.error
+                        enabled -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.tertiary
+                    },
+                    shape = CircleShape,
+                )
+                .clickable { if (enabled || isRecording) onClick() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = if (isRecording) Icons.Filled.MicOff else Icons.Filled.Mic,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+        Text(text = label, color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -592,7 +663,11 @@ private fun CustomerEntryCard(
                 )
             }
             IconButton(onClick = onSpeakClick) {
-                Icon(Icons.Filled.VolumeUp, contentDescription = "Vorlesen")
+                Icon(
+                    Icons.Filled.VolumeUp,
+                    contentDescription = "Vorlesen",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
@@ -627,7 +702,11 @@ private fun StaffEntryCard(
                 )
             }
             IconButton(onClick = onSpeakClick) {
-                Icon(Icons.Filled.VolumeUp, contentDescription = "Übersetzung erneut vorlesen")
+                Icon(
+                    Icons.Filled.VolumeUp,
+                    contentDescription = "Übersetzung erneut vorlesen",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
@@ -659,27 +738,34 @@ private fun ModelManagerScreen(onClose: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(16.dp),
+            .navigationBarsPadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                Icon(
+                    Icons.Filled.ArrowBack,
+                    contentDescription = "Zurück",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
             }
             Text(
                 text = "Sprachpakete",
                 modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.titleLarge,
             )
         }
 
         Text(
+            modifier = Modifier.padding(horizontal = 16.dp),
             text = "Einmalig mit Internet (am besten WLAN) vorbereiten - danach " +
                 "übersetzt und spricht die App komplett offline, ohne Wartezeit " +
                 "beim Kunden. Empfehlung: alle häufig gebrauchten Sprachen vorab laden.",
@@ -688,7 +774,8 @@ private fun ModelManagerScreen(onClose: () -> Unit) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(LanguageCatalog.all, key = { it.code }) { language ->

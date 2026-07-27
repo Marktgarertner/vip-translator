@@ -12,3 +12,16 @@ val VipOrange = Color(0xFFF39200)
 val VipRed = Color(0xFFD5232A)
 val VipBlue = Color(0xFF1467A8)
 val VipLogoGreen = Color(0xFF41A62A)
+
+/** Flächenfarben (helles Theme): sanfter Grün-Wash statt sterilem Weiß. */
+val VipMist = Color(0xFFE7F2ED)
+val VipSurface = Color(0xFFFFFFFF)
+val VipInk = Color(0xFF17251F)
+val VipTextMuted = Color(0xFF48685C)
+
+/** Flächenfarben (dunkles Theme). */
+val VipNight = Color(0xFF0F1713)
+val VipNightSurface = Color(0xFF1B2721)
+val VipNightInk = Color(0xFFD9E7E0)
+val VipNightMuted = Color(0xFF9CB6AB)
+val VipOnPrimaryDark = Color(0xFF00281D)

@@ -8,14 +8,22 @@ import androidx.compose.runtime.Composable
 
 private val LightColors = lightColorScheme(
     primary = VipGreen,
+    onPrimary = VipSurface,
     secondary = VipOrange,
-    tertiary = VipGreenLight,
+    tertiary = VipTextMuted,
+    background = VipMist,
+    surface = VipSurface,
+    onSurface = VipInk,
 )
 
 private val DarkColors = darkColorScheme(
     primary = VipGreenLight,
+    onPrimary = VipOnPrimaryDark,
     secondary = VipOrange,
-    tertiary = VipGreenDark,
+    tertiary = VipNightMuted,
+    background = VipNight,
+    surface = VipNightSurface,
+    onSurface = VipNightInk,
 )
 
 @Composable
