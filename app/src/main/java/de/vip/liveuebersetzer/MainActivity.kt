@@ -132,10 +132,14 @@ private fun LiveUebersetzerScreen() {
     var isPreparingSpeechModel by remember { mutableStateOf(false) }
     var recognizerJob by remember { mutableStateOf<Job?>(null) }
     var activeRecognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
+    var activeSystemSession by remember { mutableStateOf<SystemSpeechSession?>(null) }
 
     val speechOutput = remember { SpeechOutput(context) }
     var speechOutputEnabled by remember { mutableStateOf(true) }
     var showModelManager by remember { mutableStateOf(false) }
+    // Wenn für eine Sprache keine TTS-Stimme installiert ist, bietet die UI
+    // einen direkten Absprung in die Android-Sprachausgabe-Einstellungen an.
+    var ttsSettingsHint by remember { mutableStateOf(false) }
 
     // Auto-Scroll zum neuesten Beitrag (Index 0, liegt bei reverseLayout "unten").
     val staffListState = rememberLazyListState()
@@ -155,6 +159,7 @@ private fun LiveUebersetzerScreen() {
     fun speakOrExplain(text: String, language: Language) {
         if (!speechOutput.speak(text, language)) {
             errorMessage = "Sprachausgabe für ${language.displayName} ist auf diesem Gerät nicht verfügbar."
+            ttsSettingsHint = true
         }
     }
 
@@ -166,8 +171,20 @@ private fun LiveUebersetzerScreen() {
             SpeechEngine.release(recognizer)
         }
         activeRecognizer = null
+        activeSystemSession?.cancel()
+        activeSystemSession = null
         isListening = false
         isPreparingSpeechModel = false
+    }
+
+    // Übersetzt einen fertig erkannten Satz und hängt ihn an den Verlauf an.
+    fun translateAndAdd(from: Language, to: Language, text: String) {
+        scope.launch {
+            runCatching {
+                TranslationEngine.translate(from, to, text)
+            }.onSuccess { addEntry(from, to, text, it) }
+                .onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
+        }
     }
 
     fun startLive(fromCustomer: Boolean) {
@@ -175,15 +192,40 @@ private fun LiveUebersetzerScreen() {
         // bestimmt die Richtung dieses Beitrags.
         val from = if (fromCustomer) customerLanguage else staffLanguage
         val to = if (fromCustomer) staffLanguage else customerLanguage
-        if (!SpeechEngine.isLiveSupported(from.code) || isListening) return
+        val engine = SpeechEngine.engineFor(context, from.code)
+        if (engine == LiveEngine.NONE || isListening) return
         errorMessage = null
+        ttsSettingsHint = false
         // Laufende Sprachausgabe abbrechen, bevor das Mikrofon aufgeht.
         speechOutput.stop()
         liveTranscript = ""
         recordingFromCustomer = fromCustomer
+        isListening = true
+
+        if (engine == LiveEngine.SYSTEM) {
+            // Android-Systemerkennung (Ukrainisch/Arabisch): stoppt nach dem
+            // Satz von selbst - dasselbe Tap-to-Talk-Verhalten wie unten.
+            activeSystemSession = SystemSpeechEngine.listen(
+                context = context,
+                languageTag = from.speechLocaleTag,
+                onPartial = { text -> liveTranscript = text },
+                onFinal = { text ->
+                    liveTranscript = text
+                    activeSystemSession = null
+                    isListening = false
+                    translateAndAdd(from, to, text)
+                },
+                onError = { message ->
+                    activeSystemSession = null
+                    isListening = false
+                    errorMessage = message
+                },
+            )
+            return
+        }
+
         val recognizer = SpeechEngine.createRecognizer(from.code)
         activeRecognizer = recognizer
-        isListening = true
         recognizerJob = scope.launch {
             try {
                 isPreparingSpeechModel = true
@@ -201,12 +243,7 @@ private fun LiveUebersetzerScreen() {
                         // (Rückkopplungsschleife). Für den nächsten Satz die
                         // Sprechtaste einfach erneut antippen.
                         stopLive()
-                        scope.launch {
-                            runCatching {
-                                TranslationEngine.translate(from, to, text)
-                            }.onSuccess { addEntry(from, to, text, it) }
-                                .onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
-                        }
+                        translateAndAdd(from, to, text)
                     },
                     onError = { throwable ->
                         errorMessage = throwable.message ?: "Fehler bei der Live-Spracherkennung."
@@ -290,7 +327,7 @@ private fun LiveUebersetzerScreen() {
             onLogoClick = { showModelManager = true },
             entries = conversation,
             pendingTranscript = liveTranscript.takeIf { isListening && recordingFromCustomer && it.isNotBlank() },
-            micVisible = SpeechEngine.isLiveSupported(customerLanguage.code),
+            micVisible = SpeechEngine.isLiveSupported(context, customerLanguage.code),
             isRecording = isListening && recordingFromCustomer,
             isPreparing = isPreparingSpeechModel && recordingFromCustomer,
             onMicClick = { onMicButtonClick(true) },
@@ -337,6 +374,7 @@ private fun LiveUebersetzerScreen() {
                                 conversation.clear()
                                 liveTranscript = ""
                                 errorMessage = null
+                                ttsSettingsHint = false
                             },
                             enabled = conversation.isNotEmpty(),
                         ) {
@@ -355,6 +393,19 @@ private fun LiveUebersetzerScreen() {
                         text = message,
                         color = MaterialTheme.colorScheme.error,
                     )
+                }
+                if (ttsSettingsHint) {
+                    Button(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        onClick = {
+                            if (!SpeechOutput.openTtsSettings(context)) {
+                                errorMessage = "Die Sprachausgabe-Einstellungen ließen sich nicht öffnen."
+                            }
+                            ttsSettingsHint = false
+                        },
+                    ) {
+                        Text("Sprachausgabe-Einstellungen öffnen")
+                    }
                 }
 
                 if (isListening) {
@@ -415,7 +466,7 @@ private fun LiveUebersetzerScreen() {
                     .padding(12.dp),
                 isRecording = isListening && !recordingFromCustomer,
                 isPreparing = isPreparingSpeechModel && !recordingFromCustomer,
-                enabled = SpeechEngine.isLiveSupported(staffLanguage.code) &&
+                enabled = SpeechEngine.isLiveSupported(context, staffLanguage.code) &&
                     !(isListening && recordingFromCustomer),
                 label = "Sprechen",
                 contentDescription = "Zum Sprechen antippen (${staffLanguage.displayName})",
@@ -720,6 +771,7 @@ private fun StaffEntryCard(
  */
 @Composable
 private fun ModelManagerScreen(onClose: () -> Unit) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val statuses = remember { mutableStateMapOf<String, ModelStatus>() }
 
@@ -796,10 +848,11 @@ private fun ModelManagerScreen(onClose: () -> Unit) {
                                     ModelStatus.FEHLT -> "Noch nicht geladen"
                                     ModelStatus.LAEDT -> "Wird heruntergeladen …"
                                     ModelStatus.GELADEN ->
-                                        if (language.liveSpeechSupported) {
+                                        if (language.mlKitLiveSpeech) {
                                             "Bereit (inkl. Live-Erkennung)"
                                         } else {
-                                            "Bereit (nur Übersetzung, kein Live-Mikro)"
+                                            "Übersetzung bereit - Live-Erkennung läuft über die " +
+                                                "Android-Systemerkennung (Offline-Sprachpaket nötig)"
                                         }
                                     ModelStatus.FEHLER -> "Download fehlgeschlagen - Internetverbindung prüfen"
                                 },
@@ -812,7 +865,7 @@ private fun ModelManagerScreen(onClose: () -> Unit) {
                                 scope.launch {
                                     runCatching {
                                         TranslationEngine.downloadModel(language)
-                                        SpeechEngine.prepareModel(language.code)
+                                        SpeechEngine.prepareModel(context, language.code)
                                     }.onSuccess { statuses[language.code] = ModelStatus.GELADEN }
                                         .onFailure { statuses[language.code] = ModelStatus.FEHLER }
                                 }

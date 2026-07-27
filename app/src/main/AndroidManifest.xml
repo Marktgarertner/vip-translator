@@ -12,6 +12,18 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+      Paketsichtbarkeit (Android 11+): noetig, damit die App den
+      Spracherkennungsdienst des Systems sehen und binden kann
+      (SystemSpeechEngine, android.speech.SpeechRecognizer - zweite
+      Live-Engine fuer Sprachen ohne ML-Kit-Abdeckung).
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"

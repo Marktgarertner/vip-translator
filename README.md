@@ -29,42 +29,56 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 |---|---|
 | `LanguageCatalog.kt` | Die 11 unterstützten Sprachen, Anzeigenamen, ML-Kit-Sprachkonstanten, Live-Speech-Unterstützung pro Sprache |
 | `TranslationEngine.kt` | Wrapper um ML Kit Translate (Translator-Cache pro Sprachpaar, Modell-Download, `translate()`) |
-| `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow, `isLiveSupported()`) |
-| `SpeechOutput.kt` | Sprachausgabe der Übersetzungen über die systemeigene Android-TTS-Engine (on-device) |
+| `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow) plus die Engine-Weiche `engineFor()`: entscheidet pro Sprache zwischen ML Kit, Android-Systemerkennung und "kein Live" |
+| `SystemSpeechEngine.kt` | Zweite Live-Engine: garantiert geräteinterne Android-Systemerkennung (`SpeechRecognizer.createOnDeviceSpeechRecognizer`, Android 12+) für Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch) |
+| `SpeechOutput.kt` | Sprachausgabe über die systemeigene Android-TTS-Engine (on-device): wählt automatisch die beste installierte Offline-Stimme pro Sprache, leicht reduziertes Sprechtempo, Absprung in die TTS-Einstellungen bei fehlender Stimme |
 | `MainActivity.kt` | Jetpack-Compose-UI: Splitscreen (Kundenseite 180° gedreht), Sprachauswahl pro Seite direkt neben dem Logo, Live-Modus über je eine eigene Sprechtaste pro Seite, Konversationsverlauf. Kein getippter Modus mehr (siehe unten) |
 
 ## Sprachcoverage
 
-Übersetzung deckt alle 11 Sprachen ab. Live-Spracherkennung nur 9 davon:
+Übersetzung deckt alle 11 Sprachen ab. Die Live-Spracherkennung läuft
+**zweigleisig** - beide Wege vollständig on-device:
 
-| Sprache | Code | Übersetzung | Live-Spracherkennung |
+| Sprache | Code | Übersetzung | Live-Spracherkennung über |
 |---|---|:---:|:---:|
-| Deutsch | `de` | ✅ | ✅ |
-| Englisch | `en` | ✅ | ✅ |
-| Russisch | `ru` | ✅ | ✅ |
-| Türkisch | `tr` | ✅ | ✅ |
-| Polnisch | `pl` | ✅ | ✅ |
-| Vietnamesisch | `vi` | ✅ | ✅ |
-| Französisch | `fr` | ✅ | ✅ |
-| Spanisch | `es` | ✅ | ✅ |
-| Italienisch | `it` | ✅ | ✅ |
-| Ukrainisch | `uk` | ✅ | ❌ (nur getippt) |
-| Arabisch | `ar` | ✅ | ❌ (nur getippt) |
+| Deutsch | `de` | ✅ | ML Kit |
+| Englisch | `en` | ✅ | ML Kit |
+| Russisch | `ru` | ✅ | ML Kit |
+| Türkisch | `tr` | ✅ | ML Kit |
+| Polnisch | `pl` | ✅ | ML Kit |
+| Vietnamesisch | `vi` | ✅ | ML Kit |
+| Französisch | `fr` | ✅ | ML Kit |
+| Spanisch | `es` | ✅ | ML Kit |
+| Italienisch | `it` | ✅ | ML Kit |
+| Ukrainisch | `uk` | ✅ | Android-Systemerkennung* |
+| Arabisch | `ar` | ✅ | Android-Systemerkennung* |
 
-**Warum kein Live für Ukrainisch/Arabisch (bewusste Entscheidung, siehe
-Kommentare in `LanguageCatalog.kt`/`SpeechEngine.kt`):** ML Kit GenAI Speech
-Recognition listet im "Basic"-Modus kein Ukrainisch; Arabisch ist dort nur im
-"Advanced"-Modus verfügbar, der laut Google-Doku (Stand Juli 2026) exklusiv
-auf Pixel-10-Geräten läuft. Da die App auf der gesamten ViP-Gerätefotte
-laufen soll und kein Cloud-Fallback infrage kommt, bleiben beide Sprachen
-bewusst auf den getippten Modus beschränkt - unabhängig vom Gerät.
+\* Die Android-Systemerkennung (`SystemSpeechEngine.kt`) setzt voraus, dass
+das Gerät `SpeechRecognizer.createOnDeviceSpeechRecognizer` anbietet
+(Android 12+) und das jeweilige **Offline-Sprachpaket** installiert ist
+(Menü "Sprachpakete" stößt den Download auf Android 13+ an, darunter über
+Android-Einstellungen > Offline-Spracheingabe). Ob Ukrainisch/Arabisch dort
+verfügbar sind, hängt vom Gerät ab.
 
-Zusätzlich gilt: ML Kit GenAI Speech Recognition Basic-Modus ist laut
-Google-Doku "generally available on most Android devices with API level 31
-and higher". `SpeechEngine.isLiveSupported()` prüft deshalb neben der
-Sprachliste auch `Build.VERSION.SDK_INT >= 31` und deaktiviert den
-Live-Button entsprechend - `minSdk 26` bleibt für den getippten Modus davon
-unberührt.
+**Warum zwei Engines (bewusste Entscheidung, siehe Kommentare in
+`LanguageCatalog.kt`/`SpeechEngine.kt`/`SystemSpeechEngine.kt`):** ML Kit
+GenAI Speech Recognition listet im "Basic"-Modus kein Ukrainisch; Arabisch
+ist dort nur im "Advanced"-Modus verfügbar, der laut Google-Doku (Stand Juli
+2026) exklusiv auf Pixel-10-Geräten läuft. Statt eines (ausgeschlossenen)
+Cloud-Fallbacks übernimmt für diese beiden Sprachen die Systemerkennung des
+Geräts - aber **ausschließlich über den garantiert geräteinternen Weg**:
+`createOnDeviceSpeechRecognizer` (Android 12+). Der ältere Weg
+(`createSpeechRecognizer` + `EXTRA_PREFER_OFFLINE`) würde auch unter
+Android < 12 funktionieren, "bevorzugt" offline aber nur - Audio könnte
+trotzdem an einen Cloud-Dienst gehen und würde das Datenschutz-Requirement
+verletzen. Deshalb bewusst nicht verwendet.
+
+Zusätzlich gilt: Beide Live-Engines setzen Android 12 (API 31) voraus - ML
+Kit laut Google-Doku ("generally available on most Android devices with API
+level 31 and higher"), die geräteinterne Systemerkennung per API-Definition.
+`SpeechEngine.isLiveSupported()` prüft das zentral und deaktiviert die
+Sprechtasten entsprechend; `minSdk 26` hält die App selbst (Übersetzung,
+Verlauf, Sprachausgabe) auch darunter lauffähig.
 
 ## Splitscreen & ViP-Branding
 
@@ -148,12 +162,16 @@ das UI ist deshalb ein **Splitscreen**:
 - **Sprachausgabe:** Übersetzungen werden über die **systemeigene
   Android-TTS-Engine** (`android.speech.tts`, siehe `SpeechOutput.kt`)
   vorgelesen - ein lokaler Systemdienst, keine Dritt-Cloud-API aus der App
-  heraus. Der Lautsprecher-Button in der Titelleiste schaltet die
+  heraus. Der Lautsprecher-Button in der Kopfleiste schaltet die
   automatische Ausgabe um; jeder Verlaufseintrag hat zusätzlich einen
-  eigenen Vorlesen-Button. Ob eine Stimme für eine Sprache verfügbar ist,
-  hängt von der auf dem Gerät installierten TTS-Engine ab; für garantiert
-  netzunabhängige Ausgabe die Offline-Sprachpakete der TTS-Engine in den
-  Android-Einstellungen installieren.
+  eigenen Vorlesen-Button. Verbesserungen: Die App wählt pro Sprache
+  automatisch die **beste installierte Offline-Stimme** (höchste
+  Qualitätsstufe, Netz-Stimmen werden bewusst ignoriert), spricht mit leicht
+  reduziertem Tempo (0.9× - am Schalter verständlicher) und nutzt den vollen
+  Locale-Tag (z. B. `de-DE` statt nur `de`) für eine passendere Stimmwahl.
+  Fehlt für eine Sprache jede Stimme, bietet die Mitarbeiterseite einen
+  Button **"Sprachausgabe-Einstellungen öffnen"** an, der direkt zu den
+  Android-TTS-Einstellungen führt (dort Offline-Stimmen nachinstallieren).
 - **Übersetzer-Lebenszyklus (Fix "Translation closed"):** Ursprünglich wurde
   der ML-Kit-Translator bei jedem Sprachwechsel sofort geschlossen - lief
   dabei noch eine Übersetzung (oder der Live-Modus benutzte ihn noch),
@@ -323,19 +341,19 @@ wegen Signatur-Konflikt), ohne die alte Version vorher zu deinstallieren.
 
 ## Offene Punkte
 
-- **Ukrainisch/Arabisch ohne jede Eingabe möglich (neu seit dem Wegfall des
-  Textfelds):** Auf Wunsch ("Konzentrieren wir uns nur aufs Sprechen") wurden
-  das Texteingabefeld und die getippten Übersetzen-Tasten der
-  Mitarbeiterseite vollständig entfernt. Da Ukrainisch und Arabisch keine
-  Live-Spracherkennung unterstützen (siehe "Sprachcoverage"), gibt es für
-  diese beiden Sprachen aktuell **keinen Weg mehr, überhaupt einen
-  Gesprächsbeitrag zu erzeugen** - weder von Kunden- noch von
-  Mitarbeiterseite, in keiner Richtung. Die Mitarbeiter-Sprechtaste bleibt
-  zwar sichtbar, ist für diese beiden Sprachen aber dauerhaft deaktiviert.
-  Vor dem früheren getippten Modus war das noch der Fallback-Weg für genau
-  diesen Fall. Sollte am Schalter Bedarf für Ukrainisch/Arabisch bestehen,
-  müsste hierfür eine Lösung nachgerüstet werden (z. B. ein minimales,
-  ausschließlich für diese zwei Sprachen eingeblendetes Texteingabefeld).
+- **Ukrainisch/Arabisch hängen an der Systemerkennung des Geräts:** Seit dem
+  Wegfall des Textfelds ("Konzentrieren wir uns nur aufs Sprechen") ist die
+  Live-Erkennung der einzige Eingabeweg. Für Ukrainisch/Arabisch übernimmt
+  die Android-Systemerkennung (siehe "Sprachcoverage") - das funktioniert
+  aber nur auf Geräten mit Android 12+, geräteinterner Systemerkennung und
+  installiertem Offline-Sprachpaket für die jeweilige Sprache. Auf Geräten,
+  die eine dieser Bedingungen nicht erfüllen, gibt es für diese beiden
+  Sprachen weiterhin keinen Weg, einen Gesprächsbeitrag zu erzeugen (die
+  Sprechtasten sind dann ausgeblendet bzw. deaktiviert). Ob die
+  ViP-Schalter-Hardware Ukrainisch/Arabisch offline anbietet, sollte vor dem
+  Rollout einmal am echten Gerät geprüft werden - falls nicht, wäre der
+  Fallback ein minimales, nur für diese zwei Sprachen eingeblendetes
+  Texteingabefeld.
 - **ViP-Schalter-Hardware:** Die Android-Version der im Einsatz befindlichen
   Schalter-Hardware ist nicht bekannt. Kein Blocker für diesen Build, aber
   relevant für den Live-Modus: Läuft die Hardware unter API < 31, bleibt der
