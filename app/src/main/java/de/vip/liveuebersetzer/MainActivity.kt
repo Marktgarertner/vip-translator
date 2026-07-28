@@ -84,6 +84,12 @@ private data class ConversationEntry(
     val targetLanguage: Language,
     val originalText: String,
     val translatedText: String,
+    /**
+     * Ursprünglich erkannter Wortlaut, falls [TransitGlossary] etwas korrigiert
+     * hat - sonst `null`. Wird auf der Mitarbeiterseite als Hinweis angezeigt,
+     * damit eine Fehlkorrektur auffällt und nicht unbemerkt bleibt.
+     */
+    val recognizedText: String? = null,
 ) {
     /** Text dieses Beitrags in der Sprache der jeweiligen Bildschirmhälfte. */
     fun textFor(pane: Language): String = when (pane.code) {
@@ -148,10 +154,19 @@ private fun LiveUebersetzerScreen() {
         if (conversation.isNotEmpty()) staffListState.animateScrollToItem(0)
     }
 
-    fun addEntry(from: Language, to: Language, original: String, translated: String) {
+    fun addEntry(
+        from: Language,
+        to: Language,
+        original: String,
+        translated: String,
+        recognized: String? = null,
+    ) {
         // Neuester Eintrag an Index 0; die Listen rendern mit reverseLayout,
         // sodass er auf beiden Bildschirmhälften wie in einem Chat "unten" steht.
-        conversation.add(0, ConversationEntry(nextEntryId++, from, to, original, translated))
+        conversation.add(
+            0,
+            ConversationEntry(nextEntryId++, from, to, original, translated, recognized),
+        )
         // Nie sprechen, solange das Mikrofon offen ist - sonst erkennt die
         // Erkennung die eigene Ausgabe als Eingabe (Rückkopplungsschleife).
         if (speechOutputEnabled && !isListening) speechOutput.speak(translated, to)
@@ -180,10 +195,16 @@ private fun LiveUebersetzerScreen() {
 
     // Übersetzt einen fertig erkannten Satz und hängt ihn an den Verlauf an.
     fun translateAndAdd(from: Language, to: Language, text: String) {
+        // ÖPNV-Fachwortschatz zuerst: Das korrigiert zerlegte Komposita
+        // ("Kassen Automat") und Eigennamen ("Potstam") noch VOR der
+        // Übersetzung - ML Kit bekommt dadurch den richtigen Begriff statt
+        // zweier Bruchstücke. Siehe TransitGlossary.
+        val corrected = TransitGlossary.correct(from, text)
+        val recognized = text.takeIf { it != corrected }
         scope.launch {
             runCatching {
-                TranslationEngine.translate(from, to, text)
-            }.onSuccess { addEntry(from, to, text, it) }
+                TranslationEngine.translate(from, to, corrected)
+            }.onSuccess { addEntry(from, to, corrected, it, recognized) }
                 .onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
         }
     }
@@ -758,6 +779,14 @@ private fun StaffEntryCard(
                     text = entry.counterpartFor(staffLanguage),
                     color = MaterialTheme.colorScheme.tertiary,
                 )
+                // Nur wenn der Fachwortschatz etwas geändert hat: Original
+                // zeigen, damit eine Fehlkorrektur auffällt (siehe TransitGlossary).
+                entry.recognizedText?.let { recognized ->
+                    Text(
+                        text = "wörtlich erkannt: $recognized",
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
             }
             IconButton(onClick = onSpeakClick) {
                 Icon(

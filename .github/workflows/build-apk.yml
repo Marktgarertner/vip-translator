@@ -42,6 +42,13 @@ jobs:
       # Entwicklungs-Sandbox nicht von services.gradle.org bezogen werden
       # (siehe README). Gradle wird hier stattdessen direkt über
       # gradle/actions/setup-gradle bereitgestellt.
+      # Unit-Tests des ÖPNV-Fachwortschatzes (TransitGlossary): der einzige
+      # Teil der App, der ohne Gerät und ohne Google-/Vosk-Bibliotheken
+      # vollständig prüfbar ist - und der riskanteste, weil eine zu großzügige
+      # Schwelle stillschweigend Alltagssprache verfälschen würde.
+      - name: Unit-Tests ausführen
+        run: gradle testDebugUnitTest --stacktrace --no-daemon
+
       - name: Debug-APK bauen
         run: gradle assembleDebug --stacktrace --no-daemon
 

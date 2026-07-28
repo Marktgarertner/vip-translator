@@ -36,6 +36,7 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow) plus die Engine-Weiche `engineFor()`: entscheidet pro Sprache zwischen ML Kit, Vosk und "kein Live" |
 | `VoskSpeechEngine.kt` | Zweite Live-Engine: [Vosk](https://alphacephei.com/vosk) (Apache-2.0), direkt in die App gebündelt statt über einen Android-Systemdienst - für Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch). Modell-Download/-Entpacken, Recognizer-Erstellung, `SpeechService`-Listener |
 | `SpeechOutput.kt` | Sprachausgabe über die systemeigene Android-TTS-Engine (on-device): wählt automatisch die beste installierte Offline-Stimme pro Sprache, leicht reduziertes Sprechtempo, Absprung in die TTS-Einstellungen bei fehlender Stimme |
+| `TransitGlossary.kt` | ÖPNV-/ViP-Fachwortschatz mit Nachkorrektur des erkannten Textes (zerlegte Komposita, lautähnlich verschriebene Eigennamen) - siehe eigenen Abschnitt unten |
 | `MainActivity.kt` | Jetpack-Compose-UI: Splitscreen (Kundenseite 180° gedreht), Sprachauswahl pro Seite direkt neben dem Logo, Live-Modus über je eine eigene Sprechtaste pro Seite, Konversationsverlauf. Kein getippter Modus mehr (siehe unten) |
 
 ## Sprachcoverage
@@ -200,6 +201,56 @@ Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung.
   Erkennung komplett offline auf dem Gerät (Kaldi-Engine über JNA/native
   Bibliothek, in der AAR enthalten) - kein Unterschied zum
   Datenschutz-Anspruch der anderen 9 Sprachen.
+
+## ÖPNV-Fachwortschatz (Erkennungs-Nachkorrektur)
+
+Praxistest-Befund: Die Erkennung hat Probleme mit Eigennamen und typischem
+ÖPNV-Vokabular ("Einzelfahrausweis", "Kassenautomat") - allgemeine
+Sprachmodelle kennen weder Tarifbegriffe noch lokale Haltestellennamen.
+Typische Fehlerbilder: deutsche Komposita werden zerlegt ("Kassen Automat"),
+Eigennamen lautähnlich verschrieben ("Potstam").
+
+`TransitGlossary.kt` schiebt deshalb zwischen Erkennung und Übersetzung eine
+**Nachkorrektur**: Jeder fertig erkannte Satz wird gegen eine kuratierte
+Wortliste abgeglichen (normalisierter Levenshtein-Vergleich), wobei auch
+Fenster aus zwei und drei Wörtern geprüft werden - so werden zerlegte
+Komposita und Mehrwort-Haltestellennamen ("Alter Markt", "Platz der Einheit")
+wieder zusammengesetzt.
+
+- **Verbessert zugleich die Übersetzung:** ML Kit Translate bekommt dann das
+  korrekte Kompositum statt zweier Bruchstücke - "Einzelfahrausweis" wird
+  brauchbar übersetzt, "Einzel Fahrausweis" nicht.
+- **Nur Deutsch bekommt das volle Glossar.** Für alle anderen Sprachen wird
+  ausschließlich die Eigennamen-Teilmenge angewendet (Orte, Haltestellen,
+  Marken) - ein Kunde nennt die Haltestelle auch auf Englisch "Luisenplatz",
+  aber deutsches Fachvokabular darf fremdsprachige Sätze nicht anfassen. Bei
+  nicht-lateinischer Schrift (Ukrainisch, Arabisch) greift der Vergleich
+  ohnehin nie.
+- **Konservative Schwellen gegen Falschkorrekturen:** Mindestlängen und
+  Ähnlichkeitsgrenzen (80 % für ein Wort, 85 % beim Zusammenziehen); kurze
+  Wörter werden nur exakt erkannt. Wurde etwas geändert, zeigt die
+  Mitarbeiterseite unter dem Beitrag den ursprünglichen Wortlaut
+  ("wörtlich erkannt: ..."), damit eine Fehlkorrektur auffällt statt
+  unbemerkt zu bleiben.
+- **Durch Tests abgesichert** (`app/src/test/.../TransitGlossaryTest.kt`, läuft
+  in CI): Die Negativtests wiegen dabei schwerer als die Positivtests. Zwei
+  davon sind Regressionstests für echte, beim Entwickeln gefundene Fehler -
+  "ich **fahre** nach Potsdam" wurde zu "ich **Fähre** nach Potsdam" (Umlaut-
+  Faltung machte beide Wörter identisch) und "wir **werden**" zu
+  "wir **Werder**" (Ortsname, ein Buchstabe Unterschied).
+- **Erweitern:** Begriffe einfach in `TransitGlossary.properNouns` bzw.
+  `generalTerms` ergänzen - kein weiterer Code nötig. Die Listen sind eine
+  **Startauswahl und kein amtlich geprüftes Haltestellen- oder
+  Tarifverzeichnis**; vor dem Rollout sollte ViP sie gegen die eigenen Daten
+  abgleichen und um die real gebräuchlichen Begriffe erweitern.
+
+Was diese Nachkorrektur **nicht** kann: die *Übersetzung* eines Fachbegriffs
+erzwingen. ML Kit Translate bietet keine Glossar-/Terminologie-Funktion, d. h.
+wie "Einzelfahrausweis" auf Arabisch heißt, entscheidet weiterhin allein das
+Übersetzungsmodell. Auch Eigennamen können dabei mitübersetzt werden
+("Alter Markt" → "Old Market"). Falls das am Schalter stört, wäre der nächste
+Ausbauschritt eine feste Begriffstabelle, die solche Terme nach der
+Übersetzung wieder zurücksetzt.
 
 ## Konversationsverlauf, Sprachausgabe & Übersetzer-Lebenszyklus
 
