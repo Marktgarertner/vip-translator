@@ -859,6 +859,7 @@ private fun ModelManagerScreen(
             items(LanguageCatalog.all, key = { it.code }) { language ->
                 val status = statuses[language.code] ?: ModelStatus.PRUEFEN
                 val voiceStatus = voiceStatuses[language.code] ?: SpeechOutput.VoiceStatus.NICHT_BEREIT
+                val voskStatus = voskStatuses[language.code] ?: ModelStatus.PRUEFEN
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -905,7 +906,6 @@ private fun ModelManagerScreen(
                                     },
                                 )
                                 if (!language.mlKitLiveSpeech) {
-                                    val voskStatus = voskStatuses[language.code] ?: ModelStatus.PRUEFEN
                                     val progress = voskProgress[language.code]
                                     Text(
                                         text = when (voskStatus) {
@@ -957,13 +957,17 @@ private fun ModelManagerScreen(
                                         }
                                     }
                                 },
-                                enabled = status == ModelStatus.FEHLT || status == ModelStatus.FEHLER,
+                                enabled = status == ModelStatus.FEHLT || status == ModelStatus.FEHLER ||
+                                    (!language.mlKitLiveSpeech &&
+                                        (voskStatus == ModelStatus.FEHLT || voskStatus == ModelStatus.FEHLER)),
                             ) {
                                 Text(
-                                    when (status) {
-                                        ModelStatus.GELADEN -> "Geladen ✓"
-                                        ModelStatus.LAEDT -> "Lädt …"
-                                        else -> "Laden"
+                                    when {
+                                        status == ModelStatus.LAEDT || voskStatus == ModelStatus.LAEDT -> "Lädt …"
+                                        status == ModelStatus.FEHLT || status == ModelStatus.FEHLER -> "Laden"
+                                        !language.mlKitLiveSpeech &&
+                                            (voskStatus == ModelStatus.FEHLT || voskStatus == ModelStatus.FEHLER) -> "Laden"
+                                        else -> "Geladen ✓"
                                     },
                                 )
                             }
