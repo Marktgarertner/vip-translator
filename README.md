@@ -58,8 +58,9 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | Arabisch | `ar` | ✅ | Vosk (gebündelt)* |
 
 \* Anders als bei den 9 ML-Kit-Sprachen wird hier NICHT beim ersten
-Mikro-Tap spontan nachgeladen - das Vosk-Modell (~100-140 MB) muss vorher
-im Menü "Sprachpakete" heruntergeladen worden sein, siehe Abschnitt
+Mikro-Tap spontan nachgeladen - das Vosk-Modell (~137 MB für Ukrainisch,
+~318 MB für Arabisch) muss vorher im Menü "Sprachpakete" heruntergeladen
+worden sein, siehe Abschnitt
 "Vosk-Modelle" unten.
 
 **Warum zwei Engines (bewusste Entscheidung, siehe Kommentare in
@@ -171,12 +172,24 @@ Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung.
 - **Modelle werden nicht in der APK mitgeliefert** (würde Debug-Builds
   unhandlich groß machen), sondern im Menü "Sprachpakete" heruntergeladen:
   Ukrainisch [`vosk-model-small-uk-v3-small`](https://alphacephei.com/vosk/models)
-  (~137 MB), Arabisch `vosk-model-small-ar-0.3` (~100 MB) - jeweils die
-  "small"-Variante, gedacht für den mobilen Einsatz. Beide URLs sind per
-  HTTP-HEAD gegen die echten, von alphacephei.com ausgelieferten Dateien
+  (~137 MB, "small"-Variante), Arabisch **`vosk-model-ar-mgb2-0.4`** (~318 MB,
+  **nicht** die "small"-Variante - siehe nächster Punkt). Beide URLs sind
+  per HTTP-HEAD gegen die echten, von alphacephei.com ausgelieferten Dateien
   verifiziert (der Host selbst war aus der Entwicklungs-Sandbox nicht direkt
   erreichbar, siehe "Build-Verifikation" unten - die Prüfung lief über einen
   temporären Schritt im echten CI-Workflow).
+- **Warum Arabisch kein "small"-Modell nutzt (Praxistest-Korrektur):**
+  Ursprünglich war `vosk-model-small-ar-0.3` (~100 MB) vorgesehen - ein
+  Praxistest zeigte, dass es zwar aufnimmt, aber praktisch nichts brauchbar
+  erkennt (ein deutlich älteres/schwächeres Modell). Ukrainisch
+  funktionierte mit seiner "small"-Variante dagegen einwandfrei. Für
+  Arabisch kommt deshalb `vosk-model-ar-mgb2-0.4` zum Einsatz - Vosks
+  etabliertes, auf dem MGB-2-Corpus arabischer Rundfunknachrichten
+  trainiertes Modell - trotz des mehr als drei Mal so großen Downloads.
+  Die Marker-Datei, die den Download-Status auf dem Gerät festhält,
+  speichert dafür die jeweilige Modell-URL: Ändert sich diese Zuordnung
+  (wie hier geschehen), gilt ein bereits heruntergeladenes altes Modell
+  automatisch als veraltet und wird beim nächsten "Laden" ersetzt.
 - **Größerer, einmaliger Download:** Die Statuszeile "Live-Erkennung: ..." im
   Sprachpakete-Menü zeigt den Fortschritt in Prozent; am besten über WLAN
   vorbereiten, bevor die Sprache am Schalter gebraucht wird. Anders als bei
@@ -187,10 +200,6 @@ Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung.
   Erkennung komplett offline auf dem Gerät (Kaldi-Engine über JNA/native
   Bibliothek, in der AAR enthalten) - kein Unterschied zum
   Datenschutz-Anspruch der anderen 9 Sprachen.
-- **Warum nicht die großen Referenzmodelle:** `vosk-model-ar-mgb2-0.4`
-  (~318 MB) und `vosk-model-uk-v3` (~354 MB) sind genauer, aber für einen
-  spontanen Download am Schalter zu groß - die "small"-Varianten sind der
-  bewusste Kompromiss zwischen Genauigkeit und Downloadgröße.
 
 ## Konversationsverlauf, Sprachausgabe & Übersetzer-Lebenszyklus
 

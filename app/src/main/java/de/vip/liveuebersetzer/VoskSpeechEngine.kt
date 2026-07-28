@@ -46,17 +46,22 @@ object VoskSpeechEngine {
     private const val SAMPLE_RATE = 16000f
 
     /**
-     * Download-URLs der "small"-Offline-Modelle (kleinere, für den mobilen
-     * Einsatz gedachte Variante statt der großen Referenzmodelle). Per HTTP-
-     * HEAD gegen die echten, von alphacephei.com ausgelieferten Dateien
-     * verifiziert (siehe README, Abschnitt "Vosk-Modelle") - die Sandbox, in
-     * der dieser Code entstand, konnte alphacephei.com selbst nicht direkt
-     * erreichen, daher lief diese Prüfung über einen temporären Schritt im
-     * CI-Workflow.
+     * Download-URLs der Offline-Modelle. Für Ukrainisch die "small"-Variante
+     * (kleinere, für den mobilen Einsatz gedachte Modellgröße). Für Arabisch
+     * bewusst NICHT die "small"-Variante: Ein Praxistest zeigte, dass
+     * `vosk-model-small-ar-0.3` zwar aufnimmt, aber praktisch nichts brauchbar
+     * erkennt (deutlich schwächeres, älteres Modell) - stattdessen das
+     * MGB2-Modell, Vosks etablierteres/genaueres Arabisch-Modell (trainiert auf
+     * dem MGB-2-Corpus arabischer Rundfunknachrichten), trotz des dafür
+     * deutlich größeren Downloads. Beide URLs per HTTP-HEAD gegen die echten,
+     * von alphacephei.com ausgelieferten Dateien verifiziert (siehe README,
+     * Abschnitt "Vosk-Modelle") - die Sandbox, in der dieser Code entstand,
+     * konnte alphacephei.com selbst nicht direkt erreichen, daher lief diese
+     * Prüfung über einen temporären Schritt im CI-Workflow.
      */
     private val modelUrls = mapOf(
         "uk" to "https://alphacephei.com/vosk/models/vosk-model-small-uk-v3-small.zip", // ~137 MB
-        "ar" to "https://alphacephei.com/vosk/models/vosk-model-small-ar-0.3.zip", // ~100 MB
+        "ar" to "https://alphacephei.com/vosk/models/vosk-model-ar-mgb2-0.4.zip", // ~318 MB
     )
 
     private val loadedModels = HashMap<String, Model>()
@@ -70,9 +75,20 @@ object VoskSpeechEngine {
     private fun readyMarker(context: Context, languageCode: String): File =
         File(modelDir(context, languageCode), ".vosk-ready")
 
-    /** Ob das Modell für [languageCode] bereits heruntergeladen und entpackt ist. */
-    fun isModelReady(context: Context, languageCode: String): Boolean =
-        readyMarker(context, languageCode).exists()
+    /**
+     * Ob das Modell für [languageCode] bereits heruntergeladen und entpackt
+     * ist. Die Marker-Datei enthält die URL, mit der sie entpackt wurde - ändert
+     * sich [modelUrls] (z. B. Wechsel auf ein anderes Modell wie beim
+     * Arabisch-Downgrade auf die "small"-Variante geschehen), gilt ein
+     * bereits heruntergeladenes altes Modell automatisch als veraltet und
+     * wird beim nächsten "Laden" ersetzt, statt fälschlich als bereit zu gelten.
+     */
+    fun isModelReady(context: Context, languageCode: String): Boolean {
+        val marker = readyMarker(context, languageCode)
+        if (!marker.exists()) return false
+        val expectedUrl = modelUrls[languageCode] ?: return false
+        return runCatching { marker.readText() }.getOrNull() == expectedUrl
+    }
 
     /**
      * Lädt das Vosk-Modell für [languageCode] herunter und entpackt es (Menü
@@ -94,7 +110,11 @@ object VoskSpeechEngine {
             target.mkdirs()
             try {
                 unpackFrom(url, target, onProgress)
-                readyMarker(context, languageCode).writeText("ok")
+                readyMarker(context, languageCode).writeText(url)
+                // Falls zuvor schon (ein jetzt veraltetes) Modell fuer diese
+                // Sprache im Speicher gehalten wurde, muss das verworfen
+                // werden - sonst wuerde listen() weiter das alte benutzen.
+                loadedModels.remove(languageCode)?.let { runCatching { it.close() } }
             } catch (e: Exception) {
                 target.deleteRecursively()
                 throw e
