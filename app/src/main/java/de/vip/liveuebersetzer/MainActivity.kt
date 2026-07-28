@@ -459,7 +459,7 @@ private fun LiveUebersetzerScreen() {
                     labelFor = { it.displayName },
                     onSelected = { staffLanguage = it },
                     onLogoClick = { screen = Screen.SETUP },
-                    extras = {
+                    actions = {
                         IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
                             Icon(
                                 imageVector = if (speechOutputEnabled) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
@@ -686,41 +686,61 @@ private fun PaneHeader(
     labelFor: (Language) -> String,
     onSelected: (Language) -> Unit,
     onLogoClick: () -> Unit,
-    extras: @Composable RowScope.() -> Unit = {},
+    actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
+        // Logo und Sprachauswahl bleiben in einer eigenen Zeile, Aktionen
+        // kommen darunter. Alles in EINE Zeile zu packen hat auf einem
+        // normalen Telefon nicht gepasst: Die Sprachtaste wird zuletzt
+        // gemessen, bekam nur noch Restbreite und brach "Deutsch"
+        // buchstabenweise um ("D e ut sc h").
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.primary)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .clickable(onClick = onLogoClick),
-                contentAlignment = Alignment.Center,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Image(
-                    painter = painterResource(R.drawable.vip_logo),
-                    contentDescription = "Einstellungen (Sprachpakete)",
-                    modifier = Modifier.size(26.dp),
-                )
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(MaterialTheme.colorScheme.surface, CircleShape)
+                        .clickable(onClick = onLogoClick),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.vip_logo),
+                        contentDescription = "Einstellungen",
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    onClick = { expanded = !expanded },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                    ),
+                ) {
+                    // maxLines als Sicherheitsnetz: lieber abgeschnitten als
+                    // buchstabenweise umgebrochen.
+                    Text(text = labelFor(selected), maxLines = 1)
+                }
             }
-            extras()
-            Spacer(modifier = Modifier.weight(1f))
-            Button(
-                onClick = { expanded = !expanded },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ),
-            ) {
-                Text(labelFor(selected))
+            actions?.let { actionsRow ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    actionsRow()
+                }
             }
         }
         if (expanded) {
