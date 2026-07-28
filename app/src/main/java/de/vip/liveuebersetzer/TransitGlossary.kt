@@ -52,9 +52,6 @@ object TransitGlossary {
     /** Mindestähnlichkeit für ein einzelnes Token. */
     private const val SINGLE_THRESHOLD = 0.80
 
-    /** Mindestähnlichkeit beim Zusammenziehen mehrerer Token (strenger). */
-    private const val MERGED_THRESHOLD = 0.85
-
     /** Zusammengezogene Treffer müssen mindestens so lang sein. */
     private const val MIN_MERGED_LENGTH = 8
 
@@ -137,14 +134,30 @@ object TransitGlossary {
         val fuzzy: List<Pair<String, String>> = terms.map { foldedKey(it) to it }
     }
 
-    private val properNounIndex = Index(properNouns)
+    /**
+     * Im Menü "Fachbegriffe" selbst hinterlegte Begriffe (siehe [AppSettings]).
+     * Sie gelten für **alle** Sprachen, weil es typischerweise ViP-eigene
+     * Eigennamen sind (Produkt-, Tarif-, Haltestellennamen), die ein Kunde
+     * auch in seiner Sprache so ausspricht.
+     */
+    private var customTerms: List<String> = emptyList()
 
-    private val fullIndex = Index(properNouns + generalTerms)
+    private var properNounIndex = Index(properNouns)
+
+    private var fullIndex = Index(properNouns + generalTerms)
+
+    /** Übernimmt die selbst gepflegten Begriffe und baut die Tabellen neu auf. */
+    @Synchronized
+    fun setCustomTerms(terms: Collection<String>) {
+        customTerms = terms.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        properNounIndex = Index(properNouns + customTerms)
+        fullIndex = Index(properNouns + generalTerms + customTerms)
+    }
 
     /**
      * Korrigiert [text] gegen den Fachwortschatz. Für Deutsch mit vollem
      * Glossar, für alle anderen Sprachen nur gegen die Eigennamen (siehe
-     * [properNouns]).
+     * [properNouns]) und die selbst gepflegten Begriffe.
      */
     fun correct(language: Language, text: String): String {
         val index = if (language.code == "de") fullIndex else properNounIndex
@@ -192,11 +205,25 @@ object TransitGlossary {
             affixes(token).third.any { it in ".,;:!?" }
         }
 
+    /**
+     * Zusammengezogene Fenster werden **ausschließlich exakt** verglichen -
+     * bewusst kein unscharfer Vergleich.
+     *
+     * Grund (im Test aufgefallen): Unscharf zusammengezogen verschluckt die
+     * Korrektur benachbarte Wörter. "Ein Schwielowsee Ticket bitte" wurde zu
+     * "Schwielowseeticket bitte" - das "Ein" war weg, weil das Dreier-Fenster
+     * dem Begriff ähnlich genug war. Ein verpasster Treffer ist harmlos,
+     * verschluckte Wörter verfälschen dagegen die Aussage.
+     *
+     * Der praktisch wichtige Fall funktioniert exakt ohnehin: Die Erkennung
+     * zerlegt Komposita ("Kassen Automat"), schreibt die Teile dabei aber
+     * richtig. Ein zugleich zerlegtes *und* verschriebenes Kompositum bleibt
+     * unkorrigiert - das ist der bewusst in Kauf genommene Preis.
+     */
     private fun matchWindow(index: Index, slice: List<String>): String? {
-        val joined = slice.joinToString("") { affixes(it).second }
-        if (key(joined).length < MIN_MERGED_LENGTH) return null
-        index.exact[key(joined)]?.let { return it }
-        return bestFuzzyMatch(index, foldedKey(joined), MERGED_THRESHOLD)
+        val joined = key(slice.joinToString("") { affixes(it).second })
+        if (joined.length < MIN_MERGED_LENGTH) return null
+        return index.exact[joined]
     }
 
     private fun matchSingle(index: Index, token: String): String? {

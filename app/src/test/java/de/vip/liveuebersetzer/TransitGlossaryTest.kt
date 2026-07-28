@@ -1,5 +1,6 @@
 package de.vip.liveuebersetzer
 
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -131,5 +132,46 @@ class TransitGlossaryTest {
     @Test
     fun `laesst nicht-lateinische Schrift unveraendert`() {
         assertUnchanged("Доброго дня, де зупинка", ukrainian)
+    }
+
+    // --- Selbst gepflegte Begriffe (Menue "Fachbegriffe") ------------------
+
+    @After
+    fun clearCustomTerms() {
+        TransitGlossary.setCustomTerms(emptyList())
+    }
+
+    @Test
+    fun `beruecksichtigt selbst gepflegte Begriffe`() {
+        TransitGlossary.setCustomTerms(listOf("Schwielowseeticket"))
+        assertCorrected("Ein Schwielowseeticket bitte", "Ein Schwielowsee Ticket bitte")
+        // Auch lautaehnlich verschrieben:
+        assertCorrected("Ein Schwielowseeticket bitte", "Ein Schwielowseetiket bitte")
+    }
+
+    @Test
+    fun `wirken selbst gepflegte Begriffe auch in anderen Sprachen`() {
+        TransitGlossary.setCustomTerms(listOf("Schwielowseeticket"))
+        assertCorrected("I need a Schwielowseeticket", "I need a Schwielowseetiket", english)
+    }
+
+    @Test
+    fun `verschluckt beim Zusammenziehen keine Nachbarwoerter`() {
+        // Regressionstest: Vorher wurde "Ein Schwielowsee Ticket bitte" zu
+        // "Schwielowseeticket bitte" - das "Ein" fiel weg, weil das
+        // Dreier-Fenster dem Begriff nur "aehnlich genug" sein musste.
+        // Verschluckte Woerter verfaelschen die Aussage und sind schlimmer
+        // als eine verpasste Korrektur.
+        TransitGlossary.setCustomTerms(listOf("Schwielowseeticket"))
+        assertCorrected("Ein Schwielowseeticket bitte", "Ein Schwielowsee Ticket bitte")
+        assertCorrected("I need a Schwielowseeticket", "I need a Schwielowseetiket", english)
+        assertUnchanged("Der Automat am Bahnhof")
+    }
+
+    @Test
+    fun `entfernte Begriffe wirken nicht mehr`() {
+        TransitGlossary.setCustomTerms(listOf("Schwielowseeticket"))
+        TransitGlossary.setCustomTerms(emptyList())
+        assertUnchanged("Ein Schwielowseetiket bitte")
     }
 }

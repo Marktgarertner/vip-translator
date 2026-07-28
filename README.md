@@ -37,6 +37,11 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | `VoskSpeechEngine.kt` | Zweite Live-Engine: [Vosk](https://alphacephei.com/vosk) (Apache-2.0), direkt in die App gebündelt statt über einen Android-Systemdienst - für Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch). Modell-Download/-Entpacken, Recognizer-Erstellung, `SpeechService`-Listener |
 | `SpeechOutput.kt` | Sprachausgabe über die systemeigene Android-TTS-Engine (on-device): wählt automatisch die beste installierte Offline-Stimme pro Sprache, leicht reduziertes Sprechtempo, Absprung in die TTS-Einstellungen bei fehlender Stimme |
 | `TransitGlossary.kt` | ÖPNV-/ViP-Fachwortschatz mit Nachkorrektur des erkannten Textes (zerlegte Komposita, lautähnlich verschriebene Eigennamen) - siehe eigenen Abschnitt unten |
+| `AppSettings.kt` | Gerätelokale Einstellungen (Ersteinrichtung erledigt, selbst gepflegte Fachbegriffe) - bewusst **keine** Gesprächsinhalte |
+| `Readiness.kt` | Ermittelt pro Sprache, ob Übersetzung, Stimme und Spracheingabe bereit sind (Grundlage des Einrichtungs-Assistenten) |
+| `SetupScreen.kt` | Einrichtungs-Assistent und Einstiegsmenü: Mikrofonfreigabe, Einsatzbereitschaft pro Sprache, Absprünge in die übrigen Menüs |
+| `GlossaryScreen.kt` | Menü "Fachbegriffe": eigene Begriffe anlegen und löschen |
+| `StaffPhrases.kt` / `PhrasesScreen.kt` | Schnellbausteine: häufige Schaltersätze auf Tastendruck übersetzen und vorlesen |
 | `MainActivity.kt` | Jetpack-Compose-UI: Splitscreen (Kundenseite 180° gedreht), Sprachauswahl pro Seite direkt neben dem Logo, Live-Modus über je eine eigene Sprechtaste pro Seite, Konversationsverlauf. Kein getippter Modus mehr (siehe unten) |
 
 ## Sprachcoverage
@@ -146,6 +151,36 @@ das UI ist deshalb ein **Splitscreen**:
   New > Vector Asset) und diese Datei ersetzen - dabei auch
   `ic_launcher_foreground.xml` (weiße Variante fürs App-Icon) angleichen.
 
+## Einrichtung, Nächster Kunde & Schnellbausteine
+
+Diese drei Bausteine richten sich an das Personal am Schalter, nicht an
+technisch versierte Nutzer:
+
+- **Einrichtungs-Assistent** (`SetupScreen.kt`, per Klick auf das Logo; beim
+  allerersten Start automatisch): sagt in Klartext, ob das Gerät einsatzbereit
+  ist. Mikrofonfreigabe (mit Knopf zum Nachholen) und pro Sprache, ob
+  Übersetzung, Offline-Stimme und Spracheingabe vorhanden sind - inklusive
+  Zählerzeile "X von 11 Sprachen vollständig einsatzbereit". Hintergrund: Die
+  App braucht inzwischen Berechtigungen, 11 Übersetzungsmodelle, TTS-Stimmen
+  und für Ukrainisch/Arabisch mehrere hundert MB Vosk-Modelle - von außen ist
+  nicht erkennbar, was davon fehlt. Genau daran blieb ein nicht geladenes
+  Vosk-Modell lange unbemerkt. Der Bildschirm ist zugleich das Menü zu
+  Sprachpaketen, Fachbegriffen und Schnellbausteinen.
+- **"Nächster Kunde"** (Taste in der Mitarbeiter-Kopfleiste, ersetzt den
+  früheren Papierkorb): löscht den Verlauf, stoppt eine laufende Aufnahme und
+  setzt beide Sprachen auf Standard zurück. Zusätzlich räumt sich der Verlauf
+  **nach fünf Minuten ohne neuen Beitrag von selbst ab** - ein
+  Datenschutz-Sicherheitsnetz, falls das Zurücksetzen vergessen wird, denn
+  kein Kunde soll das Gespräch des Vorgängers sehen.
+- **Schnellbausteine** (`StaffPhrases.kt` / `PhrasesScreen.kt`, Listen-Symbol
+  in der Kopfleiste): häufige Schaltersätze, die auf Tastendruck übersetzt,
+  vorgelesen und in den Verlauf eingetragen werden. **Die mitgelieferte
+  Satzliste ist ausdrücklich eine Startauswahl und stammt nicht aus den echten
+  Abläufen des ViP-Kundencenters** - welche Sätze dort wirklich gebraucht
+  werden, wissen nur die Kolleg:innen am Schalter. Anpassen heißt: Einträge in
+  `StaffPhrases.kt` ändern, mehr nicht. Die Sätze sind auf Deutsch formuliert
+  und werden immer aus dem Deutschen übersetzt.
+
 ## Tap-to-Talk & Sprachpakete-Menü
 
 - **Tap-to-Talk (Fix aus dem Praxistest):** Bei dauerhaft offenem Mikrofon
@@ -226,18 +261,26 @@ wieder zusammengesetzt.
   aber deutsches Fachvokabular darf fremdsprachige Sätze nicht anfassen. Bei
   nicht-lateinischer Schrift (Ukrainisch, Arabisch) greift der Vergleich
   ohnehin nie.
-- **Konservative Schwellen gegen Falschkorrekturen:** Mindestlängen und
-  Ähnlichkeitsgrenzen (80 % für ein Wort, 85 % beim Zusammenziehen); kurze
-  Wörter werden nur exakt erkannt. Wurde etwas geändert, zeigt die
-  Mitarbeiterseite unter dem Beitrag den ursprünglichen Wortlaut
-  ("wörtlich erkannt: ..."), damit eine Fehlkorrektur auffällt statt
-  unbemerkt zu bleiben.
+- **Konservative Schwellen gegen Falschkorrekturen:** Einzelne Wörter ab
+  sieben Zeichen werden unscharf verglichen (Ähnlichkeit ≥ 80 %), kürzere nur
+  exakt. **Zusammengezogene Mehrwort-Treffer müssen exakt passen** - unscharf
+  verschluckte die Korrektur sonst Nachbarwörter (siehe Tests unten). Wurde
+  etwas geändert, zeigt die Mitarbeiterseite unter dem Beitrag den
+  ursprünglichen Wortlaut ("wörtlich erkannt: ..."), damit eine Fehlkorrektur
+  auffällt statt unbemerkt zu bleiben.
+- **Eigene Begriffe direkt am Gerät:** Über Logo → "Fachbegriffe" lassen sich
+  ViP-eigene Tarif-, Produkt- und Haltestellennamen ergänzen, ohne dass eine
+  neue App-Version nötig ist. Sie gelten für alle Sprachen und wirken sofort.
 - **Durch Tests abgesichert** (`app/src/test/.../TransitGlossaryTest.kt`, läuft
-  in CI): Die Negativtests wiegen dabei schwerer als die Positivtests. Zwei
-  davon sind Regressionstests für echte, beim Entwickeln gefundene Fehler -
-  "ich **fahre** nach Potsdam" wurde zu "ich **Fähre** nach Potsdam" (Umlaut-
-  Faltung machte beide Wörter identisch) und "wir **werden**" zu
-  "wir **Werder**" (Ortsname, ein Buchstabe Unterschied).
+  in CI): Die Negativtests wiegen dabei schwerer als die Positivtests. Drei
+  davon sind Regressionstests für echte, beim Entwickeln gefundene Fehler:
+  "ich **fahre** nach Potsdam" wurde zu "ich **Fähre** nach Potsdam"
+  (Umlaut-Faltung machte beide Wörter identisch), "wir **werden**" zu
+  "wir **Werder**" (Ortsname, ein Buchstabe Unterschied) und
+  "**Ein** Schwielowsee Ticket bitte" zu "Schwielowseeticket bitte" - dabei
+  fiel das "Ein" weg, weil das Mehrwort-Fenster dem Begriff nur ähnlich genug
+  sein musste. Verschluckte Wörter verfälschen die Aussage und wiegen
+  schwerer als eine verpasste Korrektur; deshalb jetzt exakt-only.
 - **Erweitern:** Begriffe einfach in `TransitGlossary.properNouns` bzw.
   `generalTerms` ergänzen - kein weiterer Code nötig. Die Listen sind eine
   **Startauswahl und kein amtlich geprüftes Haltestellen- oder

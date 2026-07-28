@@ -30,7 +30,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.VolumeOff
@@ -67,10 +67,21 @@ import de.vip.liveuebersetzer.ui.theme.VipDisabled
 import de.vip.liveuebersetzer.ui.theme.VipLiveUebersetzerTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Status eines Sprachpakets im "Sprachpakete"-Menü. */
 private enum class ModelStatus { PRUEFEN, FEHLT, LAEDT, GELADEN, FEHLER }
+
+/** Welcher Bildschirm gerade sichtbar ist. */
+private enum class Screen { CONVERSATION, SETUP, MODELS, GLOSSARY, PHRASES }
+
+/**
+ * Wie lange nach dem letzten Beitrag gewartet wird, bis sich der Verlauf von
+ * selbst abräumt (Datenschutz-Sicherheitsnetz, falls "Nächster Kunde"
+ * vergessen wird).
+ */
+private const val AUTO_RESET_MILLIS = 5L * 60L * 1000L
 
 /**
  * Ein abgeschlossener Gesprächsbeitrag. Der Verlauf lebt bewusst nur im
@@ -143,10 +154,17 @@ private fun LiveUebersetzerScreen() {
 
     val speechOutput = remember { SpeechOutput(context) }
     var speechOutputEnabled by remember { mutableStateOf(true) }
-    var showModelManager by remember { mutableStateOf(false) }
+    // Beim allerersten Start direkt in die Einrichtung, damit niemand vor
+    // einem scheinbar fertigen, aber unvorbereiteten Gerät steht.
+    var screen by remember {
+        mutableStateOf(if (AppSettings.isSetupDone(context)) Screen.CONVERSATION else Screen.SETUP)
+    }
     // Wenn für eine Sprache keine TTS-Stimme installiert ist, bietet die UI
     // einen direkten Absprung in die Android-Sprachausgabe-Einstellungen an.
     var ttsSettingsHint by remember { mutableStateOf(false) }
+
+    // Selbst gepflegte Fachbegriffe einmalig in den Wortschatz laden.
+    LaunchedEffect(Unit) { AppSettings.applyCustomTerms(context) }
 
     // Auto-Scroll zum neuesten Beitrag (Index 0, liegt bei reverseLayout "unten").
     val staffListState = rememberLazyListState()
@@ -320,6 +338,31 @@ private fun LiveUebersetzerScreen() {
         if (isListening) stopLive()
     }
 
+    /**
+     * Setzt die App für den nächsten Kunden zurück: Verlauf weg, Aufnahme aus,
+     * Sprachen auf Standard. Datenschutz-relevant - niemand soll das Gespräch
+     * des Vorgängers sehen.
+     */
+    fun resetForNextCustomer() {
+        stopLive()
+        speechOutput.stop()
+        conversation.clear()
+        liveTranscript = ""
+        errorMessage = null
+        ttsSettingsHint = false
+        staffLanguage = LanguageCatalog.defaultSource
+        customerLanguage = LanguageCatalog.defaultTarget
+    }
+
+    // Sicherheitsnetz, falls das Zurücksetzen vergessen wird: Nach einer
+    // Weile ohne neuen Beitrag räumt sich der Verlauf von selbst ab.
+    LaunchedEffect(conversation.size, isListening) {
+        if (conversation.isNotEmpty() && !isListening) {
+            delay(AUTO_RESET_MILLIS)
+            resetForNextCustomer()
+        }
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             stopLive()
@@ -329,12 +372,43 @@ private fun LiveUebersetzerScreen() {
         }
     }
 
-    if (showModelManager) {
-        ModelManagerScreen(
-            onClose = { showModelManager = false },
-            speechOutput = speechOutput,
-        )
-        return
+    when (screen) {
+        Screen.SETUP -> {
+            SetupScreen(
+                speechOutput = speechOutput,
+                onOpenModels = { screen = Screen.MODELS },
+                onOpenGlossary = { screen = Screen.GLOSSARY },
+                onOpenPhrases = { screen = Screen.PHRASES },
+                onClose = { screen = Screen.CONVERSATION },
+            )
+            return
+        }
+        Screen.MODELS -> {
+            ModelManagerScreen(
+                onClose = { screen = Screen.SETUP },
+                speechOutput = speechOutput,
+            )
+            return
+        }
+        Screen.GLOSSARY -> {
+            GlossaryScreen(onClose = { screen = Screen.SETUP })
+            return
+        }
+        Screen.PHRASES -> {
+            PhrasesScreen(
+                customerLanguage = customerLanguage,
+                onPhraseSelected = { phrase ->
+                    // Bausteine sind auf Deutsch formuliert (siehe StaffPhrases),
+                    // deshalb immer aus dem Deutschen übersetzen - unabhängig
+                    // davon, welche Sprache die Mitarbeiterseite gerade zeigt.
+                    translateAndAdd(LanguageCatalog.defaultSource, customerLanguage, phrase)
+                    screen = Screen.CONVERSATION
+                },
+                onClose = { screen = Screen.CONVERSATION },
+            )
+            return
+        }
+        Screen.CONVERSATION -> Unit
     }
 
     Column(
@@ -352,7 +426,7 @@ private fun LiveUebersetzerScreen() {
                 .rotate(180f),
             language = customerLanguage,
             onLanguageSelected = { customerLanguage = it },
-            onLogoClick = { showModelManager = true },
+            onLogoClick = { screen = Screen.SETUP },
             entries = conversation,
             pendingTranscript = liveTranscript.takeIf { isListening && recordingFromCustomer && it.isNotBlank() },
             micVisible = SpeechEngine.isLiveSupported(context, customerLanguage.code),
@@ -384,7 +458,7 @@ private fun LiveUebersetzerScreen() {
                     selected = staffLanguage,
                     labelFor = { it.displayName },
                     onSelected = { staffLanguage = it },
-                    onLogoClick = { showModelManager = true },
+                    onLogoClick = { screen = Screen.SETUP },
                     extras = {
                         IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
                             Icon(
@@ -397,20 +471,23 @@ private fun LiveUebersetzerScreen() {
                                 tint = MaterialTheme.colorScheme.onPrimary,
                             )
                         }
-                        IconButton(
-                            onClick = {
-                                conversation.clear()
-                                liveTranscript = ""
-                                errorMessage = null
-                                ttsSettingsHint = false
-                            },
-                            enabled = conversation.isNotEmpty(),
-                        ) {
+                        IconButton(onClick = { screen = Screen.PHRASES }) {
                             Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = "Konversation löschen",
+                                Icons.Filled.List,
+                                contentDescription = "Schnellbausteine öffnen",
                                 tint = MaterialTheme.colorScheme.onPrimary,
                             )
+                        }
+                        // Ersetzt den frueheren Papierkorb: raeumt alles fuer
+                        // den naechsten Kunden ab, nicht nur den Verlauf.
+                        Button(
+                            onClick = { resetForNextCustomer() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        ) {
+                            Text("Nächster Kunde")
                         }
                     },
                 )
