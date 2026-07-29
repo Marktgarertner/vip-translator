@@ -101,10 +101,13 @@ das UI ist deshalb ein **Splitscreen**:
 
 - **Beide Hälften sind identisch aufgebaut** (Optik-Feedback aus dem
   Praxistest eingearbeitet): oben eine **grüne Kopfleiste** mit dem ViP-Logo
-  links (in einem weißen Kreis - ein Antippen öffnet das Menü
-  "Sprachpakete") und der **Sprachauswahl oben rechts**; unten links die
-  **große runde Sprechtaste** in ViP-Grün. Wer eine Taste sucht, findet sie
-  auf beiden Seiten an derselben Stelle.
+  links (in einem weißen Kreis - ein Antippen öffnet den
+  Einrichtungs-Assistenten) und der **Sprachauswahl oben rechts**; unten
+  links die **große runde Sprechtaste** in ViP-Grün. Wer eine Taste sucht,
+  findet sie auf beiden Seiten an derselben Stelle. Die Mitarbeiter-Kopfleiste
+  hat eine zweite Zeile mit den Aktionen (Lautsprecher, Schnellbausteine,
+  "Nächster Kunde") - alles in eine Zeile zu packen brach auf schmalen
+  Displays die Sprachtaste buchstabenweise um (Praxistest-Foto).
 - **Obere Hälfte (Kundenseite):** um 180° gedreht, sodass das Gegenüber alles
   in seiner Leserichtung sieht ("unten links" heißt hier: aus Kundensicht).
   Unter der Kopfleiste eine Begrüßung in der Kundensprache
@@ -190,7 +193,7 @@ technisch versierte Nutzer:
   Zusätzlich: Beim Öffnen des Mikrofons wird eine laufende Sprachausgabe
   abgebrochen, und gesprochen wird grundsätzlich nie, solange das Mikrofon
   offen ist. Für den nächsten Satz das Mikrofon einfach erneut antippen.
-- **Sprachpakete-Menü (per Logo-Klick erreichbar):** Pro Sprache lassen sich
+- **Sprachpakete-Menü (über Logo → Einrichtung erreichbar):** Pro Sprache lassen sich
   Übersetzungsmodell und (wo verfügbar) Live-Erkennungsmodell **vorab
   herunterladen** - einmalig mit Internet vorbereiten, danach entsteht am
   Schalter keine Wartezeit durch spontane Modell-Downloads. Der Status pro
@@ -499,20 +502,14 @@ wegen Signatur-Konflikt), ohne die alte Version vorher zu deinstallieren.
 
 ## Offene Punkte
 
-- **Ukrainisch/Arabisch-Eingabe: noch nicht am echten Gerät bestätigt.**
-  Praxistest-Historie: Die Android-Systemerkennung war der zunächst
-  naheliegende Weg, meldete auf dem Testgerät per
-  `SpeechRecognizer.checkRecognitionSupport` aber explizit "nicht
-  unterstützt" für beide Sprachen - kein verlässlicher Weg. Die App nutzt
-  jetzt stattdessen die gebündelte Offline-Erkennung Vosk (siehe Abschnitt
-  "Vosk-Modelle"), die geräteunabhängig funktionieren sollte. Die Vosk-URLs
-  und Dateigrößen sind gegen die echten, von alphacephei.com ausgelieferten
-  Dateien verifiziert, das Zusammenspiel aus Modell-Download, Entpacken und
-  Live-Erkennung über die native Kaldi-Engine aber noch nicht an einem
-  echten Gerät getestet (die Entwicklungs-Sandbox kann keine echten
-  Android-Geräte betreiben, siehe "Build-Verifikation"). Nächster Schritt:
-  im Sprachpakete-Menü das Ukrainisch/Arabisch-Modell laden und die
-  Sprechtaste ausprobieren.
+- **Ukrainisch/Arabisch-Eingabe: am Testgerät bestätigt** (07/2026), auf
+  weiteren Geräten vor dem Rollout gegenprüfen. Praxistest-Historie in
+  Kurzform: Die Android-Systemerkennung meldete für beide Sprachen "nicht
+  unterstützt" → Umstieg auf die gebündelte Offline-Erkennung Vosk (siehe
+  Abschnitt "Vosk-Modelle"). Ukrainisch funktionierte mit der
+  "small"-Modellvariante auf Anhieb; Arabisch erst nach dem Wechsel vom
+  small- auf das MGB2-Modell (das small-Modell nahm auf, erkannte aber
+  praktisch nichts). Beide Sprachen laufen seitdem am Testgerät.
 - **Sprachausgabe für Ukrainisch/Arabisch hängt an den installierten
   TTS-Stimmen:** Die App kann nur Stimmen nutzen, die die TTS-Engine des
   Geräts anbietet (bei Google Speech Services lassen sich Offline-Stimmen

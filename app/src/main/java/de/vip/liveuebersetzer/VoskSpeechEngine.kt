@@ -114,7 +114,8 @@ object VoskSpeechEngine {
                 // Falls zuvor schon (ein jetzt veraltetes) Modell fuer diese
                 // Sprache im Speicher gehalten wurde, muss das verworfen
                 // werden - sonst wuerde listen() weiter das alte benutzen.
-                loadedModels.remove(languageCode)?.let { runCatching { it.close() } }
+                synchronized(loadedModels) { loadedModels.remove(languageCode) }
+                    ?.let { runCatching { it.close() } }
             } catch (e: Exception) {
                 target.deleteRecursively()
                 throw e
@@ -168,6 +169,13 @@ object VoskSpeechEngine {
                     val relative = rootPrefix?.let { name.removePrefix(it) } ?: name
                     if (relative.isNotBlank()) {
                         val outFile = File(target, relative)
+                        // Zip-Slip-Schutz: Ein Eintrag wie "../../datei" darf
+                        // nie ausserhalb des Zielordners landen. Die Quelle ist
+                        // zwar fest verdrahtet (alphacephei.com, HTTPS), aber
+                        // entpackter Fremdinhalt wird grundsaetzlich geprueft.
+                        if (!outFile.canonicalPath.startsWith(target.canonicalPath + File.separator)) {
+                            throw IOException("Ungültiger Pfad im Modell-Archiv: $name")
+                        }
                         if (entry.isDirectory) {
                             outFile.mkdirs()
                         } else {
@@ -191,11 +199,18 @@ object VoskSpeechEngine {
         }
     }
 
-    /** Lädt das Modell (einmalig pro Sprache, danach im Speicher gehalten). */
+    /**
+     * Lädt das Modell (einmalig pro Sprache, danach im Speicher gehalten).
+     * Der `synchronized`-Block verhindert, dass zwei gleichzeitige Aufrufe
+     * dasselbe Modell doppelt laden bzw. die HashMap unsynchronisiert
+     * beschreiben.
+     */
     private suspend fun loadModel(context: Context, languageCode: String): Model =
-        loadedModels[languageCode] ?: withContext(Dispatchers.IO) {
-            loadedModels.getOrPut(languageCode) {
-                Model(modelDir(context, languageCode).absolutePath)
+        withContext(Dispatchers.IO) {
+            synchronized(loadedModels) {
+                loadedModels.getOrPut(languageCode) {
+                    Model(modelDir(context, languageCode).absolutePath)
+                }
             }
         }
 
@@ -203,6 +218,9 @@ object VoskSpeechEngine {
      * Startet eine Aufnahme über das Mikrofon. Tap-to-Talk: Der erste über
      * `onResult` gemeldete abgeschlossene Satz gilt als [onFinal] und beendet
      * die Aufnahme sofort - dieselbe Semantik wie bei [SpeechEngine.listen].
+     *
+     * Kann werfen (z. B. `IOException`, wenn das Mikrofon nicht initialisierbar
+     * oder das entpackte Modell beschädigt ist) - der Aufrufer muss das fangen.
      */
     suspend fun listen(
         context: Context,
@@ -217,13 +235,19 @@ object VoskSpeechEngine {
         // Eigener Name noetig: kollidiert sonst mit RecognitionListener.onError(Exception).
         val reportError = onError
 
+        // Idempotent: teardown kann doppelt angestossen werden (Stopp-Tipp des
+        // Nutzers zeitgleich mit onResult/onError des Erkennungs-Threads).
+        // recognizer.close() gibt den nativen Kaldi-Recognizer frei - ein
+        // zweites free auf denselben Zeiger waere ein nativer Absturz.
+        val closed = java.util.concurrent.atomic.AtomicBoolean(false)
         fun teardown() {
+            if (!closed.compareAndSet(false, true)) return
             runCatching { speechService.cancel() }
             runCatching { speechService.shutdown() }
             runCatching { recognizer.close() }
         }
 
-        speechService.startListening(object : org.vosk.android.RecognitionListener {
+        val started = speechService.startListening(object : org.vosk.android.RecognitionListener {
             override fun onPartialResult(hypothesis: String) {
                 extractText(hypothesis, "partial")?.let { if (it.isNotBlank()) onPartial(it) }
             }
@@ -250,6 +274,12 @@ object VoskSpeechEngine {
                 reportError("Nichts erkannt - bitte erneut versuchen.")
             }
         })
+        if (!started) {
+            // Kein Callback wird je kommen - sofort aufraeumen und melden,
+            // sonst bliebe die App im "hoert zu"-Zustand haengen.
+            teardown()
+            reportError("Aufnahme konnte nicht gestartet werden - bitte erneut versuchen.")
+        }
         return VoskSpeechSession(::teardown)
     }
 
@@ -258,7 +288,9 @@ object VoskSpeechEngine {
 
     /** Gibt alle geladenen Modelle frei (z. B. beim Verlassen des Screens). */
     fun closeAll() {
-        loadedModels.values.forEach { runCatching { it.close() } }
-        loadedModels.clear()
+        synchronized(loadedModels) {
+            loadedModels.values.forEach { runCatching { it.close() } }
+            loadedModels.clear()
+        }
     }
 }

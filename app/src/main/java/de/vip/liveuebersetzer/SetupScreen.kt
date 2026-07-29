@@ -232,6 +232,16 @@ fun SetupScreen(
                     Text("Fertig - zum Gespräch")
                 }
             }
+
+            item {
+                // Beim Verteilen von Test-Versionen war nie klar, welcher
+                // Stand auf einem Geraet laeuft - deshalb hier sichtbar.
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = "ViP Live-Übersetzer, Version ${BuildConfig.VERSION_NAME}",
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
         }
     }
 }

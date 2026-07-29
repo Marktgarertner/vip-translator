@@ -1,6 +1,8 @@
 package de.vip.liveuebersetzer
 
 import android.content.Context
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Einsatzbereitschaft einer Sprache auf diesem Gerät - Grundlage des
@@ -43,8 +45,14 @@ object Readiness {
      * kurz dauert. Für Ukrainisch/Arabisch muss das deutlich größere
      * Vosk-Modell dagegen vorher vollständig geladen sein.
      */
-    suspend fun check(context: Context, speechOutput: SpeechOutput): List<LanguageReadiness> =
-        LanguageCatalog.all.map { language ->
+    suspend fun check(context: Context, speechOutput: SpeechOutput): List<LanguageReadiness> {
+        // Die TTS-Engine initialisiert asynchron und braucht nach dem App-Start
+        // einen Moment. Ohne diese Wartezeit meldete der Assistent beim ersten
+        // Öffnen fälschlich für alle Sprachen "Stimme fehlt".
+        withTimeoutOrNull(3_000) {
+            while (!speechOutput.isReady) delay(150)
+        }
+        return LanguageCatalog.all.map { language ->
             LanguageReadiness(
                 language = language,
                 translationReady = runCatching { TranslationEngine.isModelDownloaded(language) }
@@ -53,4 +61,5 @@ object Readiness {
                 speechReady = SpeechEngine.isLiveSupported(context, language.code),
             )
         }
+    }
 }

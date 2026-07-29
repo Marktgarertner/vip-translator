@@ -246,22 +246,40 @@ private fun LiveUebersetzerScreen() {
             // Gebündelte Vosk-Erkennung (Ukrainisch/Arabisch): stoppt nach dem
             // Satz von selbst - dasselbe Tap-to-Talk-Verhalten wie unten.
             scope.launch {
-                activeVoskSession = VoskSpeechEngine.listen(
-                    context = context,
-                    languageCode = from.code,
-                    onPartial = { text -> liveTranscript = text },
-                    onFinal = { text ->
-                        liveTranscript = text
-                        activeVoskSession = null
-                        isListening = false
-                        translateAndAdd(from, to, text)
-                    },
-                    onError = { message ->
-                        activeVoskSession = null
-                        isListening = false
-                        errorMessage = message
-                    },
-                )
+                try {
+                    // Beim ersten Sprechen wird das Modell von der Platte in
+                    // den Speicher geladen - das kann spuerbar dauern, daher
+                    // derselbe "wird vorbereitet"-Hinweis wie beim ML-Kit-Pfad.
+                    isPreparingSpeechModel = true
+                    activeVoskSession = VoskSpeechEngine.listen(
+                        context = context,
+                        languageCode = from.code,
+                        onPartial = { text -> liveTranscript = text },
+                        onFinal = { text ->
+                            liveTranscript = text
+                            activeVoskSession = null
+                            isListening = false
+                            translateAndAdd(from, to, text)
+                        },
+                        onError = { message ->
+                            activeVoskSession = null
+                            isListening = false
+                            errorMessage = message
+                        },
+                    )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // Z. B. Mikrofon nicht initialisierbar oder Modell auf der
+                    // Platte beschaedigt - ohne dieses Fangnetz stuerzte die
+                    // App ab, statt eine Meldung zu zeigen.
+                    activeVoskSession = null
+                    isListening = false
+                    errorMessage = e.message
+                        ?: "Spracherkennung konnte nicht gestartet werden - im Menü \"Sprachpakete\" das Modell neu laden."
+                } finally {
+                    isPreparingSpeechModel = false
+                }
             }
             return
         }
@@ -903,7 +921,7 @@ private fun StaffEntryCard(
  * Sprache die Lage der **Sprachausgabe-Stimmen** (offline bereit / nur
  * online / fehlt) mit Probehören- und Installations-Button - so fällt eine
  * fehlende Stimme (typisch: Ukrainisch/Arabisch) VOR dem Kundengespräch auf.
- * Erreichbar über einen Klick auf das ViP-Logo (auf beiden Bildschirmhälften).
+ * Erreichbar über den Einrichtungs-Assistenten (Logo antippen → "Sprachpakete öffnen").
  */
 @Composable
 private fun ModelManagerScreen(

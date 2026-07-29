@@ -48,6 +48,13 @@ class SpeechOutput(context: Context) {
     private var ready = false
     private var rateApplied = false
 
+    /**
+     * Ob die TTS-Engine ihre asynchrone Initialisierung abgeschlossen hat.
+     * Direkt nach dem App-Start ist sie kurz `false` - Statusabfragen sollten
+     * darauf warten, statt fälschlich "keine Stimme" zu melden.
+     */
+    val isReady: Boolean get() = ready
+
     /** Beste Offline-Stimme je Sprachcode, einmal ermittelt und gemerkt. */
     private val voiceCache = HashMap<String, Voice>()
 

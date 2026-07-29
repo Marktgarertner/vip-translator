@@ -48,8 +48,13 @@ object TranslationEngine {
     /**
      * Übersetzt [text] von [source] nach [target]. Lädt das Sprachmodellpaar
      * bei Bedarf einmalig herunter (ohne WLAN-Zwang, kleine Modelle).
+     *
+     * Haben beide Seiten dieselbe Sprache gewählt (z. B. beide Deutsch),
+     * wird der Text unverändert durchgereicht statt sinnlos de→de durch
+     * ML Kit zu laufen - das betrifft auch die Schnellbausteine.
      */
     suspend fun translate(source: Language, target: Language, text: String): String {
+        if (source.code == target.code) return text
         val translator = translatorFor(source, target)
         translator.downloadModelIfNeeded(DownloadConditions.Builder().build()).await()
         return translator.translate(text).await()

@@ -15,8 +15,8 @@ android {
         // die SpeechEngine.isLiveSupported() separat prueft.
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     // Fester, eingecheckter Debug-Keystore (Standard-Praxis fuer Debug-APKs, die
@@ -51,6 +51,9 @@ android {
 
     buildFeatures {
         compose = true
+        // Fuer die Versionsanzeige im Einrichtungs-Assistenten
+        // (BuildConfig.VERSION_NAME) - ab AGP 8 nicht mehr Standard.
+        buildConfig = true
     }
 
     packaging {
