@@ -21,38 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # TEMPORÄR: alphacephei.com ist aus der Entwicklungs-Sandbox gesperrt.
-      # Hier wird geprüft, welche Vosk-Modelle für die gewünschten weiteren
-      # Sprachen (asiatischer Raum) tatsächlich existieren, bevor URLs in
-      # VoskSpeechEngine.kt hartkodiert werden. Wird danach wieder entfernt.
-      - name: Vosk-Modelle für weitere Sprachen prüfen (Diagnose)
-        run: |
-          check() {
-            code=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 20 "$1" || echo "ERR")
-            size=$(curl -sI --max-time 20 "$1" | tr -d '\r' | awk 'tolower($1)=="content-length:"{print $2}')
-            if [ "$code" = "200" ]; then
-              mb=$(( ${size:-0} / 1048576 ))
-              echo "OK   ${mb} MB  $1"
-            else
-              echo "$code        $1"
-            fi
-          }
-          for u in \
-            vosk-model-small-cn-0.22 vosk-model-cn-0.22 \
-            vosk-model-small-ja-0.22 vosk-model-ja-0.22 \
-            vosk-model-small-ko-0.22 vosk-model-ko-0.22 \
-            vosk-model-small-hi-0.22 vosk-model-hi-0.22 \
-            vosk-model-small-fa-0.5 vosk-model-small-fa-0.42 vosk-model-fa-0.5 \
-            vosk-model-small-th-0.1 vosk-model-small-id-0.22 vosk-model-small-ur-0.22 \
-            vosk-model-small-tr-0.3 vosk-model-small-pl-0.22 \
-            ; do
-            check "https://alphacephei.com/vosk/models/${u}.zip"
-          done
-          echo "=== Modell-Uebersichtsseite (Sprachnamen) ==="
-          curl -sS --max-time 25 "https://alphacephei.com/vosk/models" \
-            | grep -oE '>[A-Z][a-z]+( [A-Za-z]+)?</h2>|vosk-model-[a-z0-9.-]+' \
-            | sort -u | head -120 || echo "Seite nicht abrufbar"
-
       - name: JDK 17 einrichten
         uses: actions/setup-java@v4
         with:

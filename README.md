@@ -2,7 +2,7 @@
 
 Natives Android-Projekt (Kotlin, Jetpack Compose) für den Einsatz an
 Kundenschaltern eines Verkehrsunternehmens: Text- und Live-Sprachübersetzung
-für 11 Sprachen, vollständig on-device.
+für 16 Sprachen, vollständig on-device.
 
 ## Warum on-device?
 
@@ -14,7 +14,7 @@ Richtung eines Drittanbieters verlassen. Deshalb:
   Sprachmodellpaars läuft die Übersetzung komplett offline.
 - **Live-Spracherkennung** läuft über [ML Kit GenAI Speech Recognition](https://developers.google.com/ml-kit/genai/speech-recognition/android)
   (`com.google.mlkit:genai-speech-recognition:1.0.0-alpha1`, **Alpha-Status**)
-  für 9 der 11 Sprachen, für Ukrainisch/Arabisch über die gebündelte
+  für 9 der 16 Sprachen, für die übrigen über die gebündelte
   Offline-Erkennung [Vosk](https://alphacephei.com/vosk) (Apache-2.0, siehe
   Abschnitt "Vosk-Modelle"). In beiden Fällen: einmaliger Modell-Download,
   danach reine On-Device-Inferenz.
@@ -31,7 +31,7 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 
 | Datei | Zweck |
 |---|---|
-| `LanguageCatalog.kt` | Die 11 unterstützten Sprachen, Anzeigenamen, ML-Kit-Sprachkonstanten, Live-Speech-Unterstützung pro Sprache |
+| `LanguageCatalog.kt` | Die unterstützten Sprachen, Anzeigenamen, ML-Kit-Sprachkonstanten, Live-Speech-Unterstützung pro Sprache |
 | `TranslationEngine.kt` | Wrapper um ML Kit Translate (Translator-Cache pro Sprachpaar, Modell-Download, `translate()`) |
 | `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow) plus die Engine-Weiche `engineFor()`: entscheidet pro Sprache zwischen ML Kit, Vosk und "kein Live" |
 | `VoskSpeechEngine.kt` | Zweite Live-Engine: [Vosk](https://alphacephei.com/vosk) (Apache-2.0), direkt in die App gebündelt statt über einen Android-Systemdienst - für Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch). Modell-Download/-Entpacken, Recognizer-Erstellung, `SpeechService`-Listener |
@@ -46,7 +46,7 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 
 ## Sprachcoverage
 
-Übersetzung deckt alle 11 Sprachen ab. Die Live-Spracherkennung läuft
+Übersetzung deckt alle 16 Sprachen ab. Die Live-Spracherkennung läuft
 **zweigleisig** - beide Wege vollständig on-device:
 
 | Sprache | Code | Übersetzung | Live-Spracherkennung über |
@@ -62,16 +62,21 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | Italienisch | `it` | ✅ | ML Kit |
 | Ukrainisch | `uk` | ✅ | Vosk (gebündelt)* |
 | Arabisch | `ar` | ✅ | Vosk (gebündelt)* |
+| Chinesisch | `zh` | ✅ | Vosk (gebündelt)* |
+| Japanisch | `ja` | ✅ | Vosk (gebündelt)* |
+| Koreanisch | `ko` | ✅ | Vosk (gebündelt)* |
+| Hindi | `hi` | ✅ | Vosk (gebündelt)* |
+| Persisch | `fa` | ✅ | Vosk (gebündelt)* |
 
 \* Anders als bei den 9 ML-Kit-Sprachen wird hier NICHT beim ersten
-Mikro-Tap spontan nachgeladen - das Vosk-Modell (~137 MB für Ukrainisch,
-~318 MB für Arabisch) muss vorher im Menü "Sprachpakete" heruntergeladen
-worden sein, siehe Abschnitt
-"Vosk-Modelle" unten.
+Mikro-Tap spontan nachgeladen - das Vosk-Modell (41-318 MB je nach Sprache)
+muss vorher im Menü "Sprachpakete" heruntergeladen worden sein, siehe
+Abschnitt "Vosk-Modelle" unten.
 
 **Warum zwei Engines (bewusste Entscheidung, siehe Kommentare in
 `LanguageCatalog.kt`/`SpeechEngine.kt`/`VoskSpeechEngine.kt`):** ML Kit
-GenAI Speech Recognition listet im "Basic"-Modus kein Ukrainisch; Arabisch
+GenAI Speech Recognition listet im "Basic"-Modus weder Ukrainisch noch die
+asiatischen Sprachen; Arabisch
 ist dort nur im "Advanced"-Modus verfügbar, der laut Google-Doku (Stand Juli
 2026) exklusiv auf Pixel-10-Geräten läuft. Naheliegend wäre für diese beiden
 Sprachen die **geräteinterne Android-Systemerkennung**
@@ -117,7 +122,7 @@ das UI ist deshalb ein **Splitscreen**:
   Kundensprache beschriftet (`Language.tapToSpeak`).
 - **Sprachauswahl oben rechts, pro Seite:** Ein kompakter weißer Button in
   der Kopfleiste; Antippen blendet darunter eine horizontal scrollbare
-  Chip-Reihe mit allen 11 Sprachen ein (`PaneHeader`). Auf der Kundenseite in
+  Chip-Reihe mit allen Sprachen ein (`PaneHeader`). Auf der Kundenseite in
   den jeweils **eigenen Sprachnamen** (`Language.nativeName`, z. B. "Türkçe",
   "Русский"), auf der Mitarbeiterseite in den **deutschen Bezeichnungen**
   (`Language.displayName`). Bewusst kein `DropdownMenu`/Popup: ein Popup
@@ -163,8 +168,8 @@ technisch versierte Nutzer:
   allerersten Start automatisch): sagt in Klartext, ob das Gerät einsatzbereit
   ist. Mikrofonfreigabe (mit Knopf zum Nachholen) und pro Sprache, ob
   Übersetzung, Offline-Stimme und Spracheingabe vorhanden sind - inklusive
-  Zählerzeile "X von 11 Sprachen vollständig einsatzbereit". Hintergrund: Die
-  App braucht inzwischen Berechtigungen, 11 Übersetzungsmodelle, TTS-Stimmen
+  Zählerzeile "X von 16 Sprachen vollständig einsatzbereit". Hintergrund: Die
+  App braucht inzwischen Berechtigungen, 16 Übersetzungsmodelle, TTS-Stimmen
   und für Ukrainisch/Arabisch mehrere hundert MB Vosk-Modelle - von außen ist
   nicht erkennbar, was davon fehlt. Genau daran blieb ein nicht geladenes
   Vosk-Modell lange unbemerkt. Der Bildschirm ist zugleich das Menü zu
@@ -209,14 +214,26 @@ Apache-2.0), direkt in die App gebündelt statt über einen
 Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung.
 
 - **Modelle werden nicht in der APK mitgeliefert** (würde Debug-Builds
-  unhandlich groß machen), sondern im Menü "Sprachpakete" heruntergeladen:
-  Ukrainisch [`vosk-model-small-uk-v3-small`](https://alphacephei.com/vosk/models)
-  (~137 MB, "small"-Variante), Arabisch **`vosk-model-ar-mgb2-0.4`** (~318 MB,
-  **nicht** die "small"-Variante - siehe nächster Punkt). Beide URLs sind
-  per HTTP-HEAD gegen die echten, von alphacephei.com ausgelieferten Dateien
-  verifiziert (der Host selbst war aus der Entwicklungs-Sandbox nicht direkt
-  erreichbar, siehe "Build-Verifikation" unten - die Prüfung lief über einen
-  temporären Schritt im echten CI-Workflow).
+  unhandlich groß machen), sondern im Menü "Sprachpakete" heruntergeladen.
+  Alle URLs und Größen sind per HTTP-HEAD gegen die echten, von
+  [alphacephei.com](https://alphacephei.com/vosk/models) ausgelieferten
+  Dateien verifiziert (der Host ist aus der Entwicklungs-Sandbox nicht
+  erreichbar, siehe "Build-Verifikation" - die Prüfung lief über einen
+  temporären Schritt im echten CI-Workflow):
+
+  | Sprache | Modell | Größe |
+  |---|---|---:|
+  | Chinesisch | `vosk-model-small-cn-0.22` | ~41 MB |
+  | Hindi | `vosk-model-small-hi-0.22` | ~42 MB |
+  | Japanisch | `vosk-model-small-ja-0.22` | ~47 MB |
+  | Persisch | `vosk-model-small-fa-0.5` | ~59 MB |
+  | Koreanisch | `vosk-model-small-ko-0.22` | ~82 MB |
+  | Ukrainisch | `vosk-model-small-uk-v3-small` | ~137 MB |
+  | Arabisch | `vosk-model-ar-mgb2-0.4` | ~318 MB |
+
+  Die Modelle werden **einzeln pro Sprache** geladen - es muss nie alles auf
+  ein Gerät. Vosk nutzt für Chinesisch das Kürzel `cn`, die App bleibt beim
+  ISO-Code `zh`.
 - **Warum Arabisch kein "small"-Modell nutzt (Praxistest-Korrektur):**
   Ursprünglich war `vosk-model-small-ar-0.3` (~100 MB) vorgesehen - ein
   Praxistest zeigte, dass es zwar aufnimmt, aber praktisch nichts brauchbar
@@ -238,7 +255,15 @@ Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung.
 - **Bleibt vollständig on-device:** Nach dem einmaligen Download läuft die
   Erkennung komplett offline auf dem Gerät (Kaldi-Engine über JNA/native
   Bibliothek, in der AAR enthalten) - kein Unterschied zum
-  Datenschutz-Anspruch der anderen 9 Sprachen.
+  Datenschutz-Anspruch der übrigen Sprachen.
+- **Warum Thai, Indonesisch und Urdu (noch) fehlen:** ML Kit Translate
+  könnte sie übersetzen, aber Vosk bietet für sie kein Modell an (per
+  CI gegen den Modell-Katalog geprüft: 404). Ohne Spracherkennung wären
+  sie eine Einbahnstraße - Mitarbeiter:in könnte etwas sagen, der Kunde
+  aber nicht antworten. Da die App bewusst kein Texteingabefeld mehr hat,
+  wurden sie deshalb nicht aufgenommen. Bei konkretem Bedarf wären die
+  Optionen: ein kleines Texteingabefeld nur für solche Sprachen, oder eine
+  andere Erkennungs-Bibliothek (z. B. Whisper-Ableger) zusätzlich einbinden.
 
 ## ÖPNV-Fachwortschatz (Erkennungs-Nachkorrektur)
 

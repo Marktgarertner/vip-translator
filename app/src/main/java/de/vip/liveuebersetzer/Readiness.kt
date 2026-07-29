@@ -36,14 +36,14 @@ data class LanguageReadiness(
 object Readiness {
 
     /**
-     * Prüft alle 11 Sprachen. Die Übersetzungsprüfung fragt ML Kit ab und ist
+     * Prüft alle Sprachen des Katalogs. Die Übersetzungsprüfung fragt ML Kit ab und ist
      * deshalb `suspend`.
      *
      * Hinweis zur Live-Erkennung: Für die ML-Kit-Sprachen gilt sie als bereit,
      * sobald das Gerät sie grundsätzlich unterstützt (Android 12+) - ML Kit
      * lädt sein Erkennungsmodell beim ersten Sprechen selbst nach, was nur
-     * kurz dauert. Für Ukrainisch/Arabisch muss das deutlich größere
-     * Vosk-Modell dagegen vorher vollständig geladen sein.
+     * kurz dauert. Für die Vosk-Sprachen muss das Modell dagegen vorher
+     * vollständig geladen sein.
      */
     suspend fun check(context: Context, speechOutput: SpeechOutput): List<LanguageReadiness> {
         // Die TTS-Engine initialisiert asynchron und braucht nach dem App-Start

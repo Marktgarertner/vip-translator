@@ -693,7 +693,7 @@ private fun CustomerPane(
  * Kreis (Klick öffnet die Sprachpakete), rechts die Sprachauswahl - dazwischen
  * optionale Aktionen ([extras], z. B. Lautsprecher/Papierkorb der
  * Mitarbeiterseite). Ein Antippen der Sprachauswahl blendet darunter eine
- * horizontal scrollbare Chip-Reihe aller 11 Sprachen ein. Bewusst ohne
+ * horizontal scrollbare Chip-Reihe aller Sprachen ein. Bewusst ohne
  * Popup-Menü (das würde in der um 180° gedrehten Kundenhälfte falsch
  * positioniert/orientiert erscheinen) - stattdessen normales Layout, das mit
  * der Elternhälfte mitrotiert.

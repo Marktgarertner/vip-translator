@@ -62,6 +62,15 @@ object VoskSpeechEngine {
     private val modelUrls = mapOf(
         "uk" to "https://alphacephei.com/vosk/models/vosk-model-small-uk-v3-small.zip", // ~137 MB
         "ar" to "https://alphacephei.com/vosk/models/vosk-model-ar-mgb2-0.4.zip", // ~318 MB
+        // Auf Wunsch aus dem Praxistest ergänzt. Die "small"-Modelle sind hier
+        // erfreulich kompakt - alle fünf zusammen bleiben unter dem einen
+        // arabischen Modell. Vosk verwendet für Chinesisch den Kürzel "cn",
+        // die App bleibt beim ISO-Code "zh".
+        "zh" to "https://alphacephei.com/vosk/models/vosk-model-small-cn-0.22.zip", // ~41 MB
+        "ja" to "https://alphacephei.com/vosk/models/vosk-model-small-ja-0.22.zip", // ~47 MB
+        "ko" to "https://alphacephei.com/vosk/models/vosk-model-small-ko-0.22.zip", // ~82 MB
+        "hi" to "https://alphacephei.com/vosk/models/vosk-model-small-hi-0.22.zip", // ~42 MB
+        "fa" to "https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip", // ~59 MB
     )
 
     private val loadedModels = HashMap<String, Model>()
