@@ -1,12 +1,13 @@
 name: Build APK
 
-# Diese Session konnte den Build nicht lokal validieren: die Sandbox-Egress-
-# Policy blockiert dl.google.com / maven.google.com / developers.google.com,
-# wodurch weder AndroidX/Compose noch ML Kit (Translate, GenAI Speech
-# Recognition) noch Android-SDK-Komponenten auflösbar waren. Dieser Workflow
-# läuft auf einem GitHub-Runner mit vollem Internetzugriff und ist damit die
-# eigentliche, verbindliche Build-Verifikation für dieses Projekt. Siehe
-# README.md, Abschnitt "Build-Verifikation".
+# Die frühen Entwicklungs-Sessions konnten den Build nicht lokal validieren:
+# ihre Sandbox-Egress-Policy blockierte dl.google.com / maven.google.com /
+# developers.google.com, wodurch weder AndroidX/Compose noch ML Kit (Translate,
+# GenAI Speech Recognition) noch Android-SDK-Komponenten auflösbar waren.
+# Dieser Workflow läuft auf einem GitHub-Runner mit vollem Internetzugriff und
+# ist damit die verbindliche Build-Verifikation für dieses Projekt - auch
+# seit Version 1.2 lokal gebaut werden konnte. Siehe README.md, Abschnitt
+# "Build-Verifikation".
 
 on:
   push:
@@ -27,11 +28,22 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Android SDK einrichten
-        uses: android-actions/setup-android@v3
-
-      - name: Android-Plattform & Build-Tools installieren
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      # Das ubuntu-latest-Runner-Image bringt das Android-SDK samt Platform 34
+      # und Build-Tools 34.0.0 bereits mit (ANDROID_HOME ist gesetzt). Die
+      # früher genutzte Action android-actions/setup-android@v3 ist seit
+      # Oktober 2026 unbrauchbar: Sie installiert standardmäßig das SDK-Paket
+      # "tools", das Google aus dem Repository entfernt hat ("Failed to find
+      # package 'tools'") - der Lauf brach damit vor dem ersten Gradle-Aufruf
+      # ab. Dieser Schritt stellt die beiden Pakete nur noch sicher (idempotent:
+      # sind sie da, passiert nichts).
+      - name: Android-Plattform & Build-Tools sicherstellen
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | tail -1)"
+          fi
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Gradle 8.7 einrichten
         uses: gradle/actions/setup-gradle@v4

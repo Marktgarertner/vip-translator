@@ -474,6 +474,16 @@ Damit liefen Unit-Tests und `assembleDebug` erstmals vor dem Push durch, und
 die ML-Kit-AARs konnten direkt aus dem Gradle-Cache introspiziert werden
 (`DownloadStatus`, siehe oben).
 
+**CI-Workflow repariert (10/2026):** Der erste CI-Lauf von 1.2 brach vor
+dem ersten Gradle-Aufruf ab - nicht am Code, sondern an
+`android-actions/setup-android@v3`: Die Action installiert standardmäßig
+das SDK-Paket `tools`, das Google inzwischen aus dem Repository entfernt
+hat ("Failed to find package 'tools'"). Der letzte grüne Lauf war im Juli.
+Da das `ubuntu-latest`-Runner-Image das Android-SDK samt Platform 34 und
+Build-Tools 34.0.0 ohnehin vorinstalliert mitbringt (`ANDROID_HOME`
+gesetzt), ist die Action ersatzlos gestrichen; ein idempotenter
+`sdkmanager`-Aufruf stellt die beiden Pakete nur noch sicher.
+
 **Warum ursprünglich CI statt eines lokalen Builds:** Die Entwicklungs-Sandbox,
 in der dieses Projekt geschrieben wurde, hatte eine Egress-Policy, die u. a.
 `dl.google.com`, `maven.google.com` und `developers.google.com` blockiert
