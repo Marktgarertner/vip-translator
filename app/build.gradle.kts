@@ -15,8 +15,8 @@ android {
         // die SpeechEngine.isLiveSupported() separat prueft.
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
     }
 
     // Fester, eingecheckter Debug-Keystore (Standard-Praxis fuer Debug-APKs, die

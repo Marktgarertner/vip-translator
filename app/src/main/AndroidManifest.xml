@@ -19,9 +19,17 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <!--
+          configChanges: Ohne diese Liste wird die Activity beim Drehen des
+          Geräts, beim Umschalten des dunklen Modus oder beim Einklappen einer
+          Tastatur neu erzeugt - und mit ihr der komplett im Arbeitsspeicher
+          gehaltene Gesprächsverlauf (bewusst nicht persistiert, siehe README).
+          Compose verarbeitet diese Änderungen auch ohne Neustart korrekt.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|locale|layoutDirection"
             android:theme="@android:style/Theme.Material.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

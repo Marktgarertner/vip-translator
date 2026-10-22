@@ -31,7 +31,7 @@ class TransitGlossaryTest {
         tapToSpeak = "",
         mlKitLanguage = code,
         speechLocaleTag = code,
-        mlKitLiveSpeech = true,
+        mlKitSpeechLocaleTag = code,
     )
 
     private val german = language("de")

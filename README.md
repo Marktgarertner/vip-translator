@@ -13,11 +13,12 @@ Richtung eines Drittanbieters verlassen. Deshalb:
   (`com.google.mlkit:translate`, stabil/GA). Nach einmaligem Download des
   Sprachmodellpaars läuft die Übersetzung komplett offline.
 - **Live-Spracherkennung** läuft über [ML Kit GenAI Speech Recognition](https://developers.google.com/ml-kit/genai/speech-recognition/android)
-  (`com.google.mlkit:genai-speech-recognition:1.0.0-alpha1`, **Alpha-Status**)
-  für 9 der 16 Sprachen, für die übrigen über die gebündelte
-  Offline-Erkennung [Vosk](https://alphacephei.com/vosk) (Apache-2.0, siehe
-  Abschnitt "Vosk-Modelle"). In beiden Fällen: einmaliger Modell-Download,
-  danach reine On-Device-Inferenz.
+  (`com.google.mlkit:genai-speech-recognition:1.0.0-alpha1`, **Alpha-Status**,
+  Basic-Modus) für 13 der 16 Sprachen, für Ukrainisch, Arabisch und Persisch
+  über die gebündelte Offline-Erkennung [Vosk](https://alphacephei.com/vosk)
+  (Apache-2.0, siehe Abschnitt "Vosk-Modelle"); Chinesisch, Japanisch,
+  Koreanisch und Hindi können beides (siehe "Sprachcoverage"). In allen
+  Fällen: einmaliger Modell-Download, danach reine On-Device-Inferenz.
 - Es gibt **bewusst keinen Cloud-Fallback**, auch nicht für Sprachen ohne
   Live-Unterstützung. Die einzige Internetnutzung der App ist der einmalige
   Download der on-device-Modelle - von Googles ML-Kit-Servern bzw. von
@@ -33,8 +34,9 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 |---|---|
 | `LanguageCatalog.kt` | Die unterstützten Sprachen, Anzeigenamen, ML-Kit-Sprachkonstanten, Live-Speech-Unterstützung pro Sprache |
 | `TranslationEngine.kt` | Wrapper um ML Kit Translate (Translator-Cache pro Sprachpaar, Modell-Download, `translate()`) |
-| `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Download, `startRecognition()`-Flow) plus die Engine-Weiche `engineFor()`: entscheidet pro Sprache zwischen ML Kit, Vosk und "kein Live" |
-| `VoskSpeechEngine.kt` | Zweite Live-Engine: [Vosk](https://alphacephei.com/vosk) (Apache-2.0), direkt in die App gebündelt statt über einen Android-Systemdienst - für Sprachen ohne ML-Kit-Abdeckung (Ukrainisch, Arabisch). Modell-Download/-Entpacken, Recognizer-Erstellung, `SpeechService`-Listener |
+| `SpeechEngine.kt` | Wrapper um ML Kit GenAI Speech Recognition (Recognizer-Erstellung, Modell-Status/-Download mit Fortschritt, `startRecognition()`-Flow) plus die Engine-Weiche `engineFor()`: entscheidet pro Sprache zwischen Vosk (wenn Modell geladen), ML Kit und "kein Live" |
+| `VoskSpeechEngine.kt` | Zweite Live-Engine: [Vosk](https://alphacephei.com/vosk) (Apache-2.0), direkt in die App gebündelt statt über einen Android-Systemdienst - einziger Weg für Ukrainisch, Arabisch, Persisch; erprobte Alternative für Chinesisch, Japanisch, Koreanisch, Hindi. Modell-Download/-Entpacken, Recognizer-Erstellung, `SpeechService`-Listener |
+| `ModelDownloads.kt` | App-weiter Zustand aller Sprachpaket-Downloads (Übersetzung, ML-Kit-Erkennung, Vosk) - läuft außerhalb der Compose-Hierarchie weiter, auch wenn das Menü verlassen wird |
 | `SpeechOutput.kt` | Sprachausgabe über die systemeigene Android-TTS-Engine (on-device): wählt automatisch die beste installierte Offline-Stimme pro Sprache, leicht reduziertes Sprechtempo, Absprung in die TTS-Einstellungen bei fehlender Stimme |
 | `TransitGlossary.kt` | ÖPNV-/ViP-Fachwortschatz mit Nachkorrektur des erkannten Textes (zerlegte Komposita, lautähnlich verschriebene Eigennamen) - siehe eigenen Abschnitt unten |
 | `AppSettings.kt` | Gerätelokale Einstellungen (Ersteinrichtung erledigt, selbst gepflegte Fachbegriffe) - bewusst **keine** Gesprächsinhalte |
@@ -60,26 +62,36 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | Französisch | `fr` | ✅ | ML Kit |
 | Spanisch | `es` | ✅ | ML Kit |
 | Italienisch | `it` | ✅ | ML Kit |
+| Chinesisch | `zh` | ✅ | ML Kit (`cmn-Hans-CN`) **oder** Vosk (gebündelt)*† |
+| Japanisch | `ja` | ✅ | ML Kit **oder** Vosk (gebündelt)*† |
+| Koreanisch | `ko` | ✅ | ML Kit **oder** Vosk (gebündelt)*† |
+| Hindi | `hi` | ✅ | ML Kit **oder** Vosk (gebündelt)*† |
 | Ukrainisch | `uk` | ✅ | Vosk (gebündelt)* |
 | Arabisch | `ar` | ✅ | Vosk (gebündelt)* |
-| Chinesisch | `zh` | ✅ | Vosk (gebündelt)* |
-| Japanisch | `ja` | ✅ | Vosk (gebündelt)* |
-| Koreanisch | `ko` | ✅ | Vosk (gebündelt)* |
-| Hindi | `hi` | ✅ | Vosk (gebündelt)* |
 | Persisch | `fa` | ✅ | Vosk (gebündelt)* |
 
-\* Anders als bei den 9 ML-Kit-Sprachen wird hier NICHT beim ersten
-Mikro-Tap spontan nachgeladen - das Vosk-Modell (41-318 MB je nach Sprache)
-muss vorher im Menü "Sprachpakete" heruntergeladen worden sein, siehe
-Abschnitt "Vosk-Modelle" unten.
+\* Anders als bei ML Kit wird hier NICHT beim ersten Mikro-Tap spontan
+nachgeladen - das Vosk-Modell (41-318 MB je nach Sprache) muss vorher im
+Menü "Sprachpakete" heruntergeladen worden sein, siehe Abschnitt
+"Vosk-Modelle" unten.
+
+† **Zweigleisig:** Ein geladenes Vosk-Modell hat Vorrang (dieser Pfad ist am
+Testgerät erprobt). Ohne Vosk-Modell versucht die App ML Kit - der erste
+Mikro-Tap lädt dann wie bei den anderen ML-Kit-Sprachen das Erkennungsmodell
+nach. Das Sprachpakete-Menü zeigt beide Wege und bietet das Vosk-Modell als
+"eigenes Sprachmodell" an, falls die Android-Erkennung auf dem Gerät nicht
+verfügbar ist oder schlecht versteht.
 
 **Warum zwei Engines (bewusste Entscheidung, siehe Kommentare in
-`LanguageCatalog.kt`/`SpeechEngine.kt`/`VoskSpeechEngine.kt`):** ML Kit
-GenAI Speech Recognition listet im "Basic"-Modus weder Ukrainisch noch die
-asiatischen Sprachen; Arabisch
-ist dort nur im "Advanced"-Modus verfügbar, der laut Google-Doku (Stand Juli
-2026) exklusiv auf Pixel-10-Geräten läuft. Naheliegend wäre für diese beiden
-Sprachen die **geräteinterne Android-Systemerkennung**
+`LanguageCatalog.kt`/`SpeechEngine.kt`/`VoskSpeechEngine.kt`):** Die
+aktuelle Google-Doku (Stand Oktober 2026, in dieser Session erstmals direkt
+lesbar - frühere Sessions mussten die Sprachliste aus Suchmaschinen-Snippets
+rekonstruieren, siehe "Build-Verifikation") nennt für den "Basic"-Modus die
+Locales en-US, fr-FR, it-IT, de-DE, es-ES, hi-IN, ja-JP, pt-BR, tr-TR,
+pl-PL, cmn-Hans-CN, ko-KR, cmn-Hant-TW, ru-RU, vi-VN. **Ukrainisch, Arabisch
+und Persisch fehlen** (Arabisch gibt es nur im "Advanced"-Modus, der laut
+Doku exklusiv auf Pixel 10/11 läuft). Naheliegend wäre für diese Sprachen
+die **geräteinterne Android-Systemerkennung**
 (`SpeechRecognizer.createOnDeviceSpeechRecognizer`, Android 12+) gewesen -
 der einzige Weg dorthin, der eine geräteinterne Verarbeitung garantiert
 (der ältere `createSpeechRecognizer` + `EXTRA_PREFER_OFFLINE` "bevorzugt"
@@ -98,6 +110,11 @@ and higher" - `SpeechEngine.isLiveSupported()` prüft das und deaktiviert die
 Sprechtasten für die ML-Kit-Sprachen unterhalb davon. Vosk hat diese
 Einschränkung nicht (reine Kotlin/JNA-Bibliothek ohne Android-Systemdienst)
 und läuft bereits ab `minSdk 26`.
+
+Fehlt für eine Seite die Sprechtaste (Vosk-Modell nicht geladen, Android zu
+alt), steht der Grund seit Version 1.2 in Klartext auf der Mitarbeiterseite
+("Für Ukrainisch ist das Sprachmodell noch nicht geladen … Logo antippen →
+Sprachpakete") - vorher verschwand die Taste kommentarlos.
 
 ## Splitscreen & ViP-Branding
 
@@ -179,7 +196,14 @@ technisch versierte Nutzer:
   setzt beide Sprachen auf Standard zurück. Zusätzlich räumt sich der Verlauf
   **nach fünf Minuten ohne neuen Beitrag von selbst ab** - ein
   Datenschutz-Sicherheitsnetz, falls das Zurücksetzen vergessen wird, denn
-  kein Kunde soll das Gespräch des Vorgängers sehen.
+  kein Kunde soll das Gespräch des Vorgängers sehen. Solange ein Gespräch
+  läuft (Verlauf nicht leer oder Mikrofon offen), bleibt das **Display an**;
+  nach dem Abräumen darf das Gerät wieder normal abdunkeln.
+- **Zurück-Taste und Drehen:** Die Android-Zurück-Taste führt in den Menüs
+  eine Ebene zurück statt die App zu beenden. Drehen des Geräts, Umschalten
+  des dunklen Modus oder Einklappen einer Tastatur erzeugen die Activity
+  nicht mehr neu (`android:configChanges` im Manifest) - vorher war damit
+  der komplette, bewusst nur im Arbeitsspeicher gehaltene Verlauf weg.
 - **Schnellbausteine** (`StaffPhrases.kt` / `PhrasesScreen.kt`, Listen-Symbol
   in der Kopfleiste): häufige Schaltersätze, die auf Tastendruck übersetzt,
   vorgelesen und in den Verlauf eingetragen werden. **Die mitgelieferte
@@ -199,19 +223,30 @@ technisch versierte Nutzer:
   abgebrochen, und gesprochen wird grundsätzlich nie, solange das Mikrofon
   offen ist. Für den nächsten Satz das Mikrofon einfach erneut antippen.
 - **Sprachpakete-Menü (über Logo → Einrichtung erreichbar):** Pro Sprache lassen sich
-  Übersetzungsmodell und (wo verfügbar) Live-Erkennungsmodell **vorab
-  herunterladen** - einmalig mit Internet vorbereiten, danach entsteht am
-  Schalter keine Wartezeit durch spontane Modell-Downloads. Der Status pro
-  Sprache (geprüft über `RemoteModelManager`) wird angezeigt.
+  Übersetzungsmodell und Live-Erkennungsmodell **vorab herunterladen** -
+  einmalig mit Internet vorbereiten, danach entsteht am Schalter keine
+  Wartezeit durch spontane Modell-Downloads. Der Status pro Sprache wird
+  angezeigt: Übersetzung (über `RemoteModelManager`), ML-Kit-Erkennungsmodell
+  (über `SpeechRecognizer.checkStatus()` - bisher galt die ML-Kit-Erkennung
+  pauschal als bereit, und der erste Mikro-Tap am Schalter löste dann den
+  Download aus) und Vosk-Modell. **Downloads laufen weiter, wenn das Menü
+  verlassen wird** (`ModelDownloads.kt`): Vorher liefen sie im Scope des
+  Menüs und wurden beim Tipp auf "Zurück" still abgebrochen - beim 318-MB-
+  Modell für Arabisch hieß das: von vorn, ohne Hinweis. Fehler werden pro
+  Teil gemeldet; ein gescheitertes Erkennungsmodell macht eine fertige
+  Übersetzung nicht mehr rückgängig.
 - **Auto-Scroll:** Beide Verlaufslisten (Kunden- und Mitarbeiterseite)
   scrollen bei jedem neuen Beitrag automatisch zum aktuellsten Eintrag.
 
-## Vosk-Modelle (Ukrainisch/Arabisch)
+## Vosk-Modelle (Ukrainisch, Arabisch, Persisch - und als Alternative für zh/ja/ko/hi)
 
-Die Live-Erkennung für Ukrainisch und Arabisch läuft über
+Die Live-Erkennung für Ukrainisch, Arabisch und Persisch läuft über
 [Vosk](https://alphacephei.com/vosk) (`com.alphacephei:vosk-android:0.3.75`,
 Apache-2.0), direkt in die App gebündelt statt über einen
-Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung.
+Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung. Für
+Chinesisch, Japanisch, Koreanisch und Hindi ist Vosk der am Testgerät
+erprobte Weg und hat Vorrang, sobald das Modell geladen ist; ohne Modell
+greift ML Kit.
 
 - **Modelle werden nicht in der APK mitgeliefert** (würde Debug-Builds
   unhandlich groß machen), sondern im Menü "Sprachpakete" heruntergeladen.
@@ -247,11 +282,18 @@ Android-Systemdienst - siehe "Sprachcoverage" oben für die Begründung.
   (wie hier geschehen), gilt ein bereits heruntergeladenes altes Modell
   automatisch als veraltet und wird beim nächsten "Laden" ersetzt.
 - **Größerer, einmaliger Download:** Die Statuszeile "Live-Erkennung: ..." im
-  Sprachpakete-Menü zeigt den Fortschritt in Prozent; am besten über WLAN
-  vorbereiten, bevor die Sprache am Schalter gebraucht wird. Anders als bei
-  den ML-Kit-Sprachen wird hier **nicht** beim ersten Mikro-Tap spontan
-  nachgeladen - dafür sind die Modelle zu groß, die Sprechtaste bleibt bis
-  zum Abschluss des Downloads deaktiviert.
+  Sprachpakete-Menü zeigt den Fortschritt in Prozent (gezählt werden die
+  heruntergeladenen, komprimierten Bytes - vorher die entpackten, weshalb
+  die Anzeige über 100 % hinauslief); am besten über WLAN vorbereiten, bevor
+  die Sprache am Schalter gebraucht wird. Anders als bei den ML-Kit-Sprachen
+  wird hier **nicht** beim ersten Mikro-Tap spontan nachgeladen - dafür sind
+  die Modelle zu groß, die Sprechtaste bleibt bis zum Abschluss des Downloads
+  deaktiviert.
+- **Stille am Anfang:** Vosk meldet nach wenigen Sekunden ohne Sprache ein
+  leeres Ergebnis. Früher beendete das die Aufnahme mit "Nichts erkannt",
+  oft bevor der Kunde überhaupt angefangen hatte. Leere Ergebnisse werden
+  jetzt ignoriert, die Aufnahme läuft bis zum ersten Satz weiter - begrenzt
+  durch Vosks eigenen Timeout von 30 s, danach kommt die Meldung zu Recht.
 - **Bleibt vollständig on-device:** Nach dem einmaligen Download läuft die
   Erkennung komplett offline auf dem Gerät (Kaldi-Engine über JNA/native
   Bibliothek, in der AAR enthalten) - kein Unterschied zum
@@ -344,12 +386,17 @@ Ausbauschritt eine feste Begriffstabelle, die solche Terme nach der
   Locale-Tag (z. B. `de-DE` statt nur `de`) für eine passendere Stimmwahl.
   Fehlt für eine Sprache jede Stimme, bietet die Mitarbeiterseite einen
   Button **"Sprachausgabe-Einstellungen öffnen"** an, der direkt zu den
-  Android-TTS-Einstellungen führt (dort Offline-Stimmen nachinstallieren).
+  Android-TTS-Einstellungen führt (dort Offline-Stimmen nachinstallieren) -
+  mit einer Meldung, die die Ursache nennt (Engine startet noch / nur
+  Online-Stimme / keine Stimme). Bleibt eine Übersetzung im Gespräch stumm,
+  erscheint dieselbe Meldung; vorher schwieg die App ohne Erklärung.
   **Datenschutz-Absicherung:** Sind für eine Sprache ausschließlich
   Netz-Stimmen installiert, bleibt die Ausgabe bewusst stumm - eine
   Netz-Stimme würde den zu sprechenden Text (also Gesprächsinhalte) an den
   TTS-Cloud-Dienst übertragen. Das Menü "Sprachpakete" zeigt diesen Fall
-  explizit an.
+  explizit an. Stimmen, deren Sprachdaten die Engine zwar listet, aber noch
+  nicht heruntergeladen hat (Google TTS kennzeichnet sie mit dem Feature
+  `notInstalled`), zählen dabei nicht als Offline-Stimme.
 - **Stimmen-Check im Sprachpakete-Menü:** Pro Sprache zeigt das Menü neben
   dem Übersetzungs-Status auch die **Stimmen-Lage der Sprachausgabe**
   (Offline-Stimme bereit / nur Online-Stimme / keine Stimme), einen
@@ -357,7 +404,7 @@ Ausbauschritt eine feste Begriffstabelle, die solche Terme nach der
   sich die Ausgabe vor dem Kundengespräch testen) und bei fehlender Stimme
   einen **"Stimme installieren"**-Button direkt in die
   Android-TTS-Einstellungen. Gedacht als Einrichtungs-Checkliste: einmal
-  durchgehen, alle 11 Zeilen grün bekommen.
+  durchgehen, alle 16 Zeilen grün bekommen.
 - **Übersetzer-Lebenszyklus (Fix "Translation closed"):** Ursprünglich wurde
   der ML-Kit-Translator bei jedem Sprachwechsel sofort geschlossen - lief
   dabei noch eine Übersetzung (oder der Live-Modus benutzte ihn noch),
@@ -397,19 +444,38 @@ Stellen falsch war:
 | `ErrorResponse` unbekannter Aufbau | `ErrorResponse(val e: GenAiException)` |
 | `SpeechRecognizerOptions.Mode` als Enum | `Mode` ist ein `@IntDef`-Interface mit `Int`-Konstanten |
 
-`DownloadStatus`s genauer Aufbau (für eine Fortschrittsanzeige beim Modell-
-Download) ist noch nicht verifiziert - `ensureModelDownloaded()` durchläuft
-den Flow aktuell bis zum Abschluss, ohne den Fortschritt auszuwerten.
+`DownloadStatus` (aus `genai-common 1.0.0-beta3`) ist seit Version 1.2
+ebenfalls per `javap` gegen die echte AAR verifiziert - diesmal lokal, weil
+die Sandbox dieser Session Google Maven erreichen konnte (siehe
+"Build-Verifikation"): eine sealed class mit `DownloadStarted`,
+`DownloadProgress(totalBytesDownloaded: Long)`, `DownloadFailed(e:
+GenAiException)` und `DownloadCompleted`. `ensureModelDownloaded()` wertet
+den Flow jetzt aus: Fortschritt in MB (Sprachpakete-Menü und Hinweis beim
+ersten Mikro-Tap), ein `DownloadFailed` wird als Fehler gemeldet statt erst
+beim Sprechen kryptisch aufzufallen. Eine Gesamtgröße nennt ML Kit nicht.
 
 ## Build-Verifikation
 
-**Status: `gradle assembleDebug` ist grün.** Der CI-Workflow
-[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) baut das
-Projekt auf einem GitHub-Actions-Runner erfolgreich zu einer Debug-APK
-(Artifact `vip-live-uebersetzer-debug`).
+**Status: `gradle testDebugUnitTest` und `gradle assembleDebug` sind grün.**
+Der CI-Workflow [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
+baut das Projekt auf einem GitHub-Actions-Runner zu einer Debug-APK
+(Artifact `vip-live-uebersetzer-debug`) und bleibt die verbindliche Prüfung.
 
-**Warum überhaupt CI statt eines lokalen Builds:** Die Entwicklungs-Sandbox,
-in der dieses Projekt geschrieben wurde, hat eine Egress-Policy, die u. a.
+**Version 1.2 wurde zusätzlich lokal gebaut:** Die Sandbox dieser Session
+konnte - anders als alle früheren - `dl.google.com`, Google Maven, Maven
+Central und `developers.google.com` erreichen. Android-SDK (Platform 34,
+Build-Tools 34.0.0) per `sdkmanager` installiert, Gradle 8.14.3 (vorinstalliert;
+CI nutzt weiterhin 8.7), JDK 21. Einzige Hürde: Maven Central weist Gradles
+parallele Downloads mit HTTP 429 ab - gelöst über ein lokales Init-Script,
+das Googles Maven-Central-Spiegel
+(`maven-central.storage-download.googleapis.com`) voranstellt; das Script
+liegt bewusst **nicht** im Repo, die Projekt-Repositories sind unverändert.
+Damit liefen Unit-Tests und `assembleDebug` erstmals vor dem Push durch, und
+die ML-Kit-AARs konnten direkt aus dem Gradle-Cache introspiziert werden
+(`DownloadStatus`, siehe oben).
+
+**Warum ursprünglich CI statt eines lokalen Builds:** Die Entwicklungs-Sandbox,
+in der dieses Projekt geschrieben wurde, hatte eine Egress-Policy, die u. a.
 `dl.google.com`, `maven.google.com` und `developers.google.com` blockiert
 (HTTP 403 auf allen drei Hosts, verifiziert). Damit war es dort nicht möglich,
 - Android-SDK-Plattformen/Build-Tools per `sdkmanager` zu installieren,
@@ -542,17 +608,23 @@ wegen Signatur-Konflikt), ohne die alte Version vorher zu deinstallieren.
   Sprachen auf dem Testgerät bereits. Das Sprachpakete-Menü macht die Lage
   pro Sprache sichtbar (Probehören/Installieren), falls es auf anderer
   Hardware doch fehlt.
+- **ML Kit für Chinesisch/Japanisch/Koreanisch/Hindi ist am Gerät noch
+  nicht getestet.** Die aktuelle Google-Doku listet die vier im Basic-Modus,
+  deshalb bietet die App sie dort an - der Basic-Modus nutzt aber die
+  Offline-Erkennung des Systems, und ob die ViP-Hardware diese Sprachpakete
+  hat, weiß nur ein Praxistest. Deshalb bleibt Vosk Vorrang, sobald geladen,
+  und im Sprachpakete-Menü steht es als "eigenes Sprachmodell" bereit. Für
+  Chinesisch verlangt ML Kit die Locale `cmn-Hans-CN` (so in
+  `LanguageCatalog.kt` hinterlegt), die Sprachausgabe nutzt weiter `zh-CN`.
+- **Portugiesisch** wäre ein Kandidat ohne Aufwand: ML Kit Translate und der
+  Basic-Modus (`pt-BR`) decken es ab - eine Zeile in `LanguageCatalog.kt`,
+  falls das Kundencenter Bedarf meldet.
 - **ViP-Schalter-Hardware:** Die Android-Version der im Einsatz befindlichen
-  Schalter-Hardware ist nicht bekannt. Relevant, weil ML Kit (9 Sprachen)
-  Android 12 (API 31) voraussetzt, Vosk (Ukrainisch/Arabisch) dagegen bereits
-  ab `minSdk 26` läuft (siehe "Sprachcoverage"). Auf einem Gerät unter
-  API 31 hätten also - solange kein Textfeld mehr existiert - ausgerechnet
-  **nur** Ukrainisch/Arabisch eine Live-Eingabemöglichkeit, die anderen 9
-  Sprachen keine. Sollte vor dem Rollout geklärt werden.
-- **`DownloadStatus`-Aufbau:** `SpeechRecognizer.download(): Flow<DownloadStatus>`
-  ist gegen die echte AAR verifiziert (siehe Abschnitt oben), der genaue
-  Aufbau von `DownloadStatus` selbst (für eine Fortschrittsanzeige) aber
-  nicht - `ensureModelDownloaded()` durchläuft den Flow aktuell nur bis zum
-  Abschluss. Kein Blocker (der Download funktioniert), aber offen für eine
-  spätere Fortschrittsanzeige beim Modell-Download.
+  Schalter-Hardware ist nicht bekannt. Relevant, weil ML Kit (13 Sprachen)
+  Android 12 (API 31) voraussetzt, Vosk dagegen bereits ab `minSdk 26` läuft
+  (siehe "Sprachcoverage"). Auf einem Gerät unter API 31 hätten also -
+  solange kein Textfeld mehr existiert - nur die Vosk-Sprachen eine
+  Live-Eingabemöglichkeit, Deutsch und Englisch keine. Sollte vor dem
+  Rollout geklärt werden; die Mitarbeiterseite sagt es seit 1.2 immerhin in
+  Klartext ("braucht Android 12 oder neuer").
 - **Package-Name:** `de.vip.liveuebersetzer` (unverändert, hartes Requirement).

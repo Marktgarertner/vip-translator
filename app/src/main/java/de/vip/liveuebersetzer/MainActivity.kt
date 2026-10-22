@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,12 +30,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -59,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -68,10 +70,8 @@ import de.vip.liveuebersetzer.ui.theme.VipLiveUebersetzerTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-
-/** Status eines Sprachpakets im "Sprachpakete"-Menü. */
-private enum class ModelStatus { PRUEFEN, FEHLT, LAEDT, GELADEN, FEHLER }
 
 /** Welcher Bildschirm gerade sichtbar ist. */
 private enum class Screen { CONVERSATION, SETUP, MODELS, GLOSSARY, PHRASES }
@@ -82,6 +82,8 @@ private enum class Screen { CONVERSATION, SETUP, MODELS, GLOSSARY, PHRASES }
  * vergessen wird).
  */
 private const val AUTO_RESET_MILLIS = 5L * 60L * 1000L
+
+private const val MEGABYTE = 1024L * 1024L
 
 /**
  * Ein abgeschlossener Gesprächsbeitrag. Der Verlauf lebt bewusst nur im
@@ -102,7 +104,7 @@ private data class ConversationEntry(
      */
     val recognizedText: String? = null,
 ) {
-    /** Text dieses Beitrags in der Sprache der jeweiligen Bildschirmhälfte. */
+    /** Text dieses Beitrags, wie ihn die Bildschirmhälfte mit Sprache [pane] zeigt. */
     fun textFor(pane: Language): String = when (pane.code) {
         sourceLanguage.code -> originalText
         else -> translatedText
@@ -112,6 +114,18 @@ private data class ConversationEntry(
     fun counterpartFor(pane: Language): String = when (pane.code) {
         sourceLanguage.code -> translatedText
         else -> originalText
+    }
+
+    /**
+     * Sprache, in der [textFor] tatsächlich geschrieben ist. Nicht zwingend
+     * [pane]: Wurde die Kundensprache nach diesem Beitrag gewechselt, zeigt
+     * die Kundenseite die Übersetzung in der *damaligen* Zielsprache - und
+     * genau mit deren Stimme muss sie vorgelesen werden, nicht mit der jetzt
+     * gewählten.
+     */
+    fun languageFor(pane: Language): Language = when (pane.code) {
+        sourceLanguage.code -> sourceLanguage
+        else -> targetLanguage
     }
 }
 
@@ -132,6 +146,7 @@ class MainActivity : ComponentActivity() {
 private fun LiveUebersetzerScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val view = LocalView.current
 
     var staffLanguage by remember { mutableStateOf(LanguageCatalog.defaultSource) }
     var customerLanguage by remember { mutableStateOf(LanguageCatalog.defaultTarget) }
@@ -148,6 +163,13 @@ private fun LiveUebersetzerScreen() {
     // keine Texteingabe, die App konzentriert sich aufs Sprechen.
     var recordingFromCustomer by remember { mutableStateOf(false) }
     var isPreparingSpeechModel by remember { mutableStateOf(false) }
+    // Bisher geladene MB, wenn ML Kit beim ersten Sprechen sein Modell nachlädt.
+    var preparingMegabytes by remember { mutableStateOf<Long?>(null) }
+    // Laufende Aufnahme-Coroutine - für ML Kit UND Vosk. Beim Vosk-Pfad lief
+    // der Start vorher ohne Job: Wer die Sprechtaste zum Stoppen antippte,
+    // während das Modell noch von der Platte geladen wurde, bekam "Aufnahme
+    // aus" angezeigt - die Session startete danach trotzdem, nahm unsichtbar
+    // weiter auf, und ihr nächster Satz landete aus dem Nichts im Verlauf.
     var recognizerJob by remember { mutableStateOf<Job?>(null) }
     var activeRecognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
     var activeVoskSession by remember { mutableStateOf<VoskSpeechSession?>(null) }
@@ -165,6 +187,25 @@ private fun LiveUebersetzerScreen() {
 
     // Selbst gepflegte Fachbegriffe einmalig in den Wortschatz laden.
     LaunchedEffect(Unit) { AppSettings.applyCustomTerms(context) }
+
+    // Zurück-Taste führt in den Untermenüs eine Ebene hoch statt die App zu
+    // beenden (vorher: Zurück im Sprachpakete-Menü = App zu, Verlauf weg).
+    BackHandler(enabled = screen != Screen.CONVERSATION) {
+        screen = when (screen) {
+            Screen.MODELS, Screen.GLOSSARY -> Screen.SETUP
+            else -> Screen.CONVERSATION
+        }
+    }
+
+    // Display an, solange ein Gespräch läuft: Am Schalter liest der Kunde die
+    // Übersetzung in Ruhe - ein Bildschirm, der dabei dunkel wird, ist das
+    // Letzte, was helfen würde. Nach "Nächster Kunde" bzw. dem automatischen
+    // Abräumen darf das Gerät wieder normal abdunkeln.
+    val keepScreenOn = isListening || conversation.isNotEmpty()
+    DisposableEffect(keepScreenOn) {
+        view.keepScreenOn = keepScreenOn
+        onDispose { view.keepScreenOn = false }
+    }
 
     // Auto-Scroll zum neuesten Beitrag (Index 0, liegt bei reverseLayout "unten").
     val staffListState = rememberLazyListState()
@@ -187,12 +228,16 @@ private fun LiveUebersetzerScreen() {
         )
         // Nie sprechen, solange das Mikrofon offen ist - sonst erkennt die
         // Erkennung die eigene Ausgabe als Eingabe (Rückkopplungsschleife).
-        if (speechOutputEnabled && !isListening) speechOutput.speak(translated, to)
+        if (speechOutputEnabled && !isListening && translated.isNotBlank() && !speechOutput.speak(translated, to)) {
+            // Vorher blieb die App hier einfach stumm, ohne zu sagen, warum.
+            errorMessage = speechOutput.explainSilence(to)
+            ttsSettingsHint = true
+        }
     }
 
     fun speakOrExplain(text: String, language: Language) {
         if (!speechOutput.speak(text, language)) {
-            errorMessage = "Sprachausgabe für ${language.displayName} ist auf diesem Gerät nicht verfügbar."
+            errorMessage = speechOutput.explainSilence(language)
             ttsSettingsHint = true
         }
     }
@@ -200,15 +245,13 @@ private fun LiveUebersetzerScreen() {
     fun stopLive() {
         recognizerJob?.cancel()
         recognizerJob = null
-        activeRecognizer?.let { recognizer ->
-            SpeechEngine.stopListening(recognizer)
-            SpeechEngine.release(recognizer)
-        }
+        activeRecognizer?.let { SpeechEngine.stopAndRelease(it) }
         activeRecognizer = null
         activeVoskSession?.cancel()
         activeVoskSession = null
         isListening = false
         isPreparingSpeechModel = false
+        preparingMegabytes = null
     }
 
     // Übersetzt einen fertig erkannten Satz und hängt ihn an den Verlauf an.
@@ -223,7 +266,11 @@ private fun LiveUebersetzerScreen() {
             runCatching {
                 TranslationEngine.translate(from, to, corrected)
             }.onSuccess { addEntry(from, to, corrected, it, recognized) }
-                .onFailure { errorMessage = it.message ?: "Übersetzung fehlgeschlagen." }
+                .onFailure {
+                    if (it is CancellationException) throw it
+                    errorMessage = "Übersetzung fehlgeschlagen" +
+                        (it.message?.let { reason -> ": $reason" } ?: ".")
+                }
         }
     }
 
@@ -243,35 +290,44 @@ private fun LiveUebersetzerScreen() {
         isListening = true
 
         if (engine == LiveEngine.VOSK) {
-            // Gebündelte Vosk-Erkennung (Ukrainisch/Arabisch): stoppt nach dem
-            // Satz von selbst - dasselbe Tap-to-Talk-Verhalten wie unten.
-            scope.launch {
+            // Gebündelte Vosk-Erkennung: stoppt nach dem Satz von selbst -
+            // dasselbe Tap-to-Talk-Verhalten wie beim ML-Kit-Pfad unten.
+            recognizerJob = scope.launch {
                 try {
                     // Beim ersten Sprechen wird das Modell von der Platte in
-                    // den Speicher geladen - das kann spuerbar dauern, daher
+                    // den Speicher geladen - das kann spürbar dauern, daher
                     // derselbe "wird vorbereitet"-Hinweis wie beim ML-Kit-Pfad.
                     isPreparingSpeechModel = true
-                    activeVoskSession = VoskSpeechEngine.listen(
+                    val session = VoskSpeechEngine.listen(
                         context = context,
                         languageCode = from.code,
                         onPartial = { text -> liveTranscript = text },
                         onFinal = { text ->
                             liveTranscript = text
                             activeVoskSession = null
+                            recognizerJob = null
                             isListening = false
                             translateAndAdd(from, to, text)
                         },
                         onError = { message ->
                             activeVoskSession = null
+                            recognizerJob = null
                             isListening = false
                             errorMessage = message
                         },
                     )
+                    if (!isActive) {
+                        // Stopp-Tipp kam, während das Modell noch lud: Die
+                        // gerade gestartete Aufnahme sofort wieder beenden.
+                        session.cancel()
+                    } else {
+                        activeVoskSession = session
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     // Z. B. Mikrofon nicht initialisierbar oder Modell auf der
-                    // Platte beschaedigt - ohne dieses Fangnetz stuerzte die
+                    // Platte beschädigt - ohne dieses Fangnetz stürzte die
                     // App ab, statt eine Meldung zu zeigen.
                     activeVoskSession = null
                     isListening = false
@@ -289,8 +345,12 @@ private fun LiveUebersetzerScreen() {
         recognizerJob = scope.launch {
             try {
                 isPreparingSpeechModel = true
-                SpeechEngine.ensureModelDownloaded(recognizer)
+                SpeechEngine.ensureModelDownloaded(recognizer) { bytes ->
+                    val megabytes = bytes / MEGABYTE
+                    if (preparingMegabytes != megabytes) preparingMegabytes = megabytes
+                }
                 isPreparingSpeechModel = false
+                preparingMegabytes = null
                 val listenJob = SpeechEngine.listen(
                     recognizer = recognizer,
                     scope = this,
@@ -316,6 +376,7 @@ private fun LiveUebersetzerScreen() {
                 errorMessage = e.message ?: "Fehler bei der Live-Spracherkennung."
             } finally {
                 isPreparingSpeechModel = false
+                preparingMegabytes = null
                 isListening = false
             }
         }
@@ -429,6 +490,20 @@ private fun LiveUebersetzerScreen() {
         Screen.CONVERSATION -> Unit
     }
 
+    // Warum eine Seite gerade keine Sprechtaste hat - in Klartext auf der
+    // Mitarbeiterseite, statt die Taste kommentarlos auszublenden. Die
+    // Vosk-Statusmaps werden mitgelesen, damit ein im Hintergrund fertig
+    // gewordener Modell-Download die Sprechtaste sofort einblendet und nicht
+    // erst bei der nächsten Interaktion.
+    val customerVoskState = ModelDownloads.vosk[customerLanguage.code]
+    val staffVoskState = ModelDownloads.vosk[staffLanguage.code]
+    val customerMicReason = remember(customerLanguage, customerVoskState) {
+        SpeechEngine.unavailableReason(context, customerLanguage)
+    }
+    val staffMicReason = remember(staffLanguage, staffVoskState) {
+        SpeechEngine.unavailableReason(context, staffLanguage)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -447,11 +522,13 @@ private fun LiveUebersetzerScreen() {
             onLogoClick = { screen = Screen.SETUP },
             entries = conversation,
             pendingTranscript = liveTranscript.takeIf { isListening && recordingFromCustomer && it.isNotBlank() },
-            micVisible = SpeechEngine.isLiveSupported(context, customerLanguage.code),
+            micVisible = customerMicReason == null,
             isRecording = isListening && recordingFromCustomer,
             isPreparing = isPreparingSpeechModel && recordingFromCustomer,
             onMicClick = { onMicButtonClick(true) },
-            onSpeakClick = { entry -> speakOrExplain(entry.textFor(customerLanguage), customerLanguage) },
+            onSpeakClick = { entry ->
+                speakOrExplain(entry.textFor(customerLanguage), entry.languageFor(customerLanguage))
+            },
         )
 
         // Trennlinie in ViP-Grün zwischen den beiden Hälften.
@@ -480,7 +557,7 @@ private fun LiveUebersetzerScreen() {
                     actions = {
                         IconButton(onClick = { speechOutputEnabled = !speechOutputEnabled }) {
                             Icon(
-                                imageVector = if (speechOutputEnabled) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
+                                imageVector = if (speechOutputEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
                                 contentDescription = if (speechOutputEnabled) {
                                     "Sprachausgabe ausschalten"
                                 } else {
@@ -491,13 +568,13 @@ private fun LiveUebersetzerScreen() {
                         }
                         IconButton(onClick = { screen = Screen.PHRASES }) {
                             Icon(
-                                Icons.Filled.List,
+                                Icons.AutoMirrored.Filled.List,
                                 contentDescription = "Schnellbausteine öffnen",
                                 tint = MaterialTheme.colorScheme.onPrimary,
                             )
                         }
-                        // Ersetzt den frueheren Papierkorb: raeumt alles fuer
-                        // den naechsten Kunden ab, nicht nur den Verlauf.
+                        // Ersetzt den früheren Papierkorb: räumt alles für
+                        // den nächsten Kunden ab, nicht nur den Verlauf.
                         Button(
                             onClick = { resetForNextCustomer() },
                             colors = ButtonDefaults.buttonColors(
@@ -530,14 +607,26 @@ private fun LiveUebersetzerScreen() {
                         Text("Sprachausgabe-Einstellungen öffnen")
                     }
                 }
+                listOfNotNull(
+                    customerMicReason,
+                    staffMicReason.takeIf { staffLanguage.code != customerLanguage.code },
+                ).forEach { reason ->
+                    Text(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        text = reason,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
 
                 if (isListening) {
                     Text(
                         modifier = Modifier.padding(horizontal = 16.dp),
-                        text = if (recordingFromCustomer) {
-                            "Kunde spricht gerade …"
-                        } else {
-                            "Sprechen Sie jetzt - stoppt nach dem Satz automatisch"
+                        text = when {
+                            isPreparingSpeechModel && preparingMegabytes != null ->
+                                "Erkennungsmodell wird einmalig geladen … $preparingMegabytes MB"
+                            isPreparingSpeechModel -> "Spracherkennung wird vorbereitet …"
+                            recordingFromCustomer -> "Kunde spricht gerade …"
+                            else -> "Sprechen Sie jetzt - stoppt nach dem Satz automatisch"
                         },
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -589,8 +678,7 @@ private fun LiveUebersetzerScreen() {
                     .padding(12.dp),
                 isRecording = isListening && !recordingFromCustomer,
                 isPreparing = isPreparingSpeechModel && !recordingFromCustomer,
-                enabled = SpeechEngine.isLiveSupported(context, staffLanguage.code) &&
-                    !(isListening && recordingFromCustomer),
+                enabled = staffMicReason == null && !(isListening && recordingFromCustomer),
                 label = "Sprechen",
                 contentDescription = "Zum Sprechen antippen (${staffLanguage.displayName})",
                 onClick = { onMicButtonClick(false) },
@@ -671,7 +759,8 @@ private fun CustomerPane(
 
         // Sprechtaste der Kundenseite: unten links (aus Kundensicht),
         // beschriftet in der Kundensprache. Für Sprachen ohne Live-Modus
-        // (Ukrainisch, Arabisch) ausgeblendet - siehe README, "Offene Punkte".
+        // (z. B. Vosk-Modell noch nicht geladen) ausgeblendet - die
+        // Mitarbeiterseite zeigt dann in Klartext, warum.
         if (micVisible) {
             MicButton(
                 modifier = Modifier
@@ -690,8 +779,8 @@ private fun CustomerPane(
 
 /**
  * Grüne Kopfleiste einer Bildschirmhälfte: links das ViP-Logo in einem weißen
- * Kreis (Klick öffnet die Sprachpakete), rechts die Sprachauswahl - dazwischen
- * optionale Aktionen ([extras], z. B. Lautsprecher/Papierkorb der
+ * Kreis (Klick öffnet die Einrichtung), rechts die Sprachauswahl - darunter
+ * optionale Aktionen ([actions], z. B. Lautsprecher/"Nächster Kunde" der
  * Mitarbeiterseite). Ein Antippen der Sprachauswahl blendet darunter eine
  * horizontal scrollbare Chip-Reihe aller Sprachen ein. Bewusst ohne
  * Popup-Menü (das würde in der um 180° gedrehten Kundenhälfte falsch
@@ -858,7 +947,7 @@ private fun CustomerEntryCard(
             }
             IconButton(onClick = onSpeakClick) {
                 Icon(
-                    Icons.Filled.VolumeUp,
+                    Icons.AutoMirrored.Filled.VolumeUp,
                     contentDescription = "Vorlesen",
                     tint = MaterialTheme.colorScheme.primary,
                 )
@@ -905,7 +994,7 @@ private fun StaffEntryCard(
             }
             IconButton(onClick = onSpeakClick) {
                 Icon(
-                    Icons.Filled.VolumeUp,
+                    Icons.AutoMirrored.Filled.VolumeUp,
                     contentDescription = "Übersetzung erneut vorlesen",
                     tint = MaterialTheme.colorScheme.primary,
                 )
@@ -915,13 +1004,14 @@ private fun StaffEntryCard(
 }
 
 /**
- * Vollbild-Menü "Sprachpakete": Übersetzungsmodelle (und Live-Erkennung, wo
- * verfügbar) pro Sprache vorab herunterladen, damit am Schalter keine
- * Wartezeit durch spontane Modell-Downloads entsteht. Zeigt außerdem pro
- * Sprache die Lage der **Sprachausgabe-Stimmen** (offline bereit / nur
- * online / fehlt) mit Probehören- und Installations-Button - so fällt eine
- * fehlende Stimme (typisch: Ukrainisch/Arabisch) VOR dem Kundengespräch auf.
- * Erreichbar über den Einrichtungs-Assistenten (Logo antippen → "Sprachpakete öffnen").
+ * Vollbild-Menü "Sprachpakete": Übersetzungs- und Erkennungsmodelle pro
+ * Sprache vorab herunterladen, damit am Schalter keine Wartezeit durch
+ * spontane Modell-Downloads entsteht. Zeigt außerdem pro Sprache die Lage der
+ * **Sprachausgabe-Stimmen** (offline bereit / nur online / fehlt) mit
+ * Probehören- und Installations-Button - so fällt eine fehlende Stimme VOR
+ * dem Kundengespräch auf. Der Download-Zustand lebt in [ModelDownloads] und
+ * überlebt das Verlassen des Menüs. Erreichbar über den Einrichtungs-
+ * Assistenten (Logo antippen → "Sprachpakete öffnen").
  */
 @Composable
 private fun ModelManagerScreen(
@@ -929,27 +1019,14 @@ private fun ModelManagerScreen(
     speechOutput: SpeechOutput,
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val statuses = remember { mutableStateMapOf<String, ModelStatus>() }
     val voiceStatuses = remember { mutableStateMapOf<String, SpeechOutput.VoiceStatus>() }
-    // Nur fuer Sprachen ohne ML-Kit-Live relevant (Ukrainisch/Arabisch).
-    val voskStatuses = remember { mutableStateMapOf<String, ModelStatus>() }
-    val voskProgress = remember { mutableStateMapOf<String, Int>() }
 
     LaunchedEffect(Unit) {
-        LanguageCatalog.all.forEach { language ->
-            statuses[language.code] = ModelStatus.PRUEFEN
-            voiceStatuses[language.code] = speechOutput.voiceStatus(language)
-            if (!language.mlKitLiveSpeech) {
-                voskStatuses[language.code] =
-                    if (VoskSpeechEngine.isModelReady(context, language.code)) ModelStatus.GELADEN else ModelStatus.FEHLT
-            }
-            statuses[language.code] = runCatching { TranslationEngine.isModelDownloaded(language) }
-                .fold(
-                    { downloaded -> if (downloaded) ModelStatus.GELADEN else ModelStatus.FEHLT },
-                    { ModelStatus.FEHLT },
-                )
-        }
+        // Erst auf die TTS-Engine warten - sonst stand direkt nach dem
+        // App-Start bei allen Sprachen dauerhaft "wird vorbereitet".
+        speechOutput.awaitReady()
+        LanguageCatalog.all.forEach { voiceStatuses[it.code] = speechOutput.voiceStatus(it) }
+        ModelDownloads.refresh(context)
     }
 
     Column(
@@ -969,7 +1046,7 @@ private fun ModelManagerScreen(
         ) {
             IconButton(onClick = onClose) {
                 Icon(
-                    Icons.Filled.ArrowBack,
+                    Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Zurück",
                     tint = MaterialTheme.colorScheme.onPrimary,
                 )
@@ -986,10 +1063,11 @@ private fun ModelManagerScreen(
             modifier = Modifier.padding(horizontal = 16.dp),
             text = "Einmalig mit Internet (am besten WLAN) vorbereiten - danach " +
                 "übersetzt und spricht die App komplett offline, ohne Wartezeit " +
-                "beim Kunden. Empfehlung: alle häufig gebrauchten Sprachen vorab " +
-                "laden und per Probehören prüfen, ob die Stimme da ist. Fehlende " +
-                "Stimmen lassen sich über \"Stimme installieren\" in den Android-" +
-                "Einstellungen nachladen (dort: Google Speech Services > " +
+                "beim Kunden. Downloads laufen weiter, auch wenn dieses Menü " +
+                "verlassen wird. Empfehlung: alle häufig gebrauchten Sprachen " +
+                "vorab laden und per Probehören prüfen, ob die Stimme da ist. " +
+                "Fehlende Stimmen lassen sich über \"Stimme installieren\" in den " +
+                "Android-Einstellungen nachladen (dort: Google Speech Services > " +
                 "Sprachdaten installieren).",
         )
 
@@ -1001,147 +1079,201 @@ private fun ModelManagerScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(LanguageCatalog.all, key = { it.code }) { language ->
-                val status = statuses[language.code] ?: ModelStatus.PRUEFEN
-                val voiceStatus = voiceStatuses[language.code] ?: SpeechOutput.VoiceStatus.NICHT_BEREIT
-                val voskStatus = voskStatuses[language.code] ?: ModelStatus.PRUEFEN
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Text(text = language.displayName, style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    text = when (status) {
-                                        ModelStatus.PRUEFEN -> "Übersetzung: prüfe …"
-                                        ModelStatus.FEHLT -> "Übersetzung: noch nicht geladen"
-                                        ModelStatus.LAEDT -> "Übersetzung: wird heruntergeladen …"
-                                        ModelStatus.GELADEN ->
-                                            if (language.mlKitLiveSpeech) {
-                                                "Übersetzung bereit (inkl. Live-Erkennung)"
-                                            } else {
-                                                "Übersetzung bereit - Live-Erkennung über eigenes " +
-                                                    "Sprachmodell (siehe unten)"
-                                            }
-                                        ModelStatus.FEHLER -> "Übersetzung: Download fehlgeschlagen - Internetverbindung prüfen"
-                                    },
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                )
-                                Text(
-                                    text = when (voiceStatus) {
-                                        SpeechOutput.VoiceStatus.NICHT_BEREIT ->
-                                            "Sprachausgabe: wird vorbereitet …"
-                                        SpeechOutput.VoiceStatus.OFFLINE_BEREIT ->
-                                            "Sprachausgabe: Offline-Stimme bereit"
-                                        SpeechOutput.VoiceStatus.NUR_ONLINE ->
-                                            "Sprachausgabe: nur Online-Stimme installiert - wird aus " +
-                                                "Datenschutzgründen nicht genutzt, bitte Offline-Stimme laden"
-                                        SpeechOutput.VoiceStatus.FEHLT ->
-                                            "Sprachausgabe: keine Stimme installiert"
-                                    },
-                                    color = if (voiceStatus == SpeechOutput.VoiceStatus.OFFLINE_BEREIT) {
-                                        MaterialTheme.colorScheme.tertiary
-                                    } else {
-                                        MaterialTheme.colorScheme.error
-                                    },
-                                )
-                                if (!language.mlKitLiveSpeech) {
-                                    val progress = voskProgress[language.code]
-                                    Text(
-                                        text = when (voskStatus) {
-                                            ModelStatus.PRUEFEN -> "Live-Erkennung: prüfe …"
-                                            ModelStatus.FEHLT ->
-                                                "Live-Erkennung: eigenes Sprachmodell noch nicht " +
-                                                    "geladen (größerer Download, am besten über WLAN)"
-                                            ModelStatus.LAEDT ->
-                                                if (progress != null) {
-                                                    "Live-Erkennung: Sprachmodell wird geladen … $progress %"
-                                                } else {
-                                                    "Live-Erkennung: Sprachmodell wird geladen …"
-                                                }
-                                            ModelStatus.GELADEN -> "Live-Erkennung: Sprachmodell bereit ✓"
-                                            ModelStatus.FEHLER ->
-                                                "Live-Erkennung: Download fehlgeschlagen - " +
-                                                    "Internetverbindung prüfen"
-                                        },
-                                        color = if (voskStatus == ModelStatus.GELADEN) {
-                                            MaterialTheme.colorScheme.tertiary
-                                        } else {
-                                            MaterialTheme.colorScheme.error
-                                        },
-                                    )
-                                }
-                            }
-                            Button(
-                                onClick = {
-                                    statuses[language.code] = ModelStatus.LAEDT
-                                    if (!language.mlKitLiveSpeech) voskStatuses[language.code] = ModelStatus.LAEDT
-                                    scope.launch {
-                                        runCatching {
-                                            TranslationEngine.downloadModel(language)
-                                            SpeechEngine.prepareModel(context, language.code) { downloaded, total ->
-                                                if (total != null && total > 0) {
-                                                    voskProgress[language.code] = (downloaded * 100 / total).toInt()
-                                                }
-                                            }
-                                        }.onSuccess {
-                                            statuses[language.code] = ModelStatus.GELADEN
-                                            if (!language.mlKitLiveSpeech) {
-                                                voskStatuses[language.code] = ModelStatus.GELADEN
-                                            }
-                                        }.onFailure {
-                                            statuses[language.code] = ModelStatus.FEHLER
-                                            if (!language.mlKitLiveSpeech) {
-                                                voskStatuses[language.code] = ModelStatus.FEHLER
-                                            }
-                                        }
-                                    }
-                                },
-                                enabled = status == ModelStatus.FEHLT || status == ModelStatus.FEHLER ||
-                                    (!language.mlKitLiveSpeech &&
-                                        (voskStatus == ModelStatus.FEHLT || voskStatus == ModelStatus.FEHLER)),
-                            ) {
-                                Text(
-                                    when {
-                                        status == ModelStatus.LAEDT || voskStatus == ModelStatus.LAEDT -> "Lädt …"
-                                        status == ModelStatus.FEHLT || status == ModelStatus.FEHLER -> "Laden"
-                                        !language.mlKitLiveSpeech &&
-                                            (voskStatus == ModelStatus.FEHLT || voskStatus == ModelStatus.FEHLER) -> "Laden"
-                                        else -> "Geladen ✓"
-                                    },
-                                )
-                            }
+                LanguagePackageCard(
+                    language = language,
+                    voiceStatus = voiceStatuses[language.code] ?: SpeechOutput.VoiceStatus.NICHT_BEREIT,
+                    onListen = {
+                        // Probehören spricht die Begrüßung - so lässt sich die
+                        // Stimme VOR dem Kundengespräch prüfen. Schlägt es fehl,
+                        // direkt in die Stimmen-Einstellungen springen.
+                        if (!speechOutput.speak(language.greeting, language)) {
+                            SpeechOutput.openTtsSettings(context)
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Probehören spricht die Begrüßung - so lässt sich die
-                            // Stimme VOR dem Kundengespräch prüfen. Schlägt es fehl,
-                            // direkt in die Stimmen-Einstellungen springen.
-                            Button(
-                                onClick = {
-                                    if (!speechOutput.speak(language.greeting, language)) {
-                                        SpeechOutput.openTtsSettings(context)
-                                    }
-                                    voiceStatuses[language.code] = speechOutput.voiceStatus(language)
-                                },
-                            ) {
-                                Text("Probehören")
-                            }
-                            if (voiceStatus == SpeechOutput.VoiceStatus.NUR_ONLINE ||
-                                voiceStatus == SpeechOutput.VoiceStatus.FEHLT
-                            ) {
-                                Button(
-                                    onClick = { SpeechOutput.openTtsSettings(context) },
-                                ) {
-                                    Text("Stimme installieren")
-                                }
-                            }
-                        }
+                        voiceStatuses[language.code] = speechOutput.voiceStatus(language)
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** Eine Zeile des Sprachpakete-Menüs: Status, "Laden", Probehören, Alternativen. */
+@Composable
+private fun LanguagePackageCard(
+    language: Language,
+    voiceStatus: SpeechOutput.VoiceStatus,
+    onListen: () -> Unit,
+) {
+    val context = LocalContext.current
+    val code = language.code
+    val translationStatus = ModelDownloads.translation[code] ?: ModelStatus.PRUEFEN
+    val mlKitStatus = ModelDownloads.mlKitSpeech[code]
+    val voskStatus = ModelDownloads.vosk[code]
+    val voskSupported = VoskSpeechEngine.isSupported(code)
+    // Lesen der Snapshot-Maps oben sorgt dafür, dass diese Karte neu
+    // gezeichnet wird, sobald ein Download den Zustand ändert - auch die
+    // Engine-Weiche hängt davon ab (Vosk geladen -> Vosk).
+    val engine = SpeechEngine.engineFor(context, code)
+    val running = ModelDownloads.isRunning(language)
+    val speechReady = ModelDownloads.isSpeechReady(context, language)
+    val voskSizeHint = VoskSpeechEngine.modelSizeMb(code)?.let { " (~$it MB, am besten über WLAN)" } ?: ""
+
+    val speechLine: String
+    val speechOk: Boolean
+    when (engine) {
+        LiveEngine.VOSK -> {
+            speechLine = "Live-Erkennung: eigenes Sprachmodell bereit ✓"
+            speechOk = true
+        }
+        LiveEngine.MLKIT -> {
+            speechOk = mlKitStatus == ModelStatus.GELADEN
+            speechLine = when (mlKitStatus) {
+                null, ModelStatus.PRUEFEN -> "Live-Erkennung: prüfe …"
+                ModelStatus.FEHLT -> "Live-Erkennung: Erkennungsmodell noch nicht geladen"
+                ModelStatus.LAEDT -> {
+                    val megabytes = ModelDownloads.mlKitSpeechBytes[code]?.let { it / MEGABYTE }
+                    "Live-Erkennung: Erkennungsmodell wird geladen …" +
+                        (megabytes?.let { " $it MB" } ?: "")
+                }
+                ModelStatus.GELADEN -> "Live-Erkennung: bereit ✓"
+                ModelStatus.FEHLER ->
+                    "Live-Erkennung: Download fehlgeschlagen oder Status nicht ermittelbar - " +
+                        "Internetverbindung prüfen und erneut laden"
+                ModelStatus.NICHT_VERFUEGBAR ->
+                    "Live-Erkennung: über die Android-Erkennung auf diesem Gerät nicht " +
+                        "verfügbar" + if (voskSupported) {
+                        " - stattdessen unten das eigene Sprachmodell laden"
+                    } else {
+                        " (in den Android-Einstellungen die Offline-Spracheingabe für " +
+                            "diese Sprache installieren)"
+                    }
+            }
+        }
+        LiveEngine.NONE -> {
+            speechOk = false
+            speechLine = when {
+                !voskSupported -> "Live-Erkennung: braucht Android 12 oder neuer"
+                else -> when (voskStatus) {
+                    null, ModelStatus.PRUEFEN -> "Live-Erkennung: prüfe …"
+                    ModelStatus.LAEDT -> {
+                        val percent = ModelDownloads.voskProgress[code]
+                        "Live-Erkennung: Sprachmodell wird geladen …" + (percent?.let { " $it %" } ?: "")
+                    }
+                    ModelStatus.FEHLER -> "Live-Erkennung: Download fehlgeschlagen - Internetverbindung prüfen"
+                    else -> "Live-Erkennung: eigenes Sprachmodell noch nicht geladen$voskSizeHint"
+                }
+            }
+        }
+    }
+    // Zweigleisige Sprache, deren Vosk-Alternative gerade lädt, während ML Kit
+    // (noch) die aktive Engine ist.
+    val voskAlternativeLine = if (engine == LiveEngine.MLKIT && voskStatus == ModelStatus.LAEDT) {
+        val percent = ModelDownloads.voskProgress[code]
+        "Eigenes Sprachmodell wird geladen …" + (percent?.let { " $it %" } ?: "")
+    } else {
+        null
+    }
+    val voskAlternativeOffered = engine == LiveEngine.MLKIT && voskSupported && !running &&
+        (voskStatus == ModelStatus.FEHLT || voskStatus == ModelStatus.FEHLER)
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(text = language.displayName, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = when (translationStatus) {
+                            ModelStatus.PRUEFEN -> "Übersetzung: prüfe …"
+                            ModelStatus.FEHLT -> "Übersetzung: noch nicht geladen"
+                            ModelStatus.LAEDT -> "Übersetzung: wird heruntergeladen …"
+                            ModelStatus.GELADEN -> "Übersetzung: bereit ✓"
+                            ModelStatus.FEHLER -> "Übersetzung: Download fehlgeschlagen - Internetverbindung prüfen"
+                            ModelStatus.NICHT_VERFUEGBAR -> "Übersetzung: auf diesem Gerät nicht verfügbar"
+                        },
+                        color = if (translationStatus == ModelStatus.GELADEN) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                    Text(
+                        text = when (voiceStatus) {
+                            SpeechOutput.VoiceStatus.NICHT_BEREIT ->
+                                "Sprachausgabe: wird vorbereitet …"
+                            SpeechOutput.VoiceStatus.OFFLINE_BEREIT ->
+                                "Sprachausgabe: Offline-Stimme bereit ✓"
+                            SpeechOutput.VoiceStatus.NUR_ONLINE ->
+                                "Sprachausgabe: nur Online-Stimme installiert - wird aus " +
+                                    "Datenschutzgründen nicht genutzt, bitte Offline-Stimme laden"
+                            SpeechOutput.VoiceStatus.FEHLT ->
+                                "Sprachausgabe: keine Stimme installiert"
+                        },
+                        color = if (voiceStatus == SpeechOutput.VoiceStatus.OFFLINE_BEREIT) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                    Text(
+                        text = speechLine,
+                        color = if (speechOk) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                    voskAlternativeLine?.let {
+                        Text(text = it, color = MaterialTheme.colorScheme.tertiary)
                     }
                 }
+                val needsDownload = ModelDownloads.needsDownload(context, language)
+                Button(
+                    onClick = { ModelDownloads.start(context, language) },
+                    enabled = needsDownload && !running,
+                ) {
+                    Text(
+                        when {
+                            running -> "Lädt …"
+                            translationStatus == ModelStatus.GELADEN && speechReady -> "Geladen ✓"
+                            else -> "Laden"
+                        },
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onListen) {
+                    Text("Probehören")
+                }
+                if (voiceStatus == SpeechOutput.VoiceStatus.NUR_ONLINE ||
+                    voiceStatus == SpeechOutput.VoiceStatus.FEHLT
+                ) {
+                    Button(onClick = { SpeechOutput.openTtsSettings(context) }) {
+                        Text("Stimme installieren")
+                    }
+                }
+            }
+            if (voskAlternativeOffered) {
+                // Zweigleisige Sprache (Chinesisch, Japanisch, Koreanisch,
+                // Hindi): Das gebündelte Vosk-Modell ist der am Testgerät
+                // erprobte Weg und hat Vorrang, sobald es geladen ist.
+                Button(onClick = { ModelDownloads.startVosk(context, language) }) {
+                    Text(
+                        "Eigenes Sprachmodell laden" +
+                            (VoskSpeechEngine.modelSizeMb(code)?.let { " (~$it MB)" } ?: ""),
+                    )
+                }
+                Text(
+                    text = "Alternative zur Android-Erkennung - z. B. wenn diese auf dem " +
+                        "Gerät nicht verfügbar ist oder schlecht versteht. Hat nach dem " +
+                        "Laden Vorrang.",
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
             }
         }
     }

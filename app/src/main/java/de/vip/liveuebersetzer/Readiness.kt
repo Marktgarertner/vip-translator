@@ -1,8 +1,6 @@
 package de.vip.liveuebersetzer
 
 import android.content.Context
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Einsatzbereitschaft einer Sprache auf diesem Gerät - Grundlage des
@@ -19,7 +17,7 @@ data class LanguageReadiness(
     val translationReady: Boolean,
     /** Offline-Stimme für die Sprachausgabe installiert. */
     val voiceReady: Boolean,
-    /** Live-Erkennung nutzbar (ML Kit bzw. geladenes Vosk-Modell). */
+    /** Live-Erkennung nutzbar (ML-Kit-Modell geladen bzw. Vosk-Modell entpackt). */
     val speechReady: Boolean,
 ) {
     val fullyReady: Boolean get() = translationReady && voiceReady && speechReady
@@ -36,29 +34,27 @@ data class LanguageReadiness(
 object Readiness {
 
     /**
-     * Prüft alle Sprachen des Katalogs. Die Übersetzungsprüfung fragt ML Kit ab und ist
-     * deshalb `suspend`.
+     * Prüft alle Sprachen des Katalogs. Fragt ML Kit (Übersetzungs- und
+     * Erkennungsmodelle) ab und ist deshalb `suspend`.
      *
-     * Hinweis zur Live-Erkennung: Für die ML-Kit-Sprachen gilt sie als bereit,
-     * sobald das Gerät sie grundsätzlich unterstützt (Android 12+) - ML Kit
-     * lädt sein Erkennungsmodell beim ersten Sprechen selbst nach, was nur
-     * kurz dauert. Für die Vosk-Sprachen muss das Modell dagegen vorher
-     * vollständig geladen sein.
+     * Die Live-Erkennung gilt für die ML-Kit-Sprachen erst als bereit, wenn
+     * das Erkennungsmodell laut `checkStatus()` tatsächlich auf dem Gerät
+     * ist - früher galt sie pauschal als bereit, sobald das Gerät Android 12
+     * hatte, und der erste Mikro-Tap am Schalter löste dann den Download aus.
+     * Für die Vosk-Sprachen muss das Modell entpackt sein.
      */
     suspend fun check(context: Context, speechOutput: SpeechOutput): List<LanguageReadiness> {
         // Die TTS-Engine initialisiert asynchron und braucht nach dem App-Start
         // einen Moment. Ohne diese Wartezeit meldete der Assistent beim ersten
         // Öffnen fälschlich für alle Sprachen "Stimme fehlt".
-        withTimeoutOrNull(3_000) {
-            while (!speechOutput.isReady) delay(150)
-        }
+        speechOutput.awaitReady()
+        ModelDownloads.refresh(context)
         return LanguageCatalog.all.map { language ->
             LanguageReadiness(
                 language = language,
-                translationReady = runCatching { TranslationEngine.isModelDownloaded(language) }
-                    .getOrDefault(false),
+                translationReady = ModelDownloads.translation[language.code] == ModelStatus.GELADEN,
                 voiceReady = speechOutput.voiceStatus(language) == SpeechOutput.VoiceStatus.OFFLINE_BEREIT,
-                speechReady = SpeechEngine.isLiveSupported(context, language.code),
+                speechReady = ModelDownloads.isSpeechReady(context, language),
             )
         }
     }

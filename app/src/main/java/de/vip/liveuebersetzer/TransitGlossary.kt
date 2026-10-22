@@ -142,8 +142,13 @@ object TransitGlossary {
      */
     private var customTerms: List<String> = emptyList()
 
+    // @Volatile: setCustomTerms() läuft nach dem Speichern im Menü, correct()
+    // aus den Erkennungs-Callbacks - beide auf dem Main-Thread, aber die
+    // Sichtbarkeit soll nicht von diesem Zufall abhängen.
+    @Volatile
     private var properNounIndex = Index(properNouns)
 
+    @Volatile
     private var fullIndex = Index(properNouns + generalTerms)
 
     /** Übernimmt die selbst gepflegten Begriffe und baut die Tabellen neu auf. */
