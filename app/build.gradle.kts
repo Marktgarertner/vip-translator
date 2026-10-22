@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("app.cash.paparazzi")
 }
 
 android {
@@ -15,8 +16,8 @@ android {
         // die SpeechEngine.isLiveSupported() separat prueft.
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
     }
 
     // Fester, eingecheckter Debug-Keystore (Standard-Praxis fuer Debug-APKs, die
@@ -45,8 +46,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        // compilerOptions-DSL statt des veralteten kotlinOptions.jvmTarget
+        // (Gradle warnte bei jedem Lauf).
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     buildFeatures {

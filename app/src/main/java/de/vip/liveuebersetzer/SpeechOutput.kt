@@ -141,12 +141,12 @@ class SpeechOutput(context: Context) {
      */
     fun explainSilence(language: Language): String = when (voiceStatus(language)) {
         VoiceStatus.NICHT_BEREIT ->
-            "Die Sprachausgabe startet noch - bitte gleich noch einmal versuchen."
+            "Sprachausgabe startet noch - bitte gleich noch einmal versuchen."
         VoiceStatus.NUR_ONLINE ->
-            "Für ${language.displayName} ist nur eine Online-Stimme installiert. Sie wird " +
-                "aus Datenschutzgründen nicht genutzt - bitte die Offline-Stimme nachladen."
+            "${language.displayName}: nur Online-Stimme installiert - bleibt aus " +
+                "Datenschutzgründen stumm. Bitte die Offline-Stimme nachladen."
         VoiceStatus.FEHLT ->
-            "Für ${language.displayName} ist keine Stimme installiert."
+            "${language.displayName}: keine Stimme installiert."
         VoiceStatus.OFFLINE_BEREIT ->
             "Sprachausgabe für ${language.displayName} ist gerade nicht möglich."
     }

@@ -44,7 +44,11 @@ Kernlogik in `app/src/main/java/de/vip/liveuebersetzer/`:
 | `SetupScreen.kt` | Einrichtungs-Assistent und Einstiegsmenü: Mikrofonfreigabe, Einsatzbereitschaft pro Sprache, Absprünge in die übrigen Menüs |
 | `GlossaryScreen.kt` | Menü "Fachbegriffe": eigene Begriffe anlegen und löschen |
 | `StaffPhrases.kt` / `PhrasesScreen.kt` | Schnellbausteine: häufige Schaltersätze auf Tastendruck übersetzen und vorlesen |
-| `MainActivity.kt` | Jetpack-Compose-UI: Splitscreen (Kundenseite 180° gedreht), Sprachauswahl pro Seite direkt neben dem Logo, Live-Modus über je eine eigene Sprechtaste pro Seite, Konversationsverlauf. Kein getippter Modus mehr (siehe unten) |
+| `MainActivity.kt` | Zustand und Engines (Aufnahme, Übersetzung, Sprachausgabe, Navigation) - reicht an die Bildschirme nur Daten und Rückrufe weiter |
+| `ConversationScreen.kt` | Der Splitscreen (Kundenseite 180° gedreht), zustandslos: `ConversationUiState` rein, `ConversationActions` raus. Kein getippter Modus (siehe unten) |
+| `ModelsScreen.kt` | Menü "Sprachpakete", zustandslos über `PackageCardState` |
+| `ui/components/VipComponents.kt` | Die Bausteine der Oberfläche: Kopfleisten, Sprachpille, Sprechtaste, Sprechblasen, Statusbanner, Statuszeilen, Karten, Knöpfe |
+| `ui/theme/` | ViP-Palette und abgeleitete Farbrollen (`Color.kt`, `Theme.kt`), Typo-Skala mit Inter (`Type.kt`), Rundungsskala (`Shape.kt`) |
 
 ## Sprachcoverage
 
@@ -124,12 +128,16 @@ das UI ist deshalb ein **Splitscreen**:
 - **Beide Hälften sind identisch aufgebaut** (Optik-Feedback aus dem
   Praxistest eingearbeitet): oben eine **grüne Kopfleiste** mit dem ViP-Logo
   links (in einem weißen Kreis - ein Antippen öffnet den
-  Einrichtungs-Assistenten) und der **Sprachauswahl oben rechts**; unten
-  links die **große runde Sprechtaste** in ViP-Grün. Wer eine Taste sucht,
-  findet sie auf beiden Seiten an derselben Stelle. Die Mitarbeiter-Kopfleiste
-  hat eine zweite Zeile mit den Aktionen (Lautsprecher, Schnellbausteine,
-  "Nächster Kunde") - alles in eine Zeile zu packen brach auf schmalen
-  Displays die Sprachtaste buchstabenweise um (Praxistest-Foto).
+  Einrichtungs-Assistenten) und der **Sprachauswahl als weiße Pille oben
+  rechts**; unten links die **große runde Sprechtaste** in ViP-Grün. Wer eine
+  Taste sucht, findet sie auf beiden Seiten an derselben Stelle. Die
+  Kopfleiste ist seit 1.3 auf beiden Seiten einzeilig: Die
+  Mitarbeiter-Aktionen (Lautsprecher, Schnellbausteine) sitzen als runde
+  Icons neben dem Logo, "Nächster Kunde" ist nach unten rechts gewandert -
+  als Gegenstück zur Sprechtaste, beide in Daumenreichweite. Vorher brauchte
+  die Mitarbeiterseite zwei Zeilen, weil "Nächster Kunde" mit hineinmusste
+  und die Sprachtaste sonst buchstabenweise umbrach (Praxistest-Foto); die
+  Pille schneidet jetzt notfalls ab.
 - **Obere Hälfte (Kundenseite):** um 180° gedreht, sodass das Gegenüber alles
   in seiner Leserichtung sieht ("unten links" heißt hier: aus Kundensicht).
   Unter der Kopfleiste eine Begrüßung in der Kundensprache
@@ -154,18 +162,38 @@ das UI ist deshalb ein **Splitscreen**:
   dargestellt und deaktiviert. **Kein Textfeld und keine Übersetzen-Tasten
   für getippten Text** - die App konzentriert sich bewusst aufs Sprechen;
   Konsequenz für Ukrainisch/Arabisch siehe "Offene Punkte".
-- **Mitarbeiterseite zusätzlich:** Lautsprecher- (Sprachausgabe an/aus) und
-  Papierkorb-Button (Verlauf leeren) als weiße Icons in der Kopfleiste;
-  Status- und Fehlermeldungen erscheinen direkt unter der Kopfleiste.
+- **Verlauf als Sprechblasen:** Beiträge der eigenen Seite stehen rechts in
+  Grün, die der Gegenseite links in Weiß - auf beiden Hälften aus der
+  jeweils eigenen Perspektive. Hauptzeile in der Sprache der Hälfte, darunter
+  klein das Gegenstück; die Mitarbeiterseite zeigt zusätzlich das Sprachpaar
+  und, falls der Fachwortschatz eingegriffen hat, "wörtlich erkannt: …".
+  Jede Blase hat einen Vorlesen-Knopf. Auf Tablets sind Blasen auf 560 dp
+  begrenzt, damit die Chat-Anordnung erhalten bleibt.
+- **Mitarbeiterseite zusätzlich:** Status- und Fehlermeldungen erscheinen
+  als **Banner mit Symbol** direkt unter der Kopfleiste (Fehler rot, Hinweis
+  orange, "Aufnahme läuft" mit pulsierendem roten Punkt und mitlaufendem
+  Text), bewusst kompakt, damit mehrere Banner den Verlauf nicht verdrängen.
 - **Farben:** Die App nutzt die **offizielle ViP-Palette "Verkehr (ViP)"**
   aus dem SWP-Markenportal (`ui/theme/Color.kt`, Namen wie dort vergeben):
   `$waldgruen` **#006A4D** (Leistungsbereich → Primärfarbe: Kopfleisten,
   Sprechtasten), `$seegruen` **#008963** (Hell Kontrast → Akzente,
-  Sekundärtexte), `$dunkelgruen` **#09503D** (Dunkel Kontrast → Fließtext
-  auf Karten), `$aquamarine` **#DEF3F0** (Sonderfarbe →
-  Bildschirmhintergrund). Karten in Weiß; das dunkle Theme leitet seine
-  Flächen aus Dunkelgrün ab. Der Launcher-Icon-Hintergrund ist Waldgrün,
-  das Launcher-Symbol ein weißes Windrad.
+  Abschnittsüberschriften), `$dunkelgruen` **#09503D** (Dunkel Kontrast →
+  Fließtext auf Karten), `$aquamarine` **#DEF3F0** (Sonderfarbe →
+  Bildschirmhintergrund). Karten in Weiß mit feinem Rahmen statt Schatten;
+  das dunkle Theme leitet seine Flächen aus Dunkelgrün ab. Die **vier
+  Farben des Windrads** (Rot #D5232A, Orange #F39200, Blau #1467A8, Grün
+  #41A62A aus `vip_logo.xml`) dienen als Statusakzente - Rot für "Aufnahme
+  läuft" und Fehler, Orange für Hinweise, Grün für "bereit" - statt des
+  Material-Standardrots. Der Launcher-Icon-Hintergrund ist Waldgrün, das
+  Launcher-Symbol ein weißes Windrad.
+- **Schrift:** Inter (SIL Open Font License, Lizenztext in
+  `app/fonts-license/OFL-Inter.txt`), als variable Schrift gebündelt
+  (`res/font/inter_variable.ttf`, 0,9 MB). Gewählt, weil sie mit Abstand gut
+  lesbar ist und Latein, Kyrillisch, Griechisch und Vietnamesisch abdeckt;
+  für Arabisch, Persisch, Hindi und die ostasiatischen Schriften fällt
+  Android automatisch auf die Systemschrift zurück. Die Typo-Skala
+  (`ui/theme/Type.kt`) ist etwas größer als die Material-Defaults, weil am
+  Schalter mit Abstand gelesen wird.
 - **Logo:** `res/drawable/vip_logo.xml` ist eine **stilisierte
   Vektor-Annäherung** an das offizielle Windrad, nach der
   Original-Vorlage aufgebaut: vier gebogene Ringsegmente mit Lücken -
@@ -175,6 +203,35 @@ das UI ist deshalb ein **Splitscreen**:
   SWP-Markenportal als Vector-Asset importieren (Android Studio: File >
   New > Vector Asset) und diese Datei ersetzen - dabei auch
   `ic_launcher_foreground.xml` (weiße Variante fürs App-Icon) angleichen.
+
+## Gestaltung & Screenshots
+
+Die Oberfläche wurde für Version 1.3 von Grund auf neu gezeichnet - weg von
+den Material-Standardbauteilen (lavendelfarbene Karten auf Aquamarin, nackte
+rote Textzeilen als Fehlermeldung) hin zu einem eigenen, kleinen
+Designsystem in `ui/components/VipComponents.kt`: Alles, was auf mehr als
+einem Bildschirm vorkommt, steht dort genau einmal (Kopfleisten, Sprachpille,
+Sprechtaste mit Pulsring, Sprechblasen, Statusbanner, Statuszeilen mit
+Fortschrittsbalken, Karten, Knöpfe, Abzeichen, Leerzustände).
+
+**Sehen statt raten:** Die Bildschirme werden per
+[Paparazzi](https://github.com/cashapp/paparazzi) auf der JVM gerendert -
+ohne Gerät, ohne Emulator. `app/src/test/.../ScreenshotTest.kt` füllt sie
+mit erfundenen Gesprächsdaten (keine Engine wird angefasst), und
+
+```
+gradle recordPaparazziDebug
+```
+
+legt die PNGs unter `app/src/test/snapshots/images/` ab: Gespräch (leer,
+mit Beiträgen und laufender Aufnahme, mit Hinweisen, dunkel, Tablet),
+Einrichtung, Sprachpakete (hell/dunkel), Schnellbausteine, Fachbegriffe.
+Die Bilder sind eingecheckt, damit der aktuelle Stand auch ohne Build
+sichtbar ist, und der CI-Workflow legt sie bei jedem Lauf zusätzlich als
+Artefakt `vip-live-uebersetzer-screenshots` ab. Dafür mussten die
+Bildschirme zustandslos werden (`ConversationUiState`, `PackageCardState`,
+`SetupContent`, `GlossaryContent`) - eine Trennung, die `MainActivity.kt`
+ohnehin gutgetan hat.
 
 ## Einrichtung, Nächster Kunde & Schnellbausteine
 
@@ -191,8 +248,8 @@ technisch versierte Nutzer:
   nicht erkennbar, was davon fehlt. Genau daran blieb ein nicht geladenes
   Vosk-Modell lange unbemerkt. Der Bildschirm ist zugleich das Menü zu
   Sprachpaketen, Fachbegriffen und Schnellbausteinen.
-- **"Nächster Kunde"** (Taste in der Mitarbeiter-Kopfleiste, ersetzt den
-  früheren Papierkorb): löscht den Verlauf, stoppt eine laufende Aufnahme und
+- **"Nächster Kunde"** (Taste unten rechts auf der Mitarbeiterseite, ersetzt
+  den früheren Papierkorb): löscht den Verlauf, stoppt eine laufende Aufnahme und
   setzt beide Sprachen auf Standard zurück. Zusätzlich räumt sich der Verlauf
   **nach fünf Minuten ohne neuen Beitrag von selbst ab** - ein
   Datenschutz-Sicherheitsnetz, falls das Zurücksetzen vergessen wird, denn
@@ -456,10 +513,12 @@ beim Sprechen kryptisch aufzufallen. Eine Gesamtgröße nennt ML Kit nicht.
 
 ## Build-Verifikation
 
-**Status: `gradle testDebugUnitTest` und `gradle assembleDebug` sind grün.**
-Der CI-Workflow [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
-baut das Projekt auf einem GitHub-Actions-Runner zu einer Debug-APK
-(Artifact `vip-live-uebersetzer-debug`) und bleibt die verbindliche Prüfung.
+**Status: `gradle testDebugUnitTest`, `gradle recordPaparazziDebug` und
+`gradle assembleDebug` sind grün.** Der CI-Workflow
+[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) baut das
+Projekt auf einem GitHub-Actions-Runner zu einer Debug-APK (Artifact
+`vip-live-uebersetzer-debug`), rendert die Screenshots (Artifact
+`vip-live-uebersetzer-screenshots`) und bleibt die verbindliche Prüfung.
 
 **Version 1.2 wurde zusätzlich lokal gebaut:** Die Sandbox dieser Session
 konnte - anders als alle früheren - `dl.google.com`, Google Maven, Maven

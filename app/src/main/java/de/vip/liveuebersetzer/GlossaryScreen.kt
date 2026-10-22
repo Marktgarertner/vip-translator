@@ -1,8 +1,8 @@
 package de.vip.liveuebersetzer
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,14 +12,15 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Spellcheck
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +32,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import de.vip.liveuebersetzer.ui.components.EmptyState
+import de.vip.liveuebersetzer.ui.components.VipButton
+import de.vip.liveuebersetzer.ui.components.VipCard
+import de.vip.liveuebersetzer.ui.components.VipTopBar
+import de.vip.liveuebersetzer.ui.theme.VipTheme
 
 /**
  * Menü "Fachbegriffe": eigene Begriffe zum ÖPNV-Wortschatz nachtragen.
@@ -54,115 +60,135 @@ fun GlossaryScreen(onClose: () -> Unit) {
         AppSettings.saveCustomTerms(context, terms.toList())
     }
 
+    GlossaryContent(
+        terms = terms,
+        input = input,
+        onInputChange = { input = it },
+        onAdd = {
+            val term = input.trim()
+            // Sehr kurze Einträge bringen nichts: Die Nachkorrektur
+            // vergleicht kurze Wörter ohnehin nur exakt.
+            if (term.length >= 3 && terms.none { it.equals(term, ignoreCase = true) }) {
+                terms.add(term)
+                terms.sort()
+                persist()
+            }
+            input = ""
+        },
+        onRemove = { term ->
+            terms.remove(term)
+            persist()
+        },
+        onClose = onClose,
+    )
+}
+
+/** Zustandslose Darstellung des Fachbegriffe-Menüs. */
+@Composable
+fun GlossaryContent(
+    terms: List<String>,
+    input: String,
+    onInputChange: (String) -> Unit,
+    onAdd: () -> Unit,
+    onRemove: (String) -> Unit,
+    onClose: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.primary)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            IconButton(onClick = onClose) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Zurück",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                )
-            }
-            Text(
-                text = "Fachbegriffe",
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.titleLarge,
-            )
-        }
+        VipTopBar(title = "Fachbegriffe", onBack = onClose)
 
-        Text(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            text = "Begriffe, die die Spracherkennung häufig falsch versteht - zum " +
-                "Beispiel Tarif- und Produktnamen oder Haltestellen. Bitte genau so " +
-                "schreiben, wie es richtig heißt. Die App setzt ähnlich klingende " +
-                "Erkennungen dann auf diese Schreibweise zurück.",
-        )
-
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            OutlinedTextField(
-                value = input,
-                onValueChange = { input = it },
-                modifier = Modifier.weight(1f),
-                label = { Text("Neuer Begriff") },
+            Text(
+                modifier = Modifier.padding(top = 12.dp),
+                text = "Begriffe, die die Spracherkennung häufig falsch versteht - zum " +
+                    "Beispiel Tarif- und Produktnamen oder Haltestellen. Bitte genau so " +
+                    "schreiben, wie es richtig heißt. Die App setzt ähnlich klingende " +
+                    "Erkennungen dann auf diese Schreibweise zurück.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = VipTheme.colors.textMuted,
             )
-            Button(
-                onClick = {
-                    val term = input.trim()
-                    // Sehr kurze Eintraege bringen nichts: Die Nachkorrektur
-                    // vergleicht kurze Woerter ohnehin nur exakt.
-                    if (term.length >= 3 && terms.none { it.equals(term, ignoreCase = true) }) {
-                        terms.add(term)
-                        terms.sort()
-                        persist()
-                    }
-                    input = ""
-                },
-                enabled = input.trim().length >= 3,
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Hinzufügen")
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = onInputChange,
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = VipTheme.colors.outline,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                    label = { Text("Neuer Begriff") },
+                )
+                VipButton(
+                    text = "Hinzufügen",
+                    icon = Icons.Rounded.Add,
+                    onClick = onAdd,
+                    enabled = input.trim().length >= 3,
+                )
             }
         }
 
         if (terms.isEmpty()) {
-            Text(
+            EmptyState(
+                icon = Icons.Rounded.Spellcheck,
+                title = "Noch keine eigenen Begriffe",
+                text = "Der eingebaute ÖPNV-Wortschatz (Haltestellen, Tarifbegriffe) ist trotzdem aktiv.",
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 16.dp),
-                text = "Noch keine eigenen Begriffe hinterlegt. Der eingebaute " +
-                    "ÖPNV-Wortschatz ist trotzdem aktiv.",
-                color = MaterialTheme.colorScheme.tertiary,
+                    .padding(bottom = 64.dp),
             )
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .weight(1f),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
             ) {
-                items(terms.toList(), key = { it }) { term ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = term,
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                            IconButton(
-                                onClick = {
-                                    terms.remove(term)
-                                    persist()
-                                },
-                            ) {
-                                Icon(
-                                    Icons.Filled.Delete,
-                                    contentDescription = "Begriff \"$term\" entfernen",
-                                    tint = MaterialTheme.colorScheme.primary,
+                item {
+                    VipCard(contentPadding = PaddingValues(0.dp)) {
+                        terms.forEachIndexed { index, term ->
+                            if (index > 0) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    color = VipTheme.colors.outline,
                                 )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = term,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                IconButton(onClick = { onRemove(term) }) {
+                                    Icon(
+                                        Icons.Rounded.DeleteOutline,
+                                        contentDescription = "Begriff \"$term\" entfernen",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             }
                         }
                     }

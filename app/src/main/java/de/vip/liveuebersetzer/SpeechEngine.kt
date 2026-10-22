@@ -111,12 +111,11 @@ object SpeechEngine {
         if (isLiveSupported(context, language.code)) return null
         return when {
             VoskSpeechEngine.isSupported(language.code) ->
-                "Für ${language.displayName} ist das Sprachmodell noch nicht geladen - " +
-                    "deshalb gibt es auf der Kundenseite keine Sprechtaste. " +
-                    "Logo antippen → Sprachpakete."
+                "${language.displayName}: Sprachmodell noch nicht geladen, deshalb keine " +
+                    "Sprechtaste. Logo antippen → Sprachpakete."
             language.mlKitLiveSpeech ->
-                "Live-Erkennung für ${language.displayName} braucht Android 12 oder neuer."
-            else -> "Für ${language.displayName} gibt es auf diesem Gerät keine Live-Erkennung."
+                "${language.displayName}: Live-Erkennung braucht Android 12 oder neuer."
+            else -> "${language.displayName}: auf diesem Gerät keine Live-Erkennung."
         }
     }
 

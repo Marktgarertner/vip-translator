@@ -61,6 +61,21 @@ jobs:
       - name: Unit-Tests ausführen
         run: gradle testDebugUnitTest --stacktrace --no-daemon
 
+      # Screenshot-Tests (Paparazzi): rendern alle Bildschirme auf der JVM
+      # und legen die PNGs als Artefakt ab - so lässt sich jeder Stand ohne
+      # Gerät ansehen. Bewusst "record" statt "verify": Die Referenzbilder im
+      # Repo stammen von einer anderen JDK-Version, und schon minimale
+      # Unterschiede in der Schriftglättung ließen einen Vergleich rot werden,
+      # ohne dass etwas kaputt wäre.
+      - name: Screenshots rendern
+        run: gradle recordPaparazziDebug --stacktrace --no-daemon
+
+      - name: Screenshots hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: vip-live-uebersetzer-screenshots
+          path: app/src/test/snapshots/images/*.png
+
       - name: Debug-APK bauen
         run: gradle assembleDebug --stacktrace --no-daemon
 
