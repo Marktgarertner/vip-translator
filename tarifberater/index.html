@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Welches Ticket passt zu mir? Vier Fragen, dann sehen Sie, was in Potsdam und im VBB für Sie am günstigsten ist.">
+<title>Welches Ticket passt?</title>
+<style>
+/* ============================================================
+   ViP Tarifberater - eine Datei, keine Abhängigkeiten.
+   Farben: offizielle ViP-Palette (Waldgrün #006A4D, Dunkelgrün
+   #09503D, Seegrün #008963, Aquamarin #DEF3F0) plus die vier
+   Windrad-Farben als Statusakzente - wie in der Übersetzer-App.
+   ============================================================ */
+:root {
+  --paper: #DEF3F0;
+  --surface: #FFFFFF;
+  --surface-soft: #EEF8F5;
+  --mint: #CDEAE0;
+  --ink: #09503D;
+  --ink-strong: #0D1A15;
+  --muted: #4C6A5F;
+  --outline: #B9DDD3;
+  --accent: #006A4D;
+  --accent-2: #008963;
+  --on-accent: #FFFFFF;
+  --rot: #D5232A;
+  --orange: #F39200;
+  --blau: #1467A8;
+  --gruen: #41A62A;
+  --warn-bg: #FFF1DB;
+  --warn-ink: #6E4300;
+  --info-bg: #E8F1FA;
+  --info-ink: #0F3D66;
+  --shadow: 0 1px 2px rgba(9,80,61,.06), 0 10px 30px -18px rgba(9,80,61,.35);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #071F18;
+    --surface: #0F2E25;
+    --surface-soft: #153B30;
+    --mint: #1C5A47;
+    --ink: #E7EFEA;
+    --ink-strong: #FFFFFF;
+    --muted: #9CC8BA;
+    --outline: #24584A;
+    --accent: #45C199;
+    --accent-2: #6FD6B3;
+    --on-accent: #06120E;
+    --rot: #E8534B;
+    --orange: #F3A733;
+    --blau: #6FB1E8;
+    --gruen: #5CC447;
+    --warn-bg: #3B2D0E;
+    --warn-ink: #FFD58A;
+    --info-bg: #12304A;
+    --info-ink: #BFDDF7;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #071F18;
+  --surface: #0F2E25;
+  --surface-soft: #153B30;
+  --mint: #1C5A47;
+  --ink: #E7EFEA;
+  --ink-strong: #FFFFFF;
+  --muted: #9CC8BA;
+  --outline: #24584A;
+  --accent: #45C199;
+  --accent-2: #6FD6B3;
+  --on-accent: #06120E;
+  --rot: #E8534B;
+  --orange: #F3A733;
+  --blau: #6FB1E8;
+  --gruen: #5CC447;
+  --warn-bg: #3B2D0E;
+  --warn-ink: #FFD58A;
+  --info-bg: #12304A;
+  --info-ink: #BFDDF7;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.5;
+}
+button { font: inherit; color: inherit; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Kopf ---------- */
+.topbar {
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 12px 16px;
+}
+:root[data-theme="dark"] .topbar, :root:not([data-theme="light"]) .topbar { }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .topbar { background: #006A4D; color: #FFFFFF; } }
+:root[data-theme="dark"] .topbar { background: #006A4D; color: #FFFFFF; }
+:root[data-theme="light"] .topbar { background: #006A4D; color: #FFFFFF; }
+.topbar-inner {
+  max-width: 720px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px;
+}
+.logo {
+  width: 40px; height: 40px; border-radius: 50%; background: #fff; flex: none;
+  display: grid; place-items: center;
+}
+.logo svg { width: 28px; height: 28px; }
+.topbar-title { font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+.topbar-sub { font-size: 13px; opacity: .85; }
+
+.shell { max-width: 720px; margin: 0 auto; padding: 0 16px 80px; }
+
+.intro { padding: 26px 0 8px; }
+.kicker {
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent-2); margin: 0 0 6px;
+}
+h1 {
+  font-size: clamp(28px, 6vw, 36px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1;
+  margin: 0 0 8px; color: var(--ink-strong); text-wrap: balance;
+}
+.lede { margin: 0; color: var(--muted); max-width: 52ch; }
+body.embed .intro { padding-top: 16px; }
+body.embed .topbar { display: none; }
+
+/* ---------- Fragen entlang der Linie ---------- */
+.line { position: relative; margin-top: 18px; }
+.line::before {
+  content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px; width: 4px;
+  background: var(--outline); border-radius: 2px;
+}
+.stop { position: relative; padding-left: 44px; margin: 0 0 14px; }
+.stop-dot {
+  position: absolute; left: 6px; top: 16px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--paper); border: 4px solid var(--outline); transition: border-color .15s, background .15s;
+}
+.stop.active .stop-dot { border-color: var(--accent); background: var(--surface); }
+.stop.done .stop-dot { border-color: var(--accent); background: var(--accent); }
+.stop.done .stop-dot::after {
+  content: ""; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px;
+  border: solid var(--on-accent); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+}
+.stop.result .stop-dot { border-color: var(--accent); background: var(--accent); width: 26px; height: 26px; left: 4px; }
+.stop.result .stop-dot::after { display: none; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--outline); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 16px 16px 14px;
+}
+.q-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.q-label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 4px; }
+.q-title { font-size: 19px; font-weight: 700; margin: 0; color: var(--ink-strong); letter-spacing: -.01em; }
+.q-hint { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+
+.options { display: grid; gap: 8px; margin-top: 12px; grid-template-columns: 1fr; }
+@media (min-width: 520px) { .options.cols2 { grid-template-columns: 1fr 1fr; } }
+.opt {
+  display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+  min-height: 52px; padding: 10px 14px; border-radius: 14px; cursor: pointer;
+  background: var(--surface-soft); border: 1.5px solid transparent; transition: border-color .12s, background .12s;
+}
+.opt:hover { border-color: var(--outline); }
+.opt[aria-pressed="true"] { background: var(--mint); border-color: var(--accent); }
+.opt .opt-main { font-weight: 600; color: var(--ink-strong); }
+.opt .opt-sub { font-size: 14px; color: var(--muted); display: block; }
+.opt .mark {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--outline); position: relative;
+}
+.opt[aria-pressed="true"] .mark { border-color: var(--accent); background: var(--accent); }
+.opt[aria-pressed="true"] .mark::after {
+  content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px;
+  border: solid var(--on-accent); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+}
+.opt.multi .mark { border-radius: 6px; }
+
+/* beantwortete Frage: zusammengeklappt */
+.stop.done .card { padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+.stop.done .q-head, .stop.done .q-hint, .stop.done .options, .stop.done .actions { display: none; }
+.summary { flex: 1; min-width: 0; }
+.summary .q-label { margin: 0; }
+.summary .answer { font-weight: 600; color: var(--ink-strong); }
+.stop:not(.done) .summary { display: none; }
+.change {
+  background: none; border: 1.5px solid var(--accent); color: var(--accent); border-radius: 999px;
+  padding: 6px 12px; font-size: 14px; font-weight: 600; cursor: pointer; flex: none;
+}
+.stop:not(.done) .change { display: none; }
+
+/* ---------- Ergebnis ---------- */
+.result-card { padding: 0; overflow: hidden; }
+.result-head { padding: 16px 16px 12px; border-bottom: 1px dashed var(--outline); position: relative; }
+.result-head::before, .result-head::after {
+  content: ""; position: absolute; bottom: -11px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--paper); border: 1px solid var(--outline);
+}
+.result-head::before { left: -12px; }
+.result-head::after { right: -12px; }
+.result-title { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 4px; }
+.result-name { font-size: 22px; font-weight: 700; margin: 0; color: var(--ink-strong); letter-spacing: -.015em; line-height: 1.25; }
+.result-tagline { margin: 8px 0 0; }
+.result-body { padding: 14px 16px 16px; }
+.price-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.price { font-size: 38px; font-weight: 700; letter-spacing: -.03em; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; }
+.price-unit { color: var(--muted); font-weight: 600; }
+.price-next { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.per-ride { font-size: 14px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tag {
+  display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 8px; background: var(--mint); color: var(--ink);
+}
+.reasons { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.reasons li { display: flex; gap: 10px; align-items: flex-start; font-size: 15.5px; }
+.reasons li::before {
+  content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; background: var(--gruen);
+}
+.reasons.beachten li::before { background: var(--orange); }
+.buy { margin-top: 12px; font-size: 14.5px; color: var(--muted); }
+.buy b { color: var(--ink); font-weight: 600; }
+
+.alts { margin-top: 14px; display: grid; gap: 10px; }
+.alt {
+  background: var(--surface); border: 1px solid var(--outline); border-radius: var(--radius-sm); padding: 12px 14px;
+}
+/* Name links, Preis rechts - auf schmalen Bildschirmen rutscht der Preis
+   unter den Namen, statt rechts aus dem Kasten zu laufen. */
+.alt-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; align-items: baseline; }
+.alt-name { font-weight: 600; color: var(--ink-strong); flex: 1 1 200px; }
+.alt-price { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; flex: 0 1 auto; }
+.alt-price b { white-space: nowrap; }
+.alt-price .unit { font-weight: 500; color: var(--muted); }
+.alt-sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.alt-sub .per { font-variant-numeric: tabular-nums; }
+.section-label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-2); margin: 18px 0 8px; }
+
+.note { border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; display: flex; gap: 10px; align-items: flex-start; }
+.note.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.note.info { background: var(--info-bg); color: var(--info-ink); }
+.note .ico { flex: none; width: 20px; height: 20px; margin-top: 1px; }
+.notes { display: grid; gap: 8px; margin-top: 14px; }
+
+.docs { margin: 0; padding-left: 20px; font-size: 15px; }
+.docs li { margin: 3px 0; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.btn {
+  border: 0; border-radius: 999px; padding: 11px 18px; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--on-accent);
+}
+.btn.secondary { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+
+.footer { margin-top: 28px; font-size: 13px; color: var(--muted); line-height: 1.55; }
+.footer a { color: var(--accent); }
+.stand { font-variant-numeric: tabular-nums; }
+
+.hidden { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media print {
+  body { background: #fff; color: #000; }
+  .topbar, .change, .actions, .line::before, .stop-dot { display: none !important; }
+  .stop { padding-left: 0; }
+  .card { box-shadow: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo" aria-hidden="true">
+      <!-- Stilisiertes ViP-Windrad: vier Ringsegmente mit Lücken -->
+      <svg viewBox="0 0 48 48" fill="none" stroke-width="8" stroke-linecap="butt">
+        <path d="M24 6 A18 18 0 0 1 42 24" stroke="#1467A8"/>
+        <path d="M42 24 A18 18 0 0 1 24 42" stroke="#F39200"/>
+        <path d="M24 42 A18 18 0 0 1 6 24" stroke="#41A62A"/>
+        <path d="M6 24 A18 18 0 0 1 24 6" stroke="#D5232A"/>
+      </svg>
+    </div>
+    <div>
+      <div class="topbar-title">ViP Tarifberater</div>
+      <div class="topbar-sub">Verkehrsbetrieb Potsdam</div>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="intro">
+    <p class="kicker">Potsdam &amp; VBB</p>
+    <h1>Welches Ticket passt zu Ihnen?</h1>
+    <p class="lede">Vier kurze Fragen – dann sehen Sie, womit Sie am günstigsten fahren, und was Sie dafür mitbringen müssen.</p>
+  </section>
+
+  <div class="line" id="line">
+    <!-- Frage 1 -->
+    <section class="stop active" id="stop-wer" data-key="wer">
+      <span class="stop-dot" aria-hidden="true"></span>
+      <div class="card">
+        <div class="summary"><p class="q-label">Wer fährt</p><div class="answer"></div></div>
+        <button class="change" type="button">Ändern</button>
+        <div class="q-head"><div><p class="q-label">Frage 1 von 4</p><h2 class="q-title">Wer fährt?</h2></div></div>
+        <p class="q-hint">Für wen soll das Ticket sein?</p>
+        <div class="options cols2" role="group" aria-label="Wer fährt">
+          <button class="opt" type="button" data-value="erwachsen"><span class="mark"></span><span><span class="opt-main">Erwachsene Person</span><span class="opt-sub">ab 15 Jahren, ohne Ermäßigung</span></span></button>
+          <button class="opt" type="button" data-value="kind"><span class="mark"></span><span><span class="opt-main">Kind 6 bis 14 Jahre</span><span class="opt-sub">Ermäßigungstarif</span></span></button>
+          <button class="opt" type="button" data-value="u6"><span class="mark"></span><span><span class="opt-main">Kind unter 6 Jahren</span><span class="opt-sub">fährt kostenlos mit</span></span></button>
+          <button class="opt" type="button" data-value="schueler"><span class="mark"></span><span><span class="opt-main">Schüler:in</span><span class="opt-sub">ab 15 Jahren oder mit Schulbescheinigung</span></span></button>
+          <button class="opt" type="button" data-value="azubi"><span class="mark"></span><span><span class="opt-main">Auszubildende:r</span><span class="opt-sub">duale oder vollschulische Ausbildung</span></span></button>
+          <button class="opt" type="button" data-value="student"><span class="mark"></span><span><span class="opt-main">Student:in</span><span class="opt-sub">an einer Hochschule eingeschrieben</span></span></button>
+          <button class="opt" type="button" data-value="leistung"><span class="mark"></span><span><span class="opt-main">Mit Leistungsbescheid</span><span class="opt-sub">Bürgergeld, Sozialhilfe, Grundsicherung, Asylbewerberleistungen</span></span></button>
+          <button class="opt" type="button" data-value="sb"><span class="mark"></span><span><span class="opt-main">Mit Schwerbehindertenausweis</span><span class="opt-sub">und Wertmarke</span></span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Frage 2 -->
+    <section class="stop" id="stop-wie" data-key="wie">
+      <span class="stop-dot" aria-hidden="true"></span>
+      <div class="card">
+        <div class="summary"><p class="q-label">Wie oft</p><div class="answer"></div></div>
+        <button class="change" type="button">Ändern</button>
+        <div class="q-head"><div><p class="q-label">Frage 2 von 4</p><h2 class="q-title">Wie oft fahren Sie?</h2></div></div>
+        <p class="q-hint">Eine Fahrt heißt: hin. Hin und zurück sind zwei Fahrten.</p>
+        <div class="options" role="group" aria-label="Wie oft">
+          <button class="opt" type="button" data-value="einmal"><span class="mark"></span><span><span class="opt-main">Eine einzelne Fahrt</span><span class="opt-sub">nur hin, oder hin und zurück an verschiedenen Tagen</span></span></button>
+          <button class="opt" type="button" data-value="tag"><span class="mark"></span><span><span class="opt-main">Mehrere Fahrten an einem Tag</span><span class="opt-sub">Ausflug, Besuch, Erledigungen</span></span></button>
+          <button class="opt" type="button" data-value="gelegentlich"><span class="mark"></span><span><span class="opt-main">Ein paar Mal im Monat</span><span class="opt-sub">etwa 4 bis 8 Fahrten</span></span></button>
+          <button class="opt" type="button" data-value="wenig"><span class="mark"></span><span><span class="opt-main">An 1 bis 2 Tagen pro Woche</span><span class="opt-sub">etwa 15 Fahrten im Monat</span></span></button>
+          <button class="opt" type="button" data-value="oft"><span class="mark"></span><span><span class="opt-main">Fast täglich</span><span class="opt-sub">Arbeit, Schule, Ausbildung – etwa 40 Fahrten im Monat</span></span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Frage 3 -->
+    <section class="stop" id="stop-wohin" data-key="wohin">
+      <span class="stop-dot" aria-hidden="true"></span>
+      <div class="card">
+        <div class="summary"><p class="q-label">Wohin</p><div class="answer"></div></div>
+        <button class="change" type="button">Ändern</button>
+        <div class="q-head"><div><p class="q-label">Frage 3 von 4</p><h2 class="q-title">Wohin fahren Sie?</h2></div></div>
+        <p class="q-hint">Der weiteste Weg zählt.</p>
+        <div class="options" role="group" aria-label="Wohin">
+          <button class="opt" type="button" data-value="ab"><span class="mark"></span><span><span class="opt-main">Nur innerhalb von Potsdam</span><span class="opt-sub">Stadtgebiet einschließlich Golm, Fahrland, Groß Glienicke, Marquardt – Tarifbereich Potsdam AB</span></span></button>
+          <button class="opt" type="button" data-value="abc"><span class="mark"></span><span><span class="opt-main">Potsdam und Umland</span><span class="opt-sub">z. B. Werder (Havel), Teltow, Michendorf, Caputh – Tarifbereich Potsdam ABC</span></span></button>
+          <button class="opt" type="button" data-value="berlin"><span class="mark"></span><span><span class="opt-main">Auch nach Berlin</span><span class="opt-sub">Potsdam liegt im Berliner Tarifbereich C</span></span></button>
+          <button class="opt" type="button" data-value="weit"><span class="mark"></span><span><span class="opt-main">Weiter weg</span><span class="opt-sub">durch Brandenburg oder deutschlandweit</span></span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Frage 4 -->
+    <section class="stop" id="stop-extras" data-key="extras">
+      <span class="stop-dot" aria-hidden="true"></span>
+      <div class="card">
+        <div class="summary"><p class="q-label">Außerdem</p><div class="answer"></div></div>
+        <button class="change" type="button">Ändern</button>
+        <div class="q-head"><div><p class="q-label">Frage 4 von 4</p><h2 class="q-title">Was ist noch dabei?</h2></div></div>
+        <p class="q-hint">Alles Zutreffende antippen – oder direkt weiter.</p>
+        <div class="options cols2" role="group" aria-label="Außerdem">
+          <button class="opt multi" type="button" data-value="kinder"><span class="mark"></span><span><span class="opt-main">Kinder von 6 bis 14</span><span class="opt-sub">fahren mit</span></span></button>
+          <button class="opt multi" type="button" data-value="gruppe"><span class="mark"></span><span><span class="opt-main">Wir sind 3 bis 5 Personen</span><span class="opt-sub">gemeinsam unterwegs</span></span></button>
+          <button class="opt multi" type="button" data-value="fahrrad"><span class="mark"></span><span><span class="opt-main">Fahrrad</span><span class="opt-sub">soll mit</span></span></button>
+          <button class="opt multi" type="button" data-value="hund"><span class="mark"></span><span><span class="opt-main">Hund</span><span class="opt-sub">soll mit</span></span></button>
+        </div>
+        <div class="actions"><button class="btn" type="button" id="extras-weiter">Ergebnis anzeigen</button></div>
+      </div>
+    </section>
+
+    <!-- Ergebnis -->
+    <section class="stop result hidden" id="stop-result">
+      <span class="stop-dot" aria-hidden="true"></span>
+      <div id="result"></div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <p id="stand-line"></p>
+    <p>Dieser Berater hilft bei der Auswahl, er ist keine verbindliche Tarifauskunft. Verbindlich sind die Tarifbestimmungen des VBB. Im Zweifel beraten wir Sie gern persönlich im ViP-Kundenzentrum am Hauptbahnhof.</p>
+  </footer>
+</main>
+
+<!-- ============================================================
+     TARIFDATEN - hier pflegen. Alle Preise in Euro als Paar
+     [Preis 2026, Preis 2027]. Quellen und Prüfstand siehe README.
+     ============================================================ -->
+<script id="tarif-data" type="application/json">
+{
+  "stand": "2026-10-26",
+  "jahre": [
+    { "key": "2026", "ab": "2026-01-01", "label": "gültig seit 1. Januar 2026" },
+    { "key": "2027", "ab": "2027-01-01", "label": "ab 1. Januar 2027 (VBB-Stand 24.9.2026, vorbehaltlich Tarifgenehmigung)" }
+  ],
+  "fahrtenProMonat": { "einmal": 1, "tag": 3, "gelegentlich": 6, "wenig": 15, "oft": 40 },
+  "potsdam": {
+    "kurz":  { "regel": [2.10, 2.20], "erm": [1.60, 1.70] },
+    "ab":    { "regel": [3.00, 3.10], "erm": [2.10, 2.20] },
+    "ab4":   { "regel": [9.60, 10.00], "erm": [7.00, 7.20] },
+    "abc":   { "regel": [3.70, 3.80], "erm": [2.60, 2.70] },
+    "abc4":  { "regel": [12.00, 12.40], "erm": [8.80, 9.20] },
+    "anschlussC": [1.90, 2.00],
+    "anschlussBerlinAB": [4.00, 4.10],
+    "tagAB":  { "regel": [6.30, 6.60], "erm": [4.60, 4.80], "gruppe": [15.50, 16.10] },
+    "tagABC": { "regel": [8.00, 8.40], "erm": [5.80, 6.00], "gruppe": [19.40, 20.10] }
+  },
+  "berlin": {
+    "ab":     { "regel": [4.00, 4.00], "erm": [2.50, 2.50] },
+    "abc":    { "regel": [5.00, 5.20], "erm": [3.50, 3.60] },
+    "abc4":   { "regel": [16.80, 17.60], "erm": [11.60, 12.00] },
+    "tagABC": { "regel": [12.90, 13.20], "erm": [8.00, 8.20], "gruppe": [37.70, 39.10] }
+  },
+  "gesamtnetzTag": [28.50, 29.60],
+  "zeit": {
+    "umweltAB":        { "monat": [57.00, 59.20], "abo": [43.50, 45.00] },
+    "umweltABC":       { "monat": [76.60, 79.40], "abo": [59.00, 61.00] },
+    "umweltBerlinABC": { "monat": [132.00, 136.90], "abo": [103.30, 107.10] },
+    "gesamtnetz":      { "monat": [273.70, 283.90], "abo": [214.50, 222.50] },
+    "azubiAB":         { "monat": [42.60, 44.20], "abo": [33.70, 35.00] },
+    "azubiABC":        { "monat": [55.20, 57.30], "abo": [43.70, 45.30] },
+    "schuelerticketPotsdam": { "eigenanteil": [15.00, 15.00], "gesamt": [26.30, 26.30] },
+    "freizeitTicket":  [18.20, 18.90],
+    "mobilAB":  [28.50, 29.60],
+    "mobilABC": [38.30, 39.70],
+    "dticket":       [63.00, 66.80],
+    "dticketJob":    [44.10, 46.76],
+    "dticketAzubi":  [37.80, 40.08],
+    "dsemester":     [37.80, 40.08]
+  },
+  "fahrrad": {
+    "potsdam":    { "einzel": [2.70, 2.80], "tag": [5.10, 5.60], "monatAB": [14.60, 15.10] },
+    "berlin":     { "einzelABC": [3.30, 3.40], "tagABC": [6.70, 6.90], "monatABC": [18.20, 18.90] },
+    "gesamtnetz": { "einzel": [4.60, 4.80], "tag": [7.50, 7.80], "monat": [30.30, 31.40] }
+  },
+  "abgeleitet": ["dticketJob", "dticketAzubi"]
+}
+</script>
+
+<!-- ============================================================
+     EMPFEHLUNGSLOGIK - reine Funktion ohne DOM, damit sie sich
+     mit Node testen lässt (tarifberater/test/engine-test.mjs).
+     ============================================================ -->
+<script id="tarif-engine">
+var TarifEngine = (function () {
+  'use strict';
+
+  function eur(x) { return x.toFixed(2).replace('.', ',') + ' €'; }
+
+  // Ein Preis ist immer ein Paar [2026, 2027]; `j` ist der Index des
+  // aktuell gültigen Jahres. `next` liefert den Folgepreis, falls er abweicht.
+  function P(paar, j) { return { jetzt: paar[j], next: (j === 0 && paar[1] !== paar[0]) ? paar[1] : null }; }
+
+  function empfehlung(id, name, preisPaar, einheit, j, extra) {
+    var p = P(preisPaar, j);
+    var e = Object.assign({
+      id: id, name: name, preis: p.jetzt, preisNext: p.next, einheit: einheit,
+      warum: [], beachten: [], kaufen: '', proFahrt: null, tag: null
+    }, extra || {});
+    return e;
+  }
+
+  // Ungefähre Kosten pro Monat bei n Fahrten, für den Vergleich.
+  function monatlich(preisProFahrt, n) { return preisProFahrt * n; }
+
+  function empfehlen(a, T) {
+    var j = a.jahrIndex || 0;
+    var n = T.fahrtenProMonat[a.wie] || 1;
+    var erm = a.wer === 'kind' ? 'erm' : 'regel';
+    var extras = a.extras || [];
+    var hat = function (x) { return extras.indexOf(x) >= 0; };
+    var r = { empfehlungen: [], hinweise: [], unterlagen: [], sofort: null, fahrtenProMonat: n };
+    var PO = T.potsdam, BE = T.berlin, Z = T.zeit, F = T.fahrrad;
+
+    // ---------- Sofort-Antworten ----------
+    if (a.wer === 'u6') {
+      r.sofort = {
+        name: 'Kein Ticket nötig',
+        text: 'Kinder unter 6 Jahren fahren in Bus, Tram, S-Bahn und Regionalzug kostenlos mit – auch mit dem Deutschlandticket einer Begleitperson.',
+        beachten: ['Ab dem 6. Geburtstag gilt der Ermäßigungstarif (Kinder 6 bis 14 Jahre).']
+      };
+      return r;
+    }
+    if (a.wer === 'sb') {
+      r.sofort = {
+        name: 'Freifahrt mit Wertmarke',
+        text: 'Mit Schwerbehindertenausweis und gültiger Wertmarke fahren Sie im gesamten Nahverkehr kostenlos – bundesweit, also auch im VBB und mit dem Regionalzug.',
+        beachten: [
+          'Die Wertmarke gibt es beim Versorgungsamt (in Brandenburg: Landesamt für Soziales und Versorgung). Ohne Wertmarke gilt der normale Tarif.',
+          'Mit Merkzeichen B fährt eine Begleitperson kostenlos mit – oder ein Hund.',
+          'Rollstuhl, Rollator und Gepäck fahren immer kostenlos mit.'
+        ]
+      };
+      r.unterlagen = ['Schwerbehindertenausweis', 'Beiblatt mit gültiger Wertmarke'];
+      return r;
+    }
+
+    // ---------- Gemeinsame Bausteine ----------
+    var kaufBar = 'Automat in Bus und Tram, VBB-App, ViP-Kundenzentrum';
+    var kaufAbo = 'ViP-Kundenzentrum oder online unter swp-potsdam.de/abonnement – Abos beginnen zum Monatsersten, am besten bis zum 10. des Vormonats beantragen';
+
+    function einzel(bereich) {
+      if (bereich === 'ab') return empfehlung('einzel-ab', 'Einzelfahrausweis Potsdam AB', PO.ab[erm], 'pro Fahrt', j, {
+        warum: ['60 Minuten in eine Richtung, Umsteigen erlaubt', 'Gilt in Bus, Tram, S-Bahn und Regionalzug innerhalb Potsdams'],
+        kaufen: kaufBar });
+      if (bereich === 'abc') return empfehlung('einzel-abc', 'Einzelfahrausweis Potsdam ABC', PO.abc[erm], 'pro Fahrt', j, {
+        warum: ['60 Minuten in eine Richtung, Umsteigen erlaubt', 'Gilt in Potsdam und im Umland (Tarifbereich C)'],
+        kaufen: kaufBar });
+      if (bereich === 'berlin') return empfehlung('einzel-berlin', 'Einzelfahrausweis Berlin ABC', BE.abc[erm], 'pro Fahrt', j, {
+        warum: ['120 Minuten in eine Richtung, Umsteigen erlaubt', 'Von Potsdam bis in die Berliner Innenstadt und zurück'],
+        beachten: ['Bis Wannsee oder Zehlendorf reicht ebenfalls nur ABC – den früheren Bereich BC gibt es nicht mehr.'],
+        kaufen: kaufBar });
+      return null;
+    }
+
+    function vierer(bereich) {
+      if (bereich === 'ab') return empfehlung('vierer-ab', '4-Fahrten-Karte Potsdam AB', PO.ab4[erm], 'für 4 Fahrten', j, {
+        proFahrt: PO.ab4[erm][j] / 4,
+        warum: ['Günstiger als vier Einzelfahrausweise', 'Kein festes Datum – die Fahrten können an verschiedenen Tagen liegen'],
+        kaufen: kaufBar });
+      if (bereich === 'abc') return empfehlung('vierer-abc', '4-Fahrten-Karte Potsdam ABC', PO.abc4[erm], 'für 4 Fahrten', j, {
+        proFahrt: PO.abc4[erm][j] / 4,
+        warum: ['Günstiger als vier Einzelfahrausweise', 'Kein festes Datum'],
+        kaufen: kaufBar });
+      if (bereich === 'berlin') return empfehlung('vierer-berlin', '4-Fahrten-Karte Berlin ABC', BE.abc4[erm], 'für 4 Fahrten', j, {
+        proFahrt: BE.abc4[erm][j] / 4,
+        warum: ['Günstiger als vier Einzelfahrausweise', 'Kein festes Datum'],
+        kaufen: kaufBar });
+      return null;
+    }
+
+    function tageskarte(bereich) {
+      var kinderSatz = 'Bis zu drei Kinder von 6 bis 14 Jahren fahren kostenlos mit';
+      if (bereich === 'ab') return empfehlung('tag-ab', '24-Stunden-Karte Potsdam AB', PO.tagAB[erm], 'für 24 Stunden', j, {
+        warum: ['Ab der dritten Fahrt günstiger als Einzelfahrausweise', '24 Stunden ab Entwertung, nicht nur bis Mitternacht', kinderSatz, 'Ein Hund fährt kostenlos mit'],
+        kaufen: kaufBar });
+      if (bereich === 'abc') return empfehlung('tag-abc', '24-Stunden-Karte Potsdam ABC', PO.tagABC[erm], 'für 24 Stunden', j, {
+        warum: ['Ab der dritten Fahrt günstiger als Einzelfahrausweise', '24 Stunden ab Entwertung', kinderSatz, 'Ein Hund fährt kostenlos mit'],
+        kaufen: kaufBar });
+      if (bereich === 'berlin') return empfehlung('tag-berlin', '24-Stunden-Karte Berlin ABC', BE.tagABC[erm], 'für 24 Stunden', j, {
+        warum: ['Ab der dritten Fahrt günstiger als Einzelfahrausweise', '24 Stunden ab Entwertung', kinderSatz, 'Ein Hund fährt kostenlos mit'],
+        kaufen: kaufBar });
+      if (bereich === 'weit') return empfehlung('tag-vbb', 'Tageskarte VBB-Gesamtnetz', T.gesamtnetzTag, 'für einen Tag', j, {
+        warum: ['Gilt in ganz Berlin und Brandenburg, in allen Bussen und Bahnen des VBB'],
+        beachten: ['Montag bis Freitag erst ab 9 Uhr gültig (bis 3 Uhr am Folgetag); am Wochenende und an Feiertagen ganztägig.'],
+        kaufen: kaufBar });
+      return null;
+    }
+
+    function gruppenkarte(bereich) {
+      var map = { ab: ['gruppe-ab', '24-Stunden-Kleingruppenkarte Potsdam AB', PO.tagAB.gruppe],
+                  abc: ['gruppe-abc', '24-Stunden-Kleingruppenkarte Potsdam ABC', PO.tagABC.gruppe],
+                  berlin: ['gruppe-berlin', '24-Stunden-Kleingruppenkarte Berlin ABC', BE.tagABC.gruppe] };
+      var m = map[bereich]; if (!m) return null;
+      return empfehlung(m[0], m[1], m[2], 'für bis zu 5 Personen, 24 Stunden', j, {
+        warum: ['Ab drei Personen günstiger als einzelne 24-Stunden-Karten', 'Alle fahren gemeinsam auf einer Karte'],
+        beachten: ['Kinder zählen hier als Personen – die kostenlose Kindermitnahme gilt nur für die normale 24-Stunden-Karte.'],
+        kaufen: kaufBar });
+    }
+
+    function dticket(tagText) {
+      return empfehlung('dticket', 'Deutschlandticket', Z.dticket, 'pro Monat', j, {
+        tag: tagText || null,
+        warum: ['Gilt deutschlandweit in allen Bussen, Trams, S-Bahnen und Regionalzügen', 'Monatlich kündbar', 'Im VBB fährt ein Hund kostenlos mit'],
+        beachten: ['Nur als Abo, nicht am Automaten – Ausweis und Bankverbindung nötig', 'Persönlich, nicht übertragbar; andere Erwachsene können nicht mitgenommen werden', 'Fahrrad kostet extra, Fernzüge (ICE, IC) sind ausgeschlossen'],
+        kaufen: kaufAbo });
+    }
+
+    function umweltkarte(bereich, abo) {
+      var map = { ab: ['umwelt-ab', 'VBB-Umweltkarte Potsdam AB', Z.umweltAB],
+                  abc: ['umwelt-abc', 'VBB-Umweltkarte Potsdam ABC', Z.umweltABC],
+                  berlin: ['umwelt-berlin', 'VBB-Umweltkarte Berlin ABC', Z.umweltBerlinABC],
+                  weit: ['umwelt-vbb', 'VBB-Umweltkarte Gesamtnetz', Z.gesamtnetz] };
+      var m = map[bereich]; if (!m) return null;
+      var e = empfehlung(m[0] + (abo ? '-abo' : '-monat'), m[1] + (abo ? ' im Abo' : ' als Monatskarte'), abo ? m[2].abo : m[2].monat, 'pro Monat', j, {
+        warum: ['Übertragbar – kann auch von Familie oder Kolleg:innen genutzt werden',
+                'Abends ab 20 Uhr, am Wochenende und an Feiertagen fahren ein Erwachsener und bis zu drei Kinder (6–14) kostenlos mit',
+                'Ein Hund fährt kostenlos mit'],
+        beachten: abo ? ['Laufzeit und Kündigungsfrist laut ViP-Abo-Bedingungen'] : ['Gilt einen Monat ab dem gewählten Tag (gleitend)'],
+        kaufen: abo ? kaufAbo : kaufBar });
+      return e;
+    }
+
+    function mobilitaetsticket(bereich) {
+      var abc = bereich === 'abc';
+      return empfehlung('mobil', 'Mobilitätsticket Brandenburg Potsdam ' + (abc ? 'ABC' : 'AB'), abc ? Z.mobilABC : Z.mobilAB, 'pro Monat', j, {
+        tag: 'Für Leistungsberechtigte',
+        warum: ['Etwa die Hälfte des normalen Monatskartenpreises', 'Ein Hund und Kinder unter 6 fahren kostenlos mit'],
+        beachten: ['Gilt nur in Brandenburg, nicht für Fahrten nach Berlin', 'Persönliche Monatskarte, kein Abo – jeden Monat neu kaufen', 'In Potsdam für Bürgergeld-Beziehende als Handyticket über das Jobcenter'],
+        kaufen: 'Nach Berechtigungsnachweis: ViP-Kundenzentrum bzw. Handyticket über das Jobcenter' });
+    }
+
+    function schuelerticket() {
+      return empfehlung('schueler-potsdam', 'Schülerticket Potsdam', Z.schuelerticketPotsdam.eigenanteil, 'pro Monat (Eigenanteil)', j, {
+        tag: 'Für Potsdamer Schüler:innen',
+        warum: ['Die Stadt Potsdam übernimmt den Großteil – voller Preis wären ' + eur(Z.schuelerticketPotsdam.gesamt[j]), 'Gilt in ganz Potsdam (Tarifbereich AB), auch in der Freizeit und in den Ferien'],
+        beachten: ['Nur als Abo, mit Schulbescheinigung', 'Gilt nicht in Berlin – dafür eignet sich das Deutschlandticket'],
+        kaufen: kaufAbo });
+    }
+
+    function aboAzubi(bereich) {
+      var abc = bereich === 'abc';
+      return empfehlung('abo-azubi', 'VBB-Abo Schüler/Azubi Potsdam ' + (abc ? 'ABC' : 'AB'), abc ? Z.azubiABC.abo : Z.azubiAB.abo, 'pro Monat', j, {
+        warum: ['Günstiger als die normale Umweltkarte', 'Als Monatskarte ohne Abo: ' + eur((abc ? Z.azubiABC : Z.azubiAB).monat[j])],
+        beachten: ['Ausbildungs- oder Schulbescheinigung nötig', 'Gilt nur im gewählten Tarifbereich'],
+        kaufen: kaufAbo });
+    }
+
+    function dticketAzubi() {
+      return empfehlung('dticket-azubi', 'Deutschlandticket Zuschuss Ausbildung', Z.dticketAzubi, 'pro Monat', j, {
+        tag: 'Für Auszubildende',
+        warum: ['Deutschlandweit, auch in der Freizeit – rund 40 % unter dem normalen Deutschlandticket', 'Monatlich kündbar'],
+        beachten: ['Duale Ausbildung: läuft über den Ausbildungsbetrieb (Jobticket-Vertrag, schon ab einem Beschäftigten). Vollschulische Ausbildung: Zuschuss vom Land Brandenburg', 'Nur als Handyticket', 'Preis ab 2027 abgeleitet (60 % des Deutschlandtickets) – bitte im Kundenzentrum bestätigen lassen'],
+        kaufen: 'Über den Ausbildungsbetrieb (firmenticket@vip-potsdam.de) bzw. die Schule' });
+    }
+
+    function fahrradHinweis(bereich, monatlichB) {
+      if (bereich === 'weit') {
+        return monatlichB
+          ? 'Fahrrad: Monatskarte Fahrrad VBB-Gesamtnetz ' + eur(F.gesamtnetz.monat[j]) + ' – auch zum Deutschlandticket nötig.'
+          : 'Fahrrad: 24-Stunden-Karte Fahrrad VBB-Gesamtnetz ' + eur(F.gesamtnetz.tag[j]) + ' bzw. Einzelfahrt ' + eur(F.gesamtnetz.einzel[j]) + '. Mitnahme nur, wenn Platz ist – Rollstuhl und Kinderwagen haben Vorrang.';
+      }
+      if (bereich === 'berlin') {
+        return monatlichB
+          ? 'Fahrrad: Monatskarte Fahrrad Berlin ABC ' + eur(F.berlin.monatABC[j]) + ' – auch zum Deutschlandticket nötig.'
+          : 'Fahrrad: Einzelfahrausweis Fahrrad Berlin ABC ' + eur(F.berlin.einzelABC[j]) + ', 24-Stunden-Karte Fahrrad ' + eur(F.berlin.tagABC[j]) + '. Mitnahme nur, wenn Platz ist.';
+      }
+      return monatlichB
+        ? 'Fahrrad: Monatskarte Fahrrad Potsdam AB ' + eur(F.potsdam.monatAB[j]) + ' – auch zum Deutschlandticket nötig.'
+        : 'Fahrrad: Einzelfahrausweis Fahrrad Potsdam ' + eur(F.potsdam.einzel[j]) + ' (gilt in ganz Potsdam ABC), 24-Stunden-Karte Fahrrad ' + eur(F.potsdam.tag[j]) + '. Mitnahme nur, wenn Platz ist – Rollstuhl und Kinderwagen haben Vorrang.';
+    }
+
+    // ---------- Einmalige Fahrt ----------
+    if (a.wie === 'einmal') {
+      if (a.wohin === 'weit') {
+        r.empfehlungen.push(empfehlung('einzel-vbb', 'Einzelfahrausweis nach Entfernung', [0, 0], '', j, {
+          preis: null, preisNext: null,
+          warum: ['Der Preis richtet sich nach der Strecke – die VBB-App oder der Automat zeigen ihn nach Eingabe des Ziels'],
+          beachten: ['Hin und zurück am selben Tag? Dann ist die Tageskarte VBB-Gesamtnetz (' + eur(T.gesamtnetzTag[j]) + ') oft günstiger.'],
+          kaufen: kaufBar }));
+        r.empfehlungen.push(tageskarte('weit'));
+      } else {
+        var e1 = einzel(a.wohin); e1.tag = 'Günstigste Wahl'; r.empfehlungen.push(e1);
+        if (a.wohin === 'ab') {
+          r.empfehlungen.push(empfehlung('kurz', 'Kurzstrecke Potsdam', PO.kurz[erm], 'pro Fahrt', j, {
+            warum: ['Reicht für bis zu 4 Haltestellen mit Bus oder Tram'],
+            beachten: ['Kein Wechsel zwischen ViP, regiobus und Havelbus'],
+            kaufen: kaufBar }));
+        }
+        r.empfehlungen.push(vierer(a.wohin));
+        if (a.wohin === 'berlin') {
+          r.hinweise.push({ art: 'info', text: 'Wer schon eine Zeitkarte Potsdam AB hat, braucht für die Weiterfahrt nach Berlin nur den Anschlussfahrausweis Potsdam → Berlin AB für ' + eur(PO.anschlussBerlinAB[j]) + '.' });
+        }
+      }
+      if (hat('gruppe')) r.hinweise.push({ art: 'info', text: 'Für eine einzelne Fahrt braucht jede Person einen Fahrausweis. Bei mehreren Fahrten am Tag lohnt sich die 24-Stunden-Kleingruppenkarte.' });
+    }
+
+    // ---------- Mehrere Fahrten an einem Tag ----------
+    if (a.wie === 'tag') {
+      if (hat('gruppe') && a.wohin !== 'weit') {
+        var g = gruppenkarte(a.wohin); g.tag = 'Günstigste Wahl'; r.empfehlungen.push(g);
+        r.empfehlungen.push(tageskarte(a.wohin));
+      } else {
+        var t = tageskarte(a.wohin); t.tag = 'Günstigste Wahl'; r.empfehlungen.push(t);
+        if (a.wohin !== 'weit') {
+          var e2 = einzel(a.wohin);
+          e2.name = '2 Einzelfahrausweise statt Tageskarte';
+          e2.preis = e2.preis * 2; e2.preisNext = e2.preisNext ? e2.preisNext * 2 : null; e2.einheit = 'für hin und zurück';
+          e2.warum = ['Nur wenn es wirklich bei hin und zurück bleibt'];
+          r.empfehlungen.push(e2);
+          r.empfehlungen.push(vierer(a.wohin));
+        }
+        if (hat('gruppe') && a.wohin === 'weit') r.hinweise.push({ art: 'info', text: 'Für das VBB-Gesamtnetz gibt es keine Gruppenkarte – jede Person braucht eine eigene Tageskarte.' });
+      }
+      if (hat('kinder') && !hat('gruppe') && a.wohin !== 'weit') r.hinweise.push({ art: 'info', text: 'Mit der 24-Stunden-Karte fahren bis zu drei Kinder von 6 bis 14 Jahren kostenlos mit – ein eigenes Ticket brauchen sie nicht.' });
+    }
+
+    // ---------- Ein paar Mal im Monat ----------
+    if (a.wie === 'gelegentlich') {
+      if (a.wohin === 'weit') {
+        var d0 = dticket('Günstigste Wahl'); r.empfehlungen.push(d0);
+        r.empfehlungen.push(tageskarte('weit'));
+        r.hinweise.push({ art: 'info', text: 'Ab drei Tagesfahrten im Monat ist das Deutschlandticket günstiger als einzelne Tageskarten.' });
+      } else {
+        var v = vierer(a.wohin); v.tag = 'Günstigste Wahl';
+        v.beachten = (v.beachten || []).concat(['Bei etwa ' + n + ' Fahrten im Monat: rund ' + eur(monatlich(v.proFahrt, n)) + ' – ein Abo lohnt sich erst ab etwa ' + Math.ceil((a.wohin === 'berlin' ? Z.dticket[j] : (a.wohin === 'abc' ? Z.umweltABC.abo[j] : Z.umweltAB.abo[j])) / v.proFahrt) + ' Fahrten']);
+        r.empfehlungen.push(v);
+        r.empfehlungen.push(einzel(a.wohin));
+        if (a.wohin === 'berlin') r.empfehlungen.push(dticket(null));
+      }
+      if (a.wer === 'schueler' && a.wohin === 'ab') {
+        var s0 = schuelerticket(); s0.tag = 'Für Potsdamer Schüler:innen'; r.empfehlungen.unshift(s0);
+      }
+    }
+
+    // ---------- Regelmäßig (1–2 Tage pro Woche bzw. fast täglich) ----------
+    if (a.wie === 'wenig' || a.wie === 'oft') {
+      var kandidaten = [];
+      var bereich = a.wohin;
+      // Die Kombination "Umweltkarte AB + Anschluss nach Berlin" hat keinen
+      // festen Monatspreis (je Berlin-Fahrt kommen 4 € dazu) und darf deshalb
+      // nicht nach ihrem Grundpreis sortiert werden - sonst stünde sie vor
+      // dem Deutschlandticket, obwohl sie bei täglichen Berlin-Fahrten weit
+      // teurer ist. Sie wird nach der Sortierung als zweite Option eingefügt.
+      var kombi = null;
+
+      // Zielgruppen-Angebote zuerst sammeln
+      if (a.wer === 'schueler' && (bereich === 'ab')) kandidaten.push(schuelerticket());
+      if (a.wer === 'schueler' && (bereich === 'abc')) kandidaten.push(aboAzubi('abc'));
+      // Das Deutschlandticket Zuschuss Ausbildung gilt für Auszubildende
+      // (dual oder vollschulisch), nicht für Schüler:innen allgemeinbildender
+      // Schulen - die bekommen für Berlin nur das normale Deutschlandticket.
+      if (a.wer === 'azubi') kandidaten.push(dticketAzubi());
+      if (a.wer === 'azubi' && (bereich === 'ab' || bereich === 'abc')) kandidaten.push(aboAzubi(bereich));
+      if (a.wer === 'schueler' && (bereich === 'berlin' || bereich === 'weit')) {
+        r.hinweise.push({ art: 'info', text: 'Für Schüler:innen gibt es im VBB kein ermäßigtes Deutschlandticket; das Schülerticket Potsdam gilt nur in Potsdam. Ausnahme: Wer eine vollschulische Berufsausbildung macht, bekommt das Deutschlandticket Zuschuss Ausbildung (' + eur(Z.dticketAzubi[j]) + ') über die Schule.' });
+      }
+      if (a.wer === 'leistung' && (bereich === 'ab' || bereich === 'abc')) kandidaten.push(mobilitaetsticket(bereich));
+
+      // Allgemeine Angebote
+      if (bereich === 'ab' || bereich === 'abc') {
+        var vv = vierer(bereich);
+        vv.name = '4-Fahrten-Karten für etwa ' + n + ' Fahrten';
+        vv.preis = monatlich(vv.proFahrt, n); vv.preisNext = (j === 0) ? monatlich((bereich === 'abc' ? PO.abc4 : PO.ab4)[erm][1] / 4, n) : null;
+        vv.einheit = 'pro Monat, geschätzt'; vv.warum = ['Kein Abo, keine Bindung', 'Lohnt sich bei wenigen Fahrten']; vv.beachten = [];
+        kandidaten.push(vv);
+        if (a.wer !== 'kind') {
+          kandidaten.push(umweltkarte(bereich, true));
+          kandidaten.push(umweltkarte(bereich, false));
+        }
+        kandidaten.push(dticket(null));
+      }
+      if (bereich === 'berlin') {
+        var d1 = dticket(null);
+        d1.warum.unshift('Weit günstiger als jede Berlin-ABC-Zeitkarte (Umweltkarte Berlin ABC im Abo: ' + eur(Z.umweltBerlinABC.abo[j]) + ')');
+        kandidaten.push(d1);
+        if (a.wer !== 'kind') {
+          kombi = umweltkarte('ab', true);
+          kombi.id = 'kombi'; kombi.name = 'Umweltkarte Potsdam AB im Abo + Anschluss nach Berlin';
+          kombi.einheit = 'pro Monat + ' + eur(PO.anschlussBerlinAB[j]) + ' je Berlin-Fahrt';
+          kombi.warum = ['Lohnt sich, wenn Berlin die Ausnahme ist: bis etwa ' + Math.floor((Z.dticket[j] - Z.umweltAB.abo[j]) / PO.anschlussBerlinAB[j]) + ' Berlin-Fahrten im Monat günstiger als das Deutschlandticket', 'Übertragbar, mit Mitnahme abends und am Wochenende'];
+          kombi.beachten = ['Der Anschlussfahrausweis Potsdam → Berlin AB wird je Fahrt zusätzlich gelöst'];
+          kandidaten.push(umweltkarte('berlin', true));
+        }
+      }
+      if (bereich === 'weit') {
+        kandidaten.push(dticket(null));
+        if (a.wer !== 'kind') kandidaten.push(umweltkarte('weit', true));
+      }
+      if (a.wer === 'kind' && bereich !== 'ab') {
+        r.hinweise.push({ art: 'info', text: 'Für Kinder im Schulalter gibt es mit Schulbescheinigung das Schülerticket Potsdam (' + eur(Z.schuelerticketPotsdam.eigenanteil[j]) + ' im Monat, Potsdam AB) oder das VBB-Abo Schüler/Azubi.' });
+      }
+      if (a.wer === 'kind' && bereich === 'ab') kandidaten.unshift(schuelerticket());
+
+      // Nach Preis sortieren, Zielgruppen-Angebote bleiben wegen ihres Preises ohnehin vorn
+      kandidaten = kandidaten.filter(Boolean);
+      kandidaten.sort(function (x, y) { return x.preis - y.preis; });
+      if (kandidaten.length) kandidaten[0].tag = kandidaten[0].tag || 'Günstigste Wahl';
+      if (kombi) kandidaten.splice(Math.min(1, kandidaten.length), 0, kombi);
+      r.empfehlungen = kandidaten;
+
+      // Einordnung der Alternativen
+      if (bereich === 'abc' && a.wer === 'erwachsen') {
+        r.hinweise.push({ art: 'info', text: 'Die Umweltkarte Potsdam ABC im Abo und das Deutschlandticket liegen nur ' + eur(Math.abs(Z.dticket[j] - Z.umweltABC.abo[j])) + ' auseinander. Wer gelegentlich weiter fährt, ist mit dem Deutschlandticket flexibler; wer die Karte weitergeben oder abends Familie mitnehmen will, mit der Umweltkarte.' });
+      }
+      if (a.wer === 'senior') r.hinweise.push({ art: 'info', text: 'Ein eigenes Seniorenangebot gibt es im VBB seit 2026 nicht mehr (das Abo 65plus wurde eingestellt) – das Deutschlandticket ersetzt es und ist günstiger.' });
+      if (a.wer === 'leistung' && bereich === 'berlin') r.hinweise.push({ art: 'warn', text: 'Das Mobilitätsticket Brandenburg gilt nicht in Berlin. Für regelmäßige Berlin-Fahrten bleibt das Deutschlandticket zum vollen Preis – ein ermäßigtes Deutschlandticket gibt es in Brandenburg derzeit nicht.' });
+      if (a.wer === 'student') r.hinweise.unshift({ art: 'info', text: 'Studierende: Fragen Sie an Ihrer Hochschule nach dem Deutschlandsemesterticket – ' + eur(Z.dsemester[j]) + ' im Monat über den Semesterbeitrag, deutschlandweit gültig. Es wird nicht im Kundenzentrum verkauft. Nimmt Ihre Hochschule nicht teil, gelten die Angebote unten.' });
+    }
+
+    // ---------- Student:in bei gelegentlichen Fahrten ----------
+    if (a.wer === 'student' && a.wie !== 'wenig' && a.wie !== 'oft') {
+      r.hinweise.unshift({ art: 'info', text: 'Mit Deutschlandsemesterticket Ihrer Hochschule brauchen Sie kein weiteres Ticket – es gilt deutschlandweit im Nahverkehr.' });
+    }
+
+    // ---------- Extras ----------
+    var monatlichB = (a.wie === 'wenig' || a.wie === 'oft');
+    if (hat('fahrrad')) r.hinweise.push({ art: 'warn', text: fahrradHinweis(a.wohin, monatlichB) });
+    if (hat('hund')) {
+      if (a.wie === 'einmal') r.hinweise.push({ art: 'warn', text: 'Hund: Für den Einzelfahrausweis braucht der Hund einen eigenen Fahrausweis zum Ermäßigungstarif (' + eur((a.wohin === 'berlin' ? BE.abc : (a.wohin === 'abc' ? PO.abc : PO.ab)).erm[j]) + '). Kleine Hunde in einer Tasche oder Box fahren kostenlos. Leine und Maulkorb sind Pflicht.' });
+      else r.hinweise.push({ art: 'info', text: 'Hund: Mit 24-Stunden-Karte, Zeitkarte oder Deutschlandticket fährt ein Hund im VBB kostenlos mit. Leine und Maulkorb sind Pflicht.' });
+    }
+    if (hat('kinder') && monatlichB) r.hinweise.push({ art: 'info', text: 'Kinder: Mit der VBB-Umweltkarte fahren abends ab 20 Uhr und am Wochenende ein Erwachsener und bis zu drei Kinder (6–14) kostenlos mit. Beim Deutschlandticket braucht jedes Kind ab 6 Jahren ein eigenes Ticket.' });
+    if (hat('kinder') && a.wie === 'einmal') r.hinweise.push({ art: 'info', text: 'Kinder von 6 bis 14 Jahren zahlen den Ermäßigungstarif. Bei mehreren Fahrten am Tag ist die 24-Stunden-Karte meist günstiger – dort fahren bis zu drei Kinder kostenlos mit.' });
+
+    // ---------- Unterlagen ----------
+    var abo = r.empfehlungen.some(function (e) { return /abo|dticket|schueler|mobil/.test(e.id); });
+    if (abo) r.unterlagen.push('Ausweis und Bankverbindung (für Abos)');
+    if (a.wer === 'schueler' || a.wer === 'kind') r.unterlagen.push('Schulbescheinigung');
+    if (a.wer === 'azubi') r.unterlagen.push('Ausbildungsvertrag oder Bescheinigung des Ausbildungsbetriebs');
+    if (a.wer === 'leistung') r.unterlagen.push('Aktueller Leistungsbescheid (Jobcenter, Sozialamt)');
+    if (a.wer === 'student') r.unterlagen.push('Immatrikulationsbescheinigung (für die Hochschule)');
+
+    return r;
+  }
+
+  return { empfehlen: empfehlen, eur: eur };
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var T = JSON.parse(document.getElementById('tarif-data').textContent);
+
+  // Aktuelles Tarifjahr: das letzte, dessen "ab"-Datum erreicht ist.
+  // ?jahr=2027 erlaubt eine Vorschau der Folgepreise (für die Pflege).
+  var params = new URLSearchParams(location.search);
+  var heute = new Date();
+  var jahrIndex = 0;
+  T.jahre.forEach(function (y, i) { if (new Date(y.ab) <= heute) jahrIndex = i; });
+  if (params.get('jahr')) T.jahre.forEach(function (y, i) { if (y.key === params.get('jahr')) jahrIndex = i; });
+  if (params.get('embed') === '1') document.body.classList.add('embed');
+
+  var standLine = document.getElementById('stand-line');
+  var naechstes = T.jahre[jahrIndex + 1];
+  standLine.innerHTML = 'Preise ' + T.jahre[jahrIndex].label + (naechstes ? '. Wo sich der Preis ändert, steht der Folgepreis dabei (' + naechstes.label + ')' : '') + '. Datenstand <span class="stand">' + formatDatum(T.stand) + '</span>.';
+
+  function formatDatum(iso) { var p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
+  function eur(x) { return TarifEngine.eur(x); }
+
+  var ORDER = ['wer', 'wie', 'wohin', 'extras'];
+  var LABELS = {};
+  document.querySelectorAll('.opt').forEach(function (b) {
+    var key = b.closest('.stop').dataset.key;
+    LABELS[key] = LABELS[key] || {};
+    LABELS[key][b.dataset.value] = b.querySelector('.opt-main').textContent;
+  });
+
+  var answers = { wer: null, wie: null, wohin: null, extras: [] };
+  var extrasDone = false;
+
+  // Zustand aus dem URL-Hash (Teilen, Zurück-Taste, Neuladen)
+  function readHash() {
+    var h = new URLSearchParams(location.hash.replace(/^#/, ''));
+    if (h.get('w')) answers.wer = h.get('w');
+    if (h.get('h')) answers.wie = h.get('h');
+    if (h.get('z')) answers.wohin = h.get('z');
+    if (h.has('x')) { answers.extras = h.get('x') ? h.get('x').split(',') : []; extrasDone = true; }
+  }
+  function writeHash() {
+    var h = new URLSearchParams();
+    if (answers.wer) h.set('w', answers.wer);
+    if (answers.wie) h.set('h', answers.wie);
+    if (answers.wohin) h.set('z', answers.wohin);
+    if (extrasDone) h.set('x', answers.extras.join(','));
+    var s = h.toString();
+    // In einem sandboxed iframe (z. B. manche Vorschauen) ist replaceState
+    // verboten - dann läuft die Seite einfach ohne Hash-Zustand weiter.
+    try { history.replaceState(null, '', s ? '#' + s : location.pathname + location.search); } catch (e) { /* egal */ }
+  }
+
+  function sofortFall() { return answers.wer === 'u6' || answers.wer === 'sb'; }
+
+  function currentStep() {
+    if (!answers.wer) return 'wer';
+    if (sofortFall()) return 'result';
+    if (!answers.wie) return 'wie';
+    if (!answers.wohin) return 'wohin';
+    if (!extrasDone) return 'extras';
+    return 'result';
+  }
+
+  function render() {
+    var step = currentStep();
+    ORDER.forEach(function (key) {
+      var stop = document.getElementById('stop-' + key);
+      var answered = key === 'extras' ? extrasDone : !!answers[key];
+      var skipped = sofortFall() && key !== 'wer';
+      stop.classList.toggle('hidden', skipped);
+      stop.classList.toggle('done', answered && step !== key);
+      stop.classList.toggle('active', step === key);
+      var text = key === 'extras'
+        ? (answers.extras.length ? answers.extras.map(function (v) { return LABELS.extras[v]; }).join(', ') : 'Nichts weiter')
+        : (answers[key] ? LABELS[key][answers[key]] : '');
+      stop.querySelector('.answer').textContent = text;
+      stop.querySelectorAll('.opt').forEach(function (b) {
+        var on = key === 'extras' ? answers.extras.indexOf(b.dataset.value) >= 0 : answers[key] === b.dataset.value;
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    });
+    var resultStop = document.getElementById('stop-result');
+    resultStop.classList.toggle('hidden', step !== 'result');
+    if (step === 'result') renderResult();
+    writeHash();
+    if (step !== 'wer') {
+      var el = step === 'result' ? resultStop : document.getElementById('stop-' + step);
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function preisHtml(e) {
+    if (e.preis === null || e.preis === undefined) return '<div class="price-row"><span class="price-unit">Preis nach Strecke</span></div>';
+    var s = '<div class="price-row"><span class="price">' + eur(e.preis) + '</span><span class="price-unit">' + e.einheit + '</span></div>';
+    if (e.preisNext) s += '<div class="price-next">ab 1.1.' + T.jahre[1].key + ': ' + eur(e.preisNext) + '</div>';
+    if (e.proFahrt) s += '<div class="per-ride">entspricht ' + eur(e.proFahrt) + ' je Fahrt</div>';
+    return s;
+  }
+  function liste(items, cls) {
+    if (!items || !items.length) return '';
+    return '<ul class="reasons ' + (cls || '') + '">' + items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var ICONS = {
+    info: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    warn: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9.5 16.5h-19L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>'
+  };
+
+  function renderResult() {
+    var r = TarifEngine.empfehlen({ wer: answers.wer, wie: answers.wie, wohin: answers.wohin, extras: answers.extras, jahrIndex: jahrIndex }, T);
+    var html = '';
+    if (r.sofort) {
+      html += '<div class="card result-card"><div class="result-head"><p class="result-title">Unsere Empfehlung</p><h2 class="result-name">' + esc(r.sofort.name) + '</h2></div>'
+        + '<div class="result-body"><p style="margin:0">' + esc(r.sofort.text) + '</p>' + liste(r.sofort.beachten, 'beachten') + '</div></div>';
+    } else {
+      var top = r.empfehlungen[0];
+      var rest = r.empfehlungen.slice(1);
+      html += '<div class="card result-card"><div class="result-head"><p class="result-title">Unsere Empfehlung</p><h2 class="result-name">' + esc(top.name) + '</h2>'
+        + (top.tag ? '<p class="result-tagline"><span class="tag">' + esc(top.tag) + '</span></p>' : '') + '</div><div class="result-body">' + preisHtml(top)
+        + liste(top.warum) + liste(top.beachten, 'beachten')
+        + (top.kaufen ? '<p class="buy"><b>Wo:</b> ' + esc(top.kaufen) + '</p>' : '') + '</div></div>';
+      if (rest.length) {
+        html += '<p class="section-label">Alternativen</p><div class="alts">' + rest.map(function (e) {
+          var sub = [];
+          if (e.proFahrt) sub.push('<span class="per">' + eur(e.proFahrt) + ' je Fahrt</span>');
+          if (e.preisNext) sub.push('ab 2027: ' + eur(e.preisNext));
+          if (e.warum && e.warum.length) sub.push(esc(e.warum[0]));
+          if (e.beachten && e.beachten.length) sub.push(esc(e.beachten[0]));
+          return '<div class="alt"><div class="alt-row"><span class="alt-name">' + esc(e.name) + '</span><span class="alt-price">'
+            + (e.preis === null ? 'nach Strecke' : '<b>' + eur(e.preis) + '</b> <span class="unit">' + esc(e.einheit) + '</span>') + '</span></div>'
+            + (sub.length ? '<div class="alt-sub">' + sub.join(' · ') + '</div>' : '') + '</div>';
+        }).join('') + '</div>';
+      }
+    }
+    if (r.hinweise.length) {
+      html += '<div class="notes">' + r.hinweise.map(function (h) { return '<div class="note ' + h.art + '">' + ICONS[h.art] + '<span>' + esc(h.text) + '</span></div>'; }).join('') + '</div>';
+    }
+    if (r.unterlagen.length) {
+      html += '<p class="section-label">Das brauchen Sie dafür</p><ul class="docs">' + r.unterlagen.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul>';
+    }
+    html += '<div class="actions"><button class="btn secondary" type="button" id="restart">Von vorn</button><button class="btn secondary" type="button" id="print">Drucken</button></div>';
+    document.getElementById('result').innerHTML = html;
+    document.getElementById('restart').addEventListener('click', function () {
+      answers = { wer: null, wie: null, wohin: null, extras: [] }; extrasDone = false; render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    document.getElementById('print').addEventListener('click', function () { window.print(); });
+  }
+
+  document.querySelectorAll('.stop').forEach(function (stop) {
+    var key = stop.dataset.key;
+    if (!key) return;
+    stop.querySelectorAll('.opt').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (key === 'extras') {
+          var v = b.dataset.value, i = answers.extras.indexOf(v);
+          if (i >= 0) answers.extras.splice(i, 1); else answers.extras.push(v);
+          b.setAttribute('aria-pressed', i >= 0 ? 'false' : 'true');
+          return;
+        }
+        answers[key] = b.dataset.value;
+        // Spätere Antworten bleiben erhalten (Ändern einer Frage), aber ein
+        // Sofort-Fall macht die übrigen Fragen überflüssig.
+        render();
+      });
+    });
+    stop.querySelector('.change').addEventListener('click', function () {
+      if (key === 'extras') extrasDone = false; else answers[key] = null;
+      if (key !== 'extras') extrasDone = extrasDone && true;
+      render();
+    });
+  });
+  document.getElementById('extras-weiter').addEventListener('click', function () { extrasDone = true; render(); });
+
+  readHash();
+  render();
+})();
+</script>
+</body>
+</html>
