@@ -21,10 +21,11 @@ Server-Logik; alles läuft im Browser des Nutzers.
 |---|---|
 | `index.html` | Vollansicht mit grüner Kopfleiste |
 | `index.html?embed=1` | ohne Kopfleiste – für WebViews und iframes, in denen die App schon einen Kopf hat |
+| `index.html?lang=tr` | startet auf Türkisch (`de`, `en`, `uk`, `ar`, `tr`) – z. B. für einen eigenen Menüpunkt je Sprache in der App |
 | `index.html?jahr=2027` | Vorschau mit den Preisen des Folgejahres (für die Pflege, nicht verlinken) |
 | `index.html#w=erwachsen&h=oft&z=berlin&x=hund` | Direktlink auf ein Ergebnis – die Antworten stehen im Hash, Zurück-Taste und Neuladen behalten den Stand |
 
-Hash-Schlüssel: `w` = wer (`erwachsen`, `kind`, `u6`, `schueler`, `azubi`,
+Hash-Schlüssel: `l` = Sprache (fehlt bei Deutsch), `w` = wer (`erwachsen`, `kind`, `u6`, `schueler`, `azubi`,
 `student`, `leistung`, `sb`), `h` = wie oft (`einmal`, `tag`, `gelegentlich`,
 `wenig`, `oft`), `z` = wohin (`ab`, `abc`, `berlin`, `weit`), `x` = Extras
 (kommagetrennt: `kinder`, `gruppe`, `fahrrad`, `hund`).
@@ -41,6 +42,32 @@ auch nichts für eine Datenschutzerklärung nachzutragen.
 Repository-Einstellungen unter „Pages“ den Branch wählen, Ordner `/` –
 danach ist die Seite unter `https://<nutzer>.github.io/vip-translator/tarifberater/`
 erreichbar. Für den Produktivbetrieb gehört sie aber auf eine ViP-Domain.
+
+## Sprachen
+
+Deutsch, Englisch, Ukrainisch, Arabisch (von rechts nach links) und
+Türkisch. Die Sprachleiste unter dem Kopf ist auch im `?embed=1`-Modus
+sichtbar. Ohne Vorgabe nimmt die Seite die Gerätesprache, sonst Deutsch;
+Reihenfolge: Hash `#l=` vor `?lang=` vor Gerätesprache.
+
+- **Produktnamen bleiben deutsch** (Deutschlandticket, 24-Stunden-Karte,
+  Einzelfahrausweis Potsdam AB …), weil genau das auf Automat, Ticket und
+  Schalter steht. Übersetzt wird alles Erklärende; die Seite sagt das in
+  den anderen Sprachen ausdrücklich.
+- Alle Texte stehen im Block `<script id="tarif-i18n">`, **ein Eintrag pro
+  Text mit einer Zeile je Sprache**. Fehlt eine Sprache, erscheint Deutsch.
+  Der Test prüft, dass jeder Text in allen fünf Sprachen existiert, die
+  Platzhalter (`{p}` Preis, `{n}`/`{m}` Zahl, `{y}` Jahr) überall gleich
+  sind und alle 8.640 Kombinationen in jeder Sprache dieselbe Empfehlung
+  ergeben wie auf Deutsch.
+- Verbindlich bleibt der deutsche Tariftext – das steht in jeder Sprache
+  im Fuß der Seite.
+- **Vor dem öffentlichen Start gegenlesen lassen:** Die Übersetzungen sind
+  sorgfältig, aber nicht von Muttersprachler:innen geprüft. Am besten je
+  eine Person aus dem Kundenzentrum oder dem Umfeld pro Sprache bitten,
+  die Seite einmal durchzuklicken (`?lang=uk` usw.).
+- Neue Sprache: Eintrag in `LANGS` ergänzen und jedem Text eine Zeile
+  geben – der Test zeigt, was fehlt.
 
 ## Die Entscheidungslogik in einem Absatz
 

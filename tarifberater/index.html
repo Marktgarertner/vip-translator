@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="Welches Ticket passt zu mir? Vier Fragen, dann sehen Sie, was in Potsdam und im VBB für Sie am günstigsten ist.">
+<meta name="description" content="Welches Ticket passt zu mir? Vier Fragen, dann sehen Sie, was in Potsdam und im VBB für Sie am günstigsten ist. Auf Deutsch, English, Українська, العربية, Türkçe.">
 <title>Welches Ticket passt?</title>
 <style>
 /* ============================================================
@@ -114,7 +114,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-2); outl
   display: flex; align-items: center; gap: 12px;
 }
 .logo { height: 34px; width: auto; display: block; }
-.topbar-title { font-weight: 600; font-size: 17px; margin-left: auto; opacity: .95; }
+.topbar-title { font-weight: 600; font-size: 17px; margin-inline-start: auto; opacity: .95; }
 .topbar-sub { font-size: 13px; opacity: .85; }
 
 .shell { max-width: 720px; margin: 0 auto; padding: 0 16px 80px; }
@@ -135,12 +135,12 @@ body.embed .topbar { display: none; }
 /* ---------- Fragen entlang der Linie ---------- */
 .line { position: relative; margin-top: 18px; }
 .line::before {
-  content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px; width: 4px;
+  content: ""; position: absolute; inset-inline-start: 15px; top: 14px; bottom: 14px; width: 4px;
   background: var(--outline); border-radius: 2px;
 }
-.stop { position: relative; padding-left: 44px; margin: 0 0 14px; }
+.stop { position: relative; padding-inline-start: 44px; margin: 0 0 14px; }
 .stop-dot {
-  position: absolute; left: 6px; top: 16px; width: 22px; height: 22px; border-radius: 50%;
+  position: absolute; inset-inline-start: 6px; top: 16px; width: 22px; height: 22px; border-radius: 50%;
   background: var(--paper); border: 4px solid var(--outline); transition: border-color .15s, background .15s;
 }
 .stop.active .stop-dot { border-color: var(--accent); background: var(--surface); }
@@ -149,7 +149,7 @@ body.embed .topbar { display: none; }
   content: ""; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px;
   border: solid var(--on-accent); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
 }
-.stop.result .stop-dot { border-color: var(--accent); background: var(--accent); width: 26px; height: 26px; left: 4px; }
+.stop.result .stop-dot { border-color: var(--accent); background: var(--accent); width: 26px; height: 26px; inset-inline-start: 4px; }
 .stop.result .stop-dot::after { display: none; }
 
 .card {
@@ -164,7 +164,7 @@ body.embed .topbar { display: none; }
 .options { display: grid; gap: 8px; margin-top: 12px; grid-template-columns: 1fr; }
 @media (min-width: 520px) { .options.cols2 { grid-template-columns: 1fr 1fr; } }
 .opt {
-  display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+  display: flex; align-items: center; gap: 12px; text-align: start; width: 100%;
   min-height: 52px; padding: 10px 14px; border-radius: 8px; cursor: pointer;
   background: var(--surface-soft); border: 1.5px solid transparent; transition: border-color .12s, background .12s;
 }
@@ -247,7 +247,7 @@ body.embed .topbar { display: none; }
 .note .ico { flex: none; width: 20px; height: 20px; margin-top: 1px; }
 .notes { display: grid; gap: 8px; margin-top: 14px; }
 
-.docs { margin: 0; padding-left: 20px; font-size: 15px; }
+.docs { margin: 0; padding-inline-start: 20px; font-size: 15px; }
 .docs li { margin: 3px 0; }
 
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
@@ -261,13 +261,32 @@ body.embed .topbar { display: none; }
 .footer a { color: var(--accent); }
 .stand { font-variant-numeric: tabular-nums; }
 
+/* ---------- Sprachwahl ---------- */
+.langbar { background: var(--surface); border-bottom: 1px solid var(--outline); }
+.langbar-inner { max-width: 720px; margin: 0 auto; padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
+.globe { flex: none; width: 20px; height: 20px; color: var(--muted); }
+.lang-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.lang-btn {
+  border: 1.5px solid var(--outline); background: transparent; color: var(--ink); border-radius: 6px;
+  min-height: 36px; padding: 4px 10px; font-size: 14.5px; font-weight: 600; cursor: pointer;
+}
+.lang-btn:hover { border-color: var(--accent-2); }
+.lang-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.names-note { margin: 12px 0 0; font-size: 14.5px; color: var(--info-ink); background: var(--info-bg); border-radius: var(--radius-sm); padding: 10px 12px; max-width: 60ch; }
+
+/* Arabisch: Inter hat keine arabischen Zeichen, und Sperrsatz zerreißt
+   die verbundene Schrift - deshalb eigene Schriftliste, kein letter-spacing. */
+:root[lang="ar"] body { font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, "Geeza Pro", var(--font); font-size: 18px; }
+:root[lang="ar"] * { letter-spacing: 0 !important; }
+:root[lang="ar"] .q-label, :root[lang="ar"] .kicker, :root[lang="ar"] .result-title, :root[lang="ar"] .section-label { font-size: 13.5px; }
+
 .hidden { display: none !important; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 @media print {
   body { background: #fff; color: #000; }
-  .topbar, .change, .actions, .line::before, .stop-dot { display: none !important; }
-  .stop { padding-left: 0; }
+  .topbar, .langbar, .change, .actions, .line::before, .stop-dot { display: none !important; }
+  .stop { padding-inline-start: 0; }
   .card { box-shadow: none; }
 }
 </style>
@@ -277,104 +296,34 @@ body.embed .topbar { display: none; }
 <header class="topbar">
   <div class="topbar-inner">
     <img class="logo" src="data:image/png;base64,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" alt="ViP Verkehrsbetrieb Potsdam">
-    <div class="topbar-title">Tarifberater</div>
+    <div class="topbar-title" data-t="topbar_title">Tarifberater</div>
   </div>
 </header>
+<nav class="langbar">
+  <div class="langbar-inner">
+    <svg class="globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
+    <div class="lang-list" id="langbar-list" role="group" aria-label="Sprache"></div>
+  </div>
+</nav>
 
 <main class="shell">
   <section class="intro">
-    <p class="kicker">Potsdam &amp; VBB</p>
-    <h1>Welches Ticket passt zu Ihnen?</h1>
-    <p class="lede">Vier kurze Fragen – dann sehen Sie, womit Sie am günstigsten fahren, und was Sie dafür mitbringen müssen.</p>
+    <p class="kicker" data-t="kicker">Potsdam &amp; VBB</p>
+    <h1 data-t="h1">Welches Ticket passt zu Ihnen?</h1>
+    <p class="lede" data-t="lede">Vier kurze Fragen – dann sehen Sie, womit Sie am günstigsten fahren, und was Sie dafür mitbringen müssen.</p>
+    <p class="names-note hidden" id="names-note"></p>
   </section>
 
-  <div class="line" id="line">
-    <!-- Frage 1 -->
-    <section class="stop active" id="stop-wer" data-key="wer">
-      <span class="stop-dot" aria-hidden="true"></span>
-      <div class="card">
-        <div class="summary"><p class="q-label">Wer fährt</p><div class="answer"></div></div>
-        <button class="change" type="button">Ändern</button>
-        <div class="q-head"><div><p class="q-label">Frage 1 von 4</p><h2 class="q-title">Wer fährt?</h2></div></div>
-        <p class="q-hint">Für wen soll das Ticket sein?</p>
-        <div class="options cols2" role="group" aria-label="Wer fährt">
-          <button class="opt" type="button" data-value="erwachsen"><span class="mark"></span><span><span class="opt-main">Erwachsene Person</span><span class="opt-sub">ab 15 Jahren, ohne Ermäßigung</span></span></button>
-          <button class="opt" type="button" data-value="kind"><span class="mark"></span><span><span class="opt-main">Kind 6 bis 14 Jahre</span><span class="opt-sub">Ermäßigungstarif</span></span></button>
-          <button class="opt" type="button" data-value="u6"><span class="mark"></span><span><span class="opt-main">Kind unter 6 Jahren</span><span class="opt-sub">fährt kostenlos mit</span></span></button>
-          <button class="opt" type="button" data-value="schueler"><span class="mark"></span><span><span class="opt-main">Schüler:in</span><span class="opt-sub">ab 15 Jahren oder mit Schulbescheinigung</span></span></button>
-          <button class="opt" type="button" data-value="azubi"><span class="mark"></span><span><span class="opt-main">Auszubildende:r</span><span class="opt-sub">duale oder vollschulische Ausbildung</span></span></button>
-          <button class="opt" type="button" data-value="student"><span class="mark"></span><span><span class="opt-main">Student:in</span><span class="opt-sub">an einer Hochschule eingeschrieben</span></span></button>
-          <button class="opt" type="button" data-value="leistung"><span class="mark"></span><span><span class="opt-main">Mit Leistungsbescheid</span><span class="opt-sub">Bürgergeld, Sozialhilfe, Grundsicherung, Asylbewerberleistungen</span></span></button>
-          <button class="opt" type="button" data-value="sb"><span class="mark"></span><span><span class="opt-main">Mit Schwerbehindertenausweis</span><span class="opt-sub">und Wertmarke</span></span></button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Frage 2 -->
-    <section class="stop" id="stop-wie" data-key="wie">
-      <span class="stop-dot" aria-hidden="true"></span>
-      <div class="card">
-        <div class="summary"><p class="q-label">Wie oft</p><div class="answer"></div></div>
-        <button class="change" type="button">Ändern</button>
-        <div class="q-head"><div><p class="q-label">Frage 2 von 4</p><h2 class="q-title">Wie oft fahren Sie?</h2></div></div>
-        <p class="q-hint">Eine Fahrt heißt: hin. Hin und zurück sind zwei Fahrten.</p>
-        <div class="options" role="group" aria-label="Wie oft">
-          <button class="opt" type="button" data-value="einmal"><span class="mark"></span><span><span class="opt-main">Eine einzelne Fahrt</span><span class="opt-sub">nur hin, oder hin und zurück an verschiedenen Tagen</span></span></button>
-          <button class="opt" type="button" data-value="tag"><span class="mark"></span><span><span class="opt-main">Mehrere Fahrten an einem Tag</span><span class="opt-sub">Ausflug, Besuch, Erledigungen</span></span></button>
-          <button class="opt" type="button" data-value="gelegentlich"><span class="mark"></span><span><span class="opt-main">Ein paar Mal im Monat</span><span class="opt-sub">etwa 4 bis 8 Fahrten</span></span></button>
-          <button class="opt" type="button" data-value="wenig"><span class="mark"></span><span><span class="opt-main">An 1 bis 2 Tagen pro Woche</span><span class="opt-sub">etwa 15 Fahrten im Monat</span></span></button>
-          <button class="opt" type="button" data-value="oft"><span class="mark"></span><span><span class="opt-main">Fast täglich</span><span class="opt-sub">Arbeit, Schule, Ausbildung – etwa 40 Fahrten im Monat</span></span></button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Frage 3 -->
-    <section class="stop" id="stop-wohin" data-key="wohin">
-      <span class="stop-dot" aria-hidden="true"></span>
-      <div class="card">
-        <div class="summary"><p class="q-label">Wohin</p><div class="answer"></div></div>
-        <button class="change" type="button">Ändern</button>
-        <div class="q-head"><div><p class="q-label">Frage 3 von 4</p><h2 class="q-title">Wohin fahren Sie?</h2></div></div>
-        <p class="q-hint">Der weiteste Weg zählt.</p>
-        <div class="options" role="group" aria-label="Wohin">
-          <button class="opt" type="button" data-value="ab"><span class="mark"></span><span><span class="opt-main">Nur innerhalb von Potsdam</span><span class="opt-sub">Stadtgebiet einschließlich Golm, Fahrland, Groß Glienicke, Marquardt – Tarifbereich Potsdam AB</span></span></button>
-          <button class="opt" type="button" data-value="abc"><span class="mark"></span><span><span class="opt-main">Potsdam und Umland</span><span class="opt-sub">z. B. Werder (Havel), Teltow, Michendorf, Caputh – Tarifbereich Potsdam ABC</span></span></button>
-          <button class="opt" type="button" data-value="berlin"><span class="mark"></span><span><span class="opt-main">Auch nach Berlin</span><span class="opt-sub">Potsdam liegt im Berliner Tarifbereich C</span></span></button>
-          <button class="opt" type="button" data-value="weit"><span class="mark"></span><span><span class="opt-main">Weiter weg</span><span class="opt-sub">durch Brandenburg oder deutschlandweit</span></span></button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Frage 4 -->
-    <section class="stop" id="stop-extras" data-key="extras">
-      <span class="stop-dot" aria-hidden="true"></span>
-      <div class="card">
-        <div class="summary"><p class="q-label">Außerdem</p><div class="answer"></div></div>
-        <button class="change" type="button">Ändern</button>
-        <div class="q-head"><div><p class="q-label">Frage 4 von 4</p><h2 class="q-title">Was ist noch dabei?</h2></div></div>
-        <p class="q-hint">Alles Zutreffende antippen – oder direkt weiter.</p>
-        <div class="options cols2" role="group" aria-label="Außerdem">
-          <button class="opt multi" type="button" data-value="kinder"><span class="mark"></span><span><span class="opt-main">Kinder von 6 bis 14</span><span class="opt-sub">fahren mit</span></span></button>
-          <button class="opt multi" type="button" data-value="gruppe"><span class="mark"></span><span><span class="opt-main">Wir sind 3 bis 5 Personen</span><span class="opt-sub">gemeinsam unterwegs</span></span></button>
-          <button class="opt multi" type="button" data-value="fahrrad"><span class="mark"></span><span><span class="opt-main">Fahrrad</span><span class="opt-sub">soll mit</span></span></button>
-          <button class="opt multi" type="button" data-value="hund"><span class="mark"></span><span><span class="opt-main">Hund</span><span class="opt-sub">soll mit</span></span></button>
-        </div>
-        <div class="actions"><button class="btn" type="button" id="extras-weiter">Ergebnis anzeigen</button></div>
-      </div>
-    </section>
-
-    <!-- Ergebnis -->
-    <section class="stop result hidden" id="stop-result">
-      <span class="stop-dot" aria-hidden="true"></span>
-      <div id="result"></div>
-    </section>
-  </div>
+  <!-- Fragen und Ergebnis werden in der gewählten Sprache aufgebaut
+       (Texte: tarif-i18n, Fragenliste: TarifI18n.questions). -->
+  <div class="line" id="line"></div>
 
   <footer class="footer">
     <p id="stand-line"></p>
-    <p>Dieser Berater hilft bei der Auswahl, er ist keine verbindliche Tarifauskunft. Verbindlich sind die Tarifbestimmungen des VBB. Im Zweifel beraten wir Sie gern persönlich im ViP-Kundenzentrum am Hauptbahnhof.</p>
+    <p data-t="disclaimer">Dieser Berater hilft bei der Auswahl, er ist keine verbindliche Tarifauskunft. Verbindlich sind die Tarifbestimmungen des VBB. Im Zweifel beraten wir Sie gern persönlich im ViP-Kundenzentrum am Hauptbahnhof.</p>
   </footer>
 </main>
+
 
 <!-- ============================================================
      TARIFDATEN - hier pflegen. Alle Preise in Euro als Paar
@@ -431,6 +380,714 @@ body.embed .topbar { display: none; }
 }
 </script>
 
+<script id="tarif-i18n">
+/* ============================================================
+   TEXTE IN ALLEN SPRACHEN - eine Zeile pro Sprache.
+   Regeln für die Pflege:
+   - Produktnamen (Deutschlandticket, 24-Stunden-Karte, Umweltkarte,
+     Einzelfahrausweis Potsdam AB ...) bleiben in jeder Sprache deutsch,
+     weil genau so auf Automat, Ticket und Schalter steht.
+   - Platzhalter in geschweiften Klammern ({p} = Preis, {n}, {m} = Zahl,
+     {y} = Jahr) müssen in jeder Sprache vorkommen. Der Test
+     (tarifberater/test/engine-test.mjs) prüft das.
+   - Fehlt ein Text in einer Sprache, erscheint der deutsche.
+   - Nicht-deutsche Texte vor dem öffentlichen Start von Muttersprachler:innen
+     gegenlesen lassen (siehe README).
+   ============================================================ */
+var TarifI18n = (function () {
+  'use strict';
+
+  var LANGS = [
+    { code: 'de', name: 'Deutsch', locale: 'de-DE', dir: 'ltr' },
+    { code: 'en', name: 'English', locale: 'en-GB', dir: 'ltr' },
+    { code: 'uk', name: 'Українська', locale: 'uk-UA', dir: 'ltr' },
+    { code: 'ar', name: 'العربية', locale: 'ar-u-nu-latn', dir: 'rtl' },
+    { code: 'tr', name: 'Türkçe', locale: 'tr-TR', dir: 'ltr' }
+  ];
+
+  // Fragen und Antwortmöglichkeiten. Texte dazu: q_<frage>_label/_title/_hint,
+  // o_<frage>_<wert> und o_<frage>_<wert>_sub.
+  var QUESTIONS = [
+    { key: 'wer', cols2: true, opts: ['erwachsen', 'kind', 'u6', 'schueler', 'azubi', 'student', 'leistung', 'sb'] },
+    { key: 'wie', opts: ['einmal', 'tag', 'gelegentlich', 'wenig', 'oft'] },
+    { key: 'wohin', opts: ['ab', 'abc', 'berlin', 'weit'] },
+    { key: 'extras', cols2: true, multi: true, opts: ['kinder', 'gruppe', 'fahrrad', 'hund'] }
+  ];
+
+  var X = {
+    // ---------------- Seite ----------------
+    doc_title: {
+      de: 'Welches Ticket passt?',
+      en: 'Which ticket is right for me?',
+      uk: 'Який квиток мені підходить?',
+      ar: 'ما التذكرة المناسبة لي؟',
+      tr: 'Hangi bilet bana uygun?'
+    },
+    topbar_title: { de: 'Tarifberater', en: 'Ticket advisor', uk: 'Підбір квитка', ar: 'دليل التذاكر', tr: 'Bilet danışmanı' },
+    lang_label: { de: 'Sprache', en: 'Language', uk: 'Мова', ar: 'اللغة', tr: 'Dil' },
+    kicker: { de: 'Potsdam & VBB', en: 'Potsdam & VBB', uk: 'Потсдам і VBB', ar: 'بوتسدام وVBB', tr: 'Potsdam ve VBB' },
+    h1: {
+      de: 'Welches Ticket passt zu Ihnen?',
+      en: 'Which ticket is right for you?',
+      uk: 'Який квиток вам підходить?',
+      ar: 'ما التذكرة المناسبة لك؟',
+      tr: 'Size hangi bilet uygun?'
+    },
+    lede: {
+      de: 'Vier kurze Fragen – dann sehen Sie, womit Sie am günstigsten fahren, und was Sie dafür mitbringen müssen.',
+      en: 'Four short questions – then you will see the cheapest way to travel and what you need to bring.',
+      uk: 'Чотири короткі запитання — і ви побачите, як їздити найдешевше та що для цього потрібно взяти з собою.',
+      ar: 'أربعة أسئلة قصيرة – ثم ترى أوفر طريقة للسفر وما تحتاج إلى إحضاره.',
+      tr: 'Dört kısa soru – ardından en ucuz nasıl yolculuk edeceğinizi ve yanınızda ne getirmeniz gerektiğini görürsünüz.'
+    },
+    names_note: {
+      de: '',
+      en: 'Ticket names are shown in German – exactly as they appear on the ticket machine, on the ticket and at the counter.',
+      uk: 'Назви квитків подано німецькою — саме так, як вони написані на автоматі, на квитку й у касі.',
+      ar: 'أسماء التذاكر مكتوبة بالألمانية – تمامًا كما تظهر على آلة البيع وعلى التذكرة وعند الشباك.',
+      tr: 'Bilet adları Almanca gösterilir – bilet otomatında, bilette ve gişede yazdığı gibi.'
+    },
+    q_of: { de: 'Frage {n} von 4', en: 'Question {n} of 4', uk: 'Запитання {n} з 4', ar: 'السؤال {n} من 4', tr: 'Soru {n} / 4' },
+    change: { de: 'Ändern', en: 'Change', uk: 'Змінити', ar: 'تغيير', tr: 'Değiştir' },
+
+    // ---------------- Frage 1: Wer ----------------
+    q_wer_label: { de: 'Wer fährt', en: 'Who is travelling', uk: 'Хто їде', ar: 'من المسافر', tr: 'Kim yolculuk ediyor' },
+    q_wer_title: { de: 'Wer fährt?', en: 'Who is travelling?', uk: 'Хто їде?', ar: 'من سيسافر؟', tr: 'Kim yolculuk edecek?' },
+    q_wer_hint: { de: 'Für wen soll das Ticket sein?', en: 'Who is the ticket for?', uk: 'Для кого квиток?', ar: 'لمن التذكرة؟', tr: 'Bilet kimin için?' },
+    o_wer_erwachsen: { de: 'Erwachsene Person', en: 'Adult', uk: 'Доросла особа', ar: 'شخص بالغ', tr: 'Yetişkin' },
+    o_wer_erwachsen_sub: { de: 'ab 15 Jahren, ohne Ermäßigung', en: 'aged 15 or over, no discount', uk: 'від 15 років, без знижки', ar: 'من عمر 15 سنة، بدون تخفيض', tr: '15 yaş ve üzeri, indirimsiz' },
+    o_wer_kind: { de: 'Kind 6 bis 14 Jahre', en: 'Child aged 6 to 14', uk: 'Дитина від 6 до 14 років', ar: 'طفل من 6 إلى 14 سنة', tr: '6–14 yaş arası çocuk' },
+    o_wer_kind_sub: { de: 'Ermäßigungstarif', en: 'reduced fare', uk: 'пільговий тариф', ar: 'تعرفة مخفّضة', tr: 'indirimli tarife' },
+    o_wer_u6: { de: 'Kind unter 6 Jahren', en: 'Child under 6', uk: 'Дитина до 6 років', ar: 'طفل دون 6 سنوات', tr: '6 yaş altı çocuk' },
+    o_wer_u6_sub: { de: 'fährt kostenlos mit', en: 'travels free of charge', uk: 'їде безкоштовно', ar: 'يسافر مجانًا', tr: 'ücretsiz yolculuk eder' },
+    o_wer_schueler: { de: 'Schüler:in', en: 'School pupil', uk: 'Учень / учениця', ar: 'تلميذ / تلميذة', tr: 'Okul öğrencisi' },
+    o_wer_schueler_sub: { de: 'ab 15 Jahren oder mit Schulbescheinigung', en: 'aged 15 or over, or with a school certificate', uk: 'від 15 років або з довідкою зі школи', ar: 'من عمر 15 سنة أو مع شهادة مدرسية', tr: '15 yaş ve üzeri veya okul belgesiyle' },
+    o_wer_azubi: { de: 'Auszubildende:r', en: 'Apprentice / trainee', uk: 'Професійне навчання (Azubi)', ar: 'متدرّب مهني (Azubi)', tr: 'Meslek eğitimi (Azubi)' },
+    o_wer_azubi_sub: { de: 'duale oder vollschulische Ausbildung', en: 'dual or full-time school-based vocational training', uk: 'дуальне або шкільне професійне навчання', ar: 'تدريب مهني مزدوج أو مدرسي بدوام كامل', tr: 'ikili veya tam zamanlı okulda meslek eğitimi' },
+    o_wer_student: { de: 'Student:in', en: 'University student', uk: 'Студент / студентка', ar: 'طالب / طالبة جامعية', tr: 'Üniversite öğrencisi' },
+    o_wer_student_sub: { de: 'an einer Hochschule eingeschrieben', en: 'enrolled at a university or college', uk: 'навчається у виші', ar: 'مسجّل في جامعة أو معهد عالٍ', tr: 'bir yükseköğretim kurumuna kayıtlı' },
+    o_wer_leistung: { de: 'Mit Leistungsbescheid', en: 'Receiving social benefits', uk: 'Отримую соціальну допомогу', ar: 'أتلقى مساعدات اجتماعية', tr: 'Sosyal yardım alıyorum' },
+    o_wer_leistung_sub: {
+      de: 'Bürgergeld, Sozialhilfe, Grundsicherung, Asylbewerberleistungen',
+      en: 'Bürgergeld, social assistance, basic income support, asylum seeker benefits',
+      uk: 'Bürgergeld, соціальна допомога, базове забезпечення, виплати для шукачів притулку',
+      ar: 'Bürgergeld، المساعدة الاجتماعية، الضمان الأساسي، مساعدات طالبي اللجوء',
+      tr: 'Bürgergeld, sosyal yardım, temel güvence, sığınmacı yardımları'
+    },
+    o_wer_sb: { de: 'Mit Schwerbehindertenausweis', en: 'With a severe disability ID card', uk: 'З посвідченням особи з інвалідністю', ar: 'لدي بطاقة إعاقة شديدة', tr: 'Ağır engelli kimlik kartım var' },
+    o_wer_sb_sub: { de: 'und Wertmarke', en: 'and a Wertmarke (token)', uk: 'і маркою (Wertmarke)', ar: 'مع طابع (Wertmarke)', tr: 've değer pulu (Wertmarke)' },
+
+    // ---------------- Frage 2: Wie oft ----------------
+    q_wie_label: { de: 'Wie oft', en: 'How often', uk: 'Як часто', ar: 'كم مرة', tr: 'Ne sıklıkla' },
+    q_wie_title: { de: 'Wie oft fahren Sie?', en: 'How often do you travel?', uk: 'Як часто ви їздите?', ar: 'كم مرة تسافر؟', tr: 'Ne sıklıkla yolculuk ediyorsunuz?' },
+    q_wie_hint: {
+      de: 'Eine Fahrt heißt: hin. Hin und zurück sind zwei Fahrten.',
+      en: 'One trip means one way. There and back counts as two trips.',
+      uk: 'Одна поїздка — це в один бік. Туди й назад — дві поїздки.',
+      ar: 'الرحلة تعني الذهاب فقط. الذهاب والعودة رحلتان.',
+      tr: 'Bir yolculuk tek yöndür. Gidiş-dönüş iki yolculuk sayılır.'
+    },
+    o_wie_einmal: { de: 'Eine einzelne Fahrt', en: 'A single trip', uk: 'Одна поїздка', ar: 'رحلة واحدة', tr: 'Tek bir yolculuk' },
+    o_wie_einmal_sub: { de: 'nur hin, oder hin und zurück an verschiedenen Tagen', en: 'one way only, or there and back on different days', uk: 'лише в один бік або туди й назад у різні дні', ar: 'ذهاب فقط، أو ذهاب وعودة في أيام مختلفة', tr: 'sadece gidiş ya da farklı günlerde gidiş-dönüş' },
+    o_wie_tag: { de: 'Mehrere Fahrten an einem Tag', en: 'Several trips in one day', uk: 'Кілька поїздок за один день', ar: 'عدة رحلات في يوم واحد', tr: 'Bir günde birkaç yolculuk' },
+    o_wie_tag_sub: { de: 'Ausflug, Besuch, Erledigungen', en: 'day out, visit, errands', uk: 'екскурсія, візит, справи', ar: 'نزهة، زيارة، قضاء حاجات', tr: 'gezi, ziyaret, işler' },
+    o_wie_gelegentlich: { de: 'Ein paar Mal im Monat', en: 'A few times a month', uk: 'Кілька разів на місяць', ar: 'بضع مرات في الشهر', tr: 'Ayda birkaç kez' },
+    o_wie_gelegentlich_sub: { de: 'etwa 4 bis 8 Fahrten', en: 'about 4 to 8 trips', uk: 'приблизно 4–8 поїздок', ar: 'حوالي 4 إلى 8 رحلات', tr: 'yaklaşık 4–8 yolculuk' },
+    o_wie_wenig: { de: 'An 1 bis 2 Tagen pro Woche', en: 'On 1 to 2 days a week', uk: '1–2 дні на тиждень', ar: 'يوم أو يومان في الأسبوع', tr: 'Haftada 1–2 gün' },
+    o_wie_wenig_sub: { de: 'etwa 15 Fahrten im Monat', en: 'about 15 trips a month', uk: 'приблизно 15 поїздок на місяць', ar: 'حوالي 15 رحلة في الشهر', tr: 'ayda yaklaşık 15 yolculuk' },
+    o_wie_oft: { de: 'Fast täglich', en: 'Almost every day', uk: 'Майже щодня', ar: 'يوميًا تقريبًا', tr: 'Neredeyse her gün' },
+    o_wie_oft_sub: { de: 'Arbeit, Schule, Ausbildung – etwa 40 Fahrten im Monat', en: 'work, school, training – about 40 trips a month', uk: 'робота, школа, навчання — приблизно 40 поїздок на місяць', ar: 'العمل، المدرسة، التدريب – حوالي 40 رحلة في الشهر', tr: 'iş, okul, eğitim – ayda yaklaşık 40 yolculuk' },
+
+    // ---------------- Frage 3: Wohin ----------------
+    q_wohin_label: { de: 'Wohin', en: 'Where to', uk: 'Куди', ar: 'إلى أين', tr: 'Nereye' },
+    q_wohin_title: { de: 'Wohin fahren Sie?', en: 'Where are you going?', uk: 'Куди ви їдете?', ar: 'إلى أين تسافر؟', tr: 'Nereye gidiyorsunuz?' },
+    q_wohin_hint: { de: 'Der weiteste Weg zählt.', en: 'Your longest journey counts.', uk: 'Враховується найдальша поїздка.', ar: 'العبرة بأبعد وجهة.', tr: 'En uzak yolculuğunuz esas alınır.' },
+    o_wohin_ab: { de: 'Nur innerhalb von Potsdam', en: 'Within Potsdam only', uk: 'Лише в межах Потсдама', ar: 'داخل بوتسدام فقط', tr: 'Sadece Potsdam içinde' },
+    o_wohin_ab_sub: {
+      de: 'Stadtgebiet einschließlich Golm, Fahrland, Groß Glienicke, Marquardt – Tarifbereich Potsdam AB',
+      en: 'the whole city incl. Golm, Fahrland, Groß Glienicke, Marquardt – fare zone Potsdam AB',
+      uk: 'усе місто, включно з Golm, Fahrland, Groß Glienicke, Marquardt — тарифна зона Potsdam AB',
+      ar: 'كامل المدينة بما فيها Golm وFahrland وGroß Glienicke وMarquardt – المنطقة التعريفية Potsdam AB',
+      tr: 'Golm, Fahrland, Groß Glienicke, Marquardt dahil tüm şehir – Potsdam AB tarife bölgesi'
+    },
+    o_wohin_abc: { de: 'Potsdam und Umland', en: 'Potsdam and surroundings', uk: 'Потсдам і околиці', ar: 'بوتسدام والمناطق المحيطة', tr: 'Potsdam ve çevresi' },
+    o_wohin_abc_sub: {
+      de: 'z. B. Werder (Havel), Teltow, Michendorf, Caputh – Tarifbereich Potsdam ABC',
+      en: 'e.g. Werder (Havel), Teltow, Michendorf, Caputh – fare zone Potsdam ABC',
+      uk: 'напр. Werder (Havel), Teltow, Michendorf, Caputh — тарифна зона Potsdam ABC',
+      ar: 'مثل Werder (Havel) وTeltow وMichendorf وCaputh – المنطقة التعريفية Potsdam ABC',
+      tr: 'örn. Werder (Havel), Teltow, Michendorf, Caputh – Potsdam ABC tarife bölgesi'
+    },
+    o_wohin_berlin: { de: 'Auch nach Berlin', en: 'Also to Berlin', uk: 'Також до Берліна', ar: 'إلى برلين أيضًا', tr: 'Berlin’e de' },
+    o_wohin_berlin_sub: { de: 'Potsdam liegt im Berliner Tarifbereich C', en: 'Potsdam is in Berlin’s fare zone C', uk: 'Потсдам входить до берлінської тарифної зони C', ar: 'تقع بوتسدام في المنطقة التعريفية C لبرلين', tr: 'Potsdam, Berlin’in C tarife bölgesindedir' },
+    o_wohin_weit: { de: 'Weiter weg', en: 'Further afield', uk: 'Далі', ar: 'أبعد من ذلك', tr: 'Daha uzağa' },
+    o_wohin_weit_sub: { de: 'durch Brandenburg oder deutschlandweit', en: 'across Brandenburg or anywhere in Germany', uk: 'по Бранденбургу або по всій Німеччині', ar: 'عبر براندنبورغ أو في أنحاء ألمانيا', tr: 'Brandenburg genelinde veya tüm Almanya’da' },
+
+    // ---------------- Frage 4: Extras ----------------
+    q_extras_label: { de: 'Außerdem', en: 'Also', uk: 'Додатково', ar: 'إضافةً إلى ذلك', tr: 'Ayrıca' },
+    q_extras_title: { de: 'Was ist noch dabei?', en: 'Anything else coming along?', uk: 'Хто чи що ще з вами?', ar: 'من أو ما الذي يرافقك؟', tr: 'Yanınızda başka kim ya da ne var?' },
+    q_extras_hint: {
+      de: 'Alles Zutreffende antippen – oder direkt weiter.',
+      en: 'Tap everything that applies – or just continue.',
+      uk: 'Позначте все, що підходить, — або просто перейдіть далі.',
+      ar: 'اختر كل ما ينطبق – أو تابع مباشرةً.',
+      tr: 'Uygun olanların hepsine dokunun – ya da doğrudan devam edin.'
+    },
+    o_extras_kinder: { de: 'Kinder von 6 bis 14', en: 'Children aged 6 to 14', uk: 'Діти від 6 до 14 років', ar: 'أطفال من 6 إلى 14 سنة', tr: '6–14 yaş arası çocuklar' },
+    o_extras_kinder_sub: { de: 'fahren mit', en: 'travelling with me', uk: 'їдуть зі мною', ar: 'يرافقونني', tr: 'benimle geliyor' },
+    o_extras_gruppe: { de: 'Wir sind 3 bis 5 Personen', en: 'We are 3 to 5 people', uk: 'Нас 3–5 осіб', ar: 'نحن من 3 إلى 5 أشخاص', tr: '3–5 kişiyiz' },
+    o_extras_gruppe_sub: { de: 'gemeinsam unterwegs', en: 'travelling together', uk: 'їдемо разом', ar: 'نسافر معًا', tr: 'birlikte yolculuk ediyoruz' },
+    o_extras_fahrrad: { de: 'Fahrrad', en: 'Bicycle', uk: 'Велосипед', ar: 'دراجة هوائية', tr: 'Bisiklet' },
+    o_extras_fahrrad_sub: { de: 'soll mit', en: 'coming along', uk: 'беру з собою', ar: 'أريد اصطحابها', tr: 'yanımda olacak' },
+    o_extras_hund: { de: 'Hund', en: 'Dog', uk: 'Собака', ar: 'كلب', tr: 'Köpek' },
+    o_extras_hund_sub: { de: 'soll mit', en: 'coming along', uk: 'беру з собою', ar: 'أريد اصطحابه', tr: 'yanımda olacak' },
+    extras_none: { de: 'Nichts weiter', en: 'Nothing else', uk: 'Нічого більше', ar: 'لا شيء آخر', tr: 'Başka bir şey yok' },
+    extras_btn: { de: 'Ergebnis anzeigen', en: 'Show result', uk: 'Показати результат', ar: 'عرض النتيجة', tr: 'Sonucu göster' },
+
+    // ---------------- Ergebnis-Rahmen ----------------
+    res_title: { de: 'Unsere Empfehlung', en: 'Our recommendation', uk: 'Наша порада', ar: 'توصيتنا', tr: 'Önerimiz' },
+    price_by_route: { de: 'Preis nach Strecke', en: 'Price depends on the route', uk: 'Ціна залежить від маршруту', ar: 'السعر حسب المسافة', tr: 'Fiyat güzergâha göre' },
+    alt_route: { de: 'nach Strecke', en: 'by route', uk: 'за маршрутом', ar: 'حسب المسافة', tr: 'güzergâha göre' },
+    price_from: { de: 'ab 1.1.{y}: {p}', en: 'from 1 Jan {y}: {p}', uk: 'з 1.1.{y}: {p}', ar: 'اعتبارًا من 1.1.{y}: {p}', tr: '1.1.{y} itibarıyla: {p}' },
+    alt_next: { de: 'ab {y}: {p}', en: 'from {y}: {p}', uk: 'з {y}: {p}', ar: 'اعتبارًا من {y}: {p}', tr: '{y} itibarıyla: {p}' },
+    per_ride: { de: 'entspricht {p} je Fahrt', en: 'that is {p} per trip', uk: 'це {p} за поїздку', ar: 'أي {p} للرحلة الواحدة', tr: 'yolculuk başına {p}' },
+    alt_per: { de: '{p} je Fahrt', en: '{p} per trip', uk: '{p} за поїздку', ar: '{p} للرحلة', tr: 'yolculuk başına {p}' },
+    where: { de: 'Wo:', en: 'Where:', uk: 'Де:', ar: 'أين:', tr: 'Nereden:' },
+    alts: { de: 'Alternativen', en: 'Alternatives', uk: 'Інші варіанти', ar: 'بدائل', tr: 'Alternatifler' },
+    docs_label: { de: 'Das brauchen Sie dafür', en: 'What you need', uk: 'Що вам потрібно', ar: 'ما تحتاج إليه', tr: 'Gerekli belgeler' },
+    restart: { de: 'Von vorn', en: 'Start again', uk: 'Почати знову', ar: 'البدء من جديد', tr: 'Baştan başla' },
+    print: { de: 'Drucken', en: 'Print', uk: 'Друкувати', ar: 'طباعة', tr: 'Yazdır' },
+
+    // ---------------- Fußzeile ----------------
+    jahr_2026: { de: 'gültig seit 1. Januar 2026', en: 'valid since 1 January 2026', uk: 'чинні з 1 січня 2026 року', ar: 'سارية منذ 1 يناير 2026', tr: '1 Ocak 2026’dan beri geçerli' },
+    jahr_2027: {
+      de: 'ab 1. Januar 2027 (VBB-Stand 24.9.2026, vorbehaltlich Tarifgenehmigung)',
+      en: 'from 1 January 2027 (VBB status 24 Sept 2026, subject to tariff approval)',
+      uk: 'з 1 січня 2027 року (стан VBB на 24.9.2026, за умови затвердження тарифу)',
+      ar: 'اعتبارًا من 1 يناير 2027 (وفق بيانات VBB بتاريخ 24.9.2026، رهنًا بالموافقة على التعرفة)',
+      tr: '1 Ocak 2027’den itibaren (VBB 24.9.2026 durumu, tarife onayına tabi)'
+    },
+    stand_prices: { de: 'Preise {label}.', en: 'Prices {label}.', uk: 'Ціни {label}.', ar: 'الأسعار {label}.', tr: 'Fiyatlar {label}.' },
+    stand_next: {
+      de: 'Wo sich der Preis ändert, steht der Folgepreis dabei ({label}).',
+      en: 'Where a price changes, the new price is shown as well ({label}).',
+      uk: 'Якщо ціна зміниться, поруч указано нову ціну ({label}).',
+      ar: 'حيث يتغير السعر يُعرض السعر الجديد أيضًا ({label}).',
+      tr: 'Fiyatın değiştiği yerlerde yeni fiyat da gösterilir ({label}).'
+    },
+    stand_data: { de: 'Datenstand {d}.', en: 'Data as of {d}.', uk: 'Дані станом на {d}.', ar: 'تاريخ البيانات {d}.', tr: 'Veri tarihi {d}.' },
+    disclaimer: {
+      de: 'Dieser Berater hilft bei der Auswahl, er ist keine verbindliche Tarifauskunft. Verbindlich sind die Tarifbestimmungen des VBB. Im Zweifel beraten wir Sie gern persönlich im ViP-Kundenzentrum am Hauptbahnhof.',
+      en: 'This advisor helps you choose; it is not a binding fare statement. Only the VBB tariff conditions (in German) are binding. If in doubt, we will gladly advise you in person at the ViP customer centre at Potsdam Hauptbahnhof.',
+      uk: 'Цей помічник допомагає з вибором, але не є офіційною тарифною довідкою. Обов’язковими є лише тарифні умови VBB (німецькою мовою). Якщо є сумніви, вас охоче проконсультують особисто в клієнтському центрі ViP на головному вокзалі (Hauptbahnhof).',
+      ar: 'يساعدك هذا الدليل على الاختيار، لكنه ليس معلومات تعرفة ملزمة. الملزم فقط هو شروط تعرفة VBB (باللغة الألمانية). إذا كان لديك شك، يسعدنا تقديم المشورة لك شخصيًا في مركز خدمة عملاء ViP في المحطة الرئيسية (Hauptbahnhof).',
+      tr: 'Bu danışman seçim yapmanıza yardımcı olur, bağlayıcı bir tarife bilgisi değildir. Yalnızca VBB tarife koşulları (Almanca) bağlayıcıdır. Emin değilseniz, Hauptbahnhof’taki ViP müşteri merkezinde size yüz yüze memnuniyetle yardımcı oluruz.'
+    },
+
+    // ---------------- Empfehlungs-Bausteine (Engine) ----------------
+    tag_best: { de: 'Günstigste Wahl', en: 'Cheapest option', uk: 'Найвигідніше', ar: 'الخيار الأوفر', tr: 'En uygun seçenek' },
+    tag_leistung: { de: 'Für Leistungsberechtigte', en: 'For benefit recipients', uk: 'Для отримувачів соціальної допомоги', ar: 'للمستفيدين من المساعدات', tr: 'Sosyal yardım alanlar için' },
+    tag_schueler: { de: 'Für Potsdamer Schüler:innen', en: 'For pupils in Potsdam', uk: 'Для учнів шкіл Потсдама', ar: 'لتلاميذ مدارس بوتسدام', tr: 'Potsdam’daki okul öğrencileri için' },
+    tag_azubi: { de: 'Für Auszubildende', en: 'For apprentices', uk: 'Для тих, хто навчається професії', ar: 'للمتدرّبين المهنيين', tr: 'Meslek eğitimi alanlar için' },
+
+    u_fahrt: { de: 'pro Fahrt', en: 'per trip', uk: 'за поїздку', ar: 'للرحلة', tr: 'yolculuk başına' },
+    u_4fahrten: { de: 'für 4 Fahrten', en: 'for 4 trips', uk: 'за 4 поїздки', ar: 'لـ 4 رحلات', tr: '4 yolculuk için' },
+    u_24h: { de: 'für 24 Stunden', en: 'for 24 hours', uk: 'на 24 години', ar: 'لمدة 24 ساعة', tr: '24 saat için' },
+    u_tag: { de: 'für einen Tag', en: 'for one day', uk: 'на один день', ar: 'ليوم واحد', tr: 'bir gün için' },
+    u_gruppe: { de: 'für bis zu 5 Personen, 24 Stunden', en: 'for up to 5 people, 24 hours', uk: 'до 5 осіб, 24 години', ar: 'حتى 5 أشخاص، 24 ساعة', tr: '5 kişiye kadar, 24 saat' },
+    u_monat: { de: 'pro Monat', en: 'per month', uk: 'на місяць', ar: 'شهريًا', tr: 'aylık' },
+    u_monat_eigen: { de: 'pro Monat (Eigenanteil)', en: 'per month (your share)', uk: 'на місяць (власний внесок)', ar: 'شهريًا (حصتك من السعر)', tr: 'aylık (kendi payınız)' },
+    u_hinzurueck: { de: 'für hin und zurück', en: 'there and back', uk: 'туди й назад', ar: 'ذهابًا وإيابًا', tr: 'gidiş-dönüş' },
+    u_monat_geschaetzt: { de: 'pro Monat, geschätzt', en: 'per month, estimated', uk: 'на місяць, орієнтовно', ar: 'شهريًا، تقديريًا', tr: 'aylık, tahmini' },
+    u_kombi: { de: 'pro Monat + {p} je Berlin-Fahrt', en: 'per month + {p} per Berlin trip', uk: 'на місяць + {p} за кожну поїздку до Берліна', ar: 'شهريًا + {p} لكل رحلة إلى برلين', tr: 'aylık + Berlin yolculuğu başına {p}' },
+
+    n_abo: { de: ' im Abo', en: ' – subscription', uk: ' — абонемент', ar: ' – اشتراك', tr: ' – abonelik' },
+    n_monat: { de: ' als Monatskarte', en: ' – monthly ticket', uk: ' — місячний квиток', ar: ' – تذكرة شهرية', tr: ' – aylık bilet' },
+    n_einzel_vbb: { de: 'Einzelfahrausweis nach Entfernung', en: 'Einzelfahrausweis (single ticket) by distance', uk: 'Einzelfahrausweis (разовий квиток) за відстанню', ar: 'Einzelfahrausweis (تذكرة رحلة واحدة) حسب المسافة', tr: 'Mesafeye göre Einzelfahrausweis (tek yolculuk bileti)' },
+    n_2einzel: { de: '2 Einzelfahrausweise statt Tageskarte', en: '2 single tickets instead of a day ticket', uk: '2 разові квитки замість денного', ar: 'تذكرتا رحلة واحدة بدل التذكرة اليومية', tr: 'Günlük bilet yerine 2 tek yolculuk bileti' },
+    n_vierer_n: { de: '4-Fahrten-Karten für etwa {n} Fahrten', en: '4-Fahrten-Karten for about {n} trips', uk: '4-Fahrten-Karten приблизно на {n} поїздок', ar: '4-Fahrten-Karten لحوالي {n} رحلة', tr: 'Yaklaşık {n} yolculuk için 4-Fahrten-Karten' },
+    n_kombi: {
+      de: 'Umweltkarte Potsdam AB im Abo + Anschluss nach Berlin',
+      en: 'Umweltkarte Potsdam AB subscription + extension ticket to Berlin',
+      uk: 'Umweltkarte Potsdam AB (абонемент) + доплатний квиток до Берліна',
+      ar: 'Umweltkarte Potsdam AB (اشتراك) + تذكرة تكميلية إلى برلين',
+      tr: 'Umweltkarte Potsdam AB aboneliği + Berlin’e ek bilet'
+    },
+
+    buy_bar: {
+      de: 'Automat in Bus und Tram, VBB-App, ViP-Kundenzentrum',
+      en: 'ticket machine on the bus or tram, VBB app, ViP customer centre',
+      uk: 'автомат в автобусі й трамваї, застосунок VBB, клієнтський центр ViP',
+      ar: 'آلة البيع في الحافلة والترام، تطبيق VBB، مركز خدمة عملاء ViP',
+      tr: 'otobüs ve tramvaydaki bilet otomatı, VBB uygulaması, ViP müşteri merkezi'
+    },
+    buy_abo: {
+      de: 'ViP-Kundenzentrum oder online unter swp-potsdam.de/abonnement – Abos beginnen zum Monatsersten, am besten bis zum 10. des Vormonats beantragen',
+      en: 'ViP customer centre or online at swp-potsdam.de/abonnement – subscriptions start on the 1st of the month; ideally apply by the 10th of the month before',
+      uk: 'клієнтський центр ViP або онлайн на swp-potsdam.de/abonnement — абонемент починається з 1-го числа місяця, заяву краще подати до 10-го числа попереднього місяця',
+      ar: 'مركز خدمة عملاء ViP أو عبر الإنترنت على swp-potsdam.de/abonnement – يبدأ الاشتراك في أول الشهر، ويُفضَّل تقديم الطلب قبل اليوم العاشر من الشهر السابق',
+      tr: 'ViP müşteri merkezi veya çevrimiçi swp-potsdam.de/abonnement – abonelikler ayın 1’inde başlar; en iyisi bir önceki ayın 10’una kadar başvurun'
+    },
+    buy_mobil: {
+      de: 'Nach Berechtigungsnachweis: ViP-Kundenzentrum bzw. Handyticket über das Jobcenter',
+      en: 'After proof of eligibility: ViP customer centre, or as a mobile ticket via the Jobcenter',
+      uk: 'Після підтвердження права: клієнтський центр ViP або мобільний квиток через Jobcenter',
+      ar: 'بعد إثبات الاستحقاق: مركز خدمة عملاء ViP، أو تذكرة على الهاتف عبر الـ Jobcenter',
+      tr: 'Hak sahipliği belgelendikten sonra: ViP müşteri merkezi veya Jobcenter üzerinden mobil bilet'
+    },
+    buy_dta: {
+      de: 'Über den Ausbildungsbetrieb (firmenticket@vip-potsdam.de) bzw. die Schule',
+      en: 'Through your training company (firmenticket@vip-potsdam.de) or your school',
+      uk: 'Через підприємство, де ви навчаєтеся (firmenticket@vip-potsdam.de), або через навчальний заклад',
+      ar: 'عن طريق جهة التدريب (firmenticket@vip-potsdam.de) أو المدرسة',
+      tr: 'Eğitim aldığınız işletme (firmenticket@vip-potsdam.de) veya okul üzerinden'
+    },
+
+    s_u6_name: { de: 'Kein Ticket nötig', en: 'No ticket needed', uk: 'Квиток не потрібен', ar: 'لا حاجة إلى تذكرة', tr: 'Bilet gerekmez' },
+    s_u6_text: {
+      de: 'Kinder unter 6 Jahren fahren in Bus, Tram, S-Bahn und Regionalzug kostenlos mit – auch mit dem Deutschlandticket einer Begleitperson.',
+      en: 'Children under 6 travel free of charge on buses, trams, S-Bahn and regional trains – also with an accompanying person’s Deutschlandticket.',
+      uk: 'Діти до 6 років їздять безкоштовно в автобусі, трамваї, S-Bahn і регіональному поїзді — також із супровідною особою, яка має Deutschlandticket.',
+      ar: 'يسافر الأطفال دون 6 سنوات مجانًا في الحافلة والترام وقطار S-Bahn والقطار الإقليمي – وكذلك مع مرافق يحمل Deutschlandticket.',
+      tr: '6 yaş altı çocuklar otobüs, tramvay, S-Bahn ve bölgesel trende ücretsiz yolculuk eder – Deutschlandticket sahibi bir refakatçiyle de.'
+    },
+    s_u6_b1: {
+      de: 'Ab dem 6. Geburtstag gilt der Ermäßigungstarif (Kinder 6 bis 14 Jahre).',
+      en: 'From their 6th birthday, the reduced fare applies (children aged 6 to 14).',
+      uk: 'З 6-го дня народження діє пільговий тариф (діти від 6 до 14 років).',
+      ar: 'ابتداءً من عيد الميلاد السادس تُطبَّق التعرفة المخفّضة (الأطفال من 6 إلى 14 سنة).',
+      tr: '6. yaş gününden itibaren indirimli tarife geçerlidir (6–14 yaş arası çocuklar).'
+    },
+    s_sb_name: { de: 'Freifahrt mit Wertmarke', en: 'Free travel with Wertmarke', uk: 'Безкоштовний проїзд з маркою (Wertmarke)', ar: 'سفر مجاني مع الطابع (Wertmarke)', tr: 'Değer pulu (Wertmarke) ile ücretsiz yolculuk' },
+    s_sb_text: {
+      de: 'Mit Schwerbehindertenausweis und gültiger Wertmarke fahren Sie im gesamten Nahverkehr kostenlos – bundesweit, also auch im VBB und mit dem Regionalzug.',
+      en: 'With a severe disability ID card and a valid Wertmarke you travel free on all local public transport – throughout Germany, including the VBB and regional trains.',
+      uk: 'З посвідченням особи з тяжкою інвалідністю та дійсною маркою (Wertmarke) ви їздите безкоштовно в усьому місцевому транспорті — по всій Німеччині, тобто й у VBB, і в регіональних поїздах.',
+      ar: 'مع بطاقة الإعاقة الشديدة وطابع صالح (Wertmarke) تسافر مجانًا في جميع المواصلات المحلية – في كل ألمانيا، أي أيضًا في شبكة VBB وفي القطار الإقليمي.',
+      tr: 'Ağır engelli kimlik kartı ve geçerli değer pulu (Wertmarke) ile tüm yerel toplu taşımada ücretsiz yolculuk edersiniz – Almanya genelinde, yani VBB’de ve bölgesel trende de.'
+    },
+    s_sb_b1: {
+      de: 'Die Wertmarke gibt es beim Versorgungsamt (in Brandenburg: Landesamt für Soziales und Versorgung). Ohne Wertmarke gilt der normale Tarif.',
+      en: 'You get the Wertmarke from the Versorgungsamt (in Brandenburg: Landesamt für Soziales und Versorgung). Without it, the normal fare applies.',
+      uk: 'Марку (Wertmarke) видає Versorgungsamt (у Бранденбурзі: Landesamt für Soziales und Versorgung). Без марки діє звичайний тариф.',
+      ar: 'يُحصل على الطابع (Wertmarke) من Versorgungsamt (في براندنبورغ: Landesamt für Soziales und Versorgung). بدون الطابع تُطبَّق التعرفة العادية.',
+      tr: 'Değer pulu Versorgungsamt’tan alınır (Brandenburg’da: Landesamt für Soziales und Versorgung). Değer pulu olmadan normal tarife geçerlidir.'
+    },
+    s_sb_b2: {
+      de: 'Mit Merkzeichen B fährt eine Begleitperson kostenlos mit – oder ein Hund.',
+      en: 'With the marker B, one companion travels free – or a dog.',
+      uk: 'З позначкою B безкоштовно їде одна супровідна особа — або собака.',
+      ar: 'مع العلامة B يسافر مرافق واحد مجانًا – أو كلب.',
+      tr: 'B işaretiyle bir refakatçi – ya da bir köpek – ücretsiz yolculuk eder.'
+    },
+    s_sb_b3: {
+      de: 'Rollstuhl, Rollator und Gepäck fahren immer kostenlos mit.',
+      en: 'Wheelchairs, walkers and luggage always travel free.',
+      uk: 'Інвалідний візок, ходунки та багаж завжди перевозяться безкоштовно.',
+      ar: 'الكرسي المتحرك والمشّاية والأمتعة تُنقل دائمًا مجانًا.',
+      tr: 'Tekerlekli sandalye, yürüteç ve bagaj her zaman ücretsiz taşınır.'
+    },
+    d_sb1: { de: 'Schwerbehindertenausweis', en: 'Severe disability ID card (Schwerbehindertenausweis)', uk: 'Посвідчення особи з тяжкою інвалідністю (Schwerbehindertenausweis)', ar: 'بطاقة الإعاقة الشديدة (Schwerbehindertenausweis)', tr: 'Ağır engelli kimlik kartı (Schwerbehindertenausweis)' },
+    d_sb2: { de: 'Beiblatt mit gültiger Wertmarke', en: 'Supplementary sheet (Beiblatt) with a valid Wertmarke', uk: 'Додатковий аркуш (Beiblatt) з дійсною маркою', ar: 'الورقة الملحقة (Beiblatt) مع طابع صالح', tr: 'Geçerli değer pulu olan ek sayfa (Beiblatt)' },
+
+    w_60min: { de: '60 Minuten in eine Richtung, Umsteigen erlaubt', en: '60 minutes in one direction, changes allowed', uk: '60 хвилин в одному напрямку, пересадки дозволено', ar: '60 دقيقة في اتجاه واحد، مع السماح بتبديل الوسيلة', tr: 'Tek yönde 60 dakika, aktarma serbest' },
+    w_120min: { de: '120 Minuten in eine Richtung, Umsteigen erlaubt', en: '120 minutes in one direction, changes allowed', uk: '120 хвилин в одному напрямку, пересадки дозволено', ar: '120 دقيقة في اتجاه واحد، مع السماح بتبديل الوسيلة', tr: 'Tek yönde 120 dakika, aktarma serbest' },
+    w_einzel_ab: { de: 'Gilt in Bus, Tram, S-Bahn und Regionalzug innerhalb Potsdams', en: 'Valid on buses, trams, S-Bahn and regional trains within Potsdam', uk: 'Діє в автобусі, трамваї, S-Bahn і регіональному поїзді в межах Потсдама', ar: 'صالحة في الحافلة والترام وقطار S-Bahn والقطار الإقليمي داخل بوتسدام', tr: 'Potsdam içinde otobüs, tramvay, S-Bahn ve bölgesel trende geçerli' },
+    w_einzel_abc: { de: 'Gilt in Potsdam und im Umland (Tarifbereich C)', en: 'Valid in Potsdam and the surrounding area (fare zone C)', uk: 'Діє в Потсдамі та околицях (тарифна зона C)', ar: 'صالحة في بوتسدام والمناطق المحيطة (المنطقة التعريفية C)', tr: 'Potsdam’da ve çevresinde geçerli (C tarife bölgesi)' },
+    w_einzel_berlin: { de: 'Von Potsdam bis in die Berliner Innenstadt und zurück', en: 'From Potsdam into central Berlin and back', uk: 'Від Потсдама до центру Берліна і назад', ar: 'من بوتسدام إلى وسط برلين والعودة', tr: 'Potsdam’dan Berlin şehir merkezine ve geri' },
+    b_einzel_berlin: {
+      de: 'Bis Wannsee oder Zehlendorf reicht ebenfalls nur ABC – den früheren Bereich BC gibt es nicht mehr.',
+      en: 'For Wannsee or Zehlendorf you also need ABC – the former BC zone no longer exists.',
+      uk: 'До Wannsee чи Zehlendorf так само потрібен квиток ABC — колишньої зони BC більше немає.',
+      ar: 'حتى Wannsee أو Zehlendorf تحتاج أيضًا إلى ABC – المنطقة BC السابقة لم تعد موجودة.',
+      tr: 'Wannsee veya Zehlendorf için de ABC gerekir – eski BC bölgesi artık yok.'
+    },
+    w_vierer: { de: 'Günstiger als vier Einzelfahrausweise', en: 'Cheaper than four single tickets', uk: 'Дешевше, ніж чотири разові квитки', ar: 'أرخص من أربع تذاكر رحلة واحدة', tr: 'Dört tek yolculuk biletinden daha ucuz' },
+    w_vierer_datum_lang: {
+      de: 'Kein festes Datum – die Fahrten können an verschiedenen Tagen liegen',
+      en: 'No fixed date – the trips can be on different days',
+      uk: 'Без фіксованої дати — поїздки можуть бути в різні дні',
+      ar: 'بدون تاريخ محدد – يمكن أن تكون الرحلات في أيام مختلفة',
+      tr: 'Sabit tarih yok – yolculuklar farklı günlerde olabilir'
+    },
+    w_vierer_datum: { de: 'Kein festes Datum', en: 'No fixed date', uk: 'Без фіксованої дати', ar: 'بدون تاريخ محدد', tr: 'Sabit tarih yok' },
+    w_kinder3: {
+      de: 'Bis zu drei Kinder von 6 bis 14 Jahren fahren kostenlos mit',
+      en: 'Up to three children aged 6 to 14 travel free',
+      uk: 'До трьох дітей від 6 до 14 років їдуть безкоштовно',
+      ar: 'يسافر حتى ثلاثة أطفال من 6 إلى 14 سنة مجانًا',
+      tr: '6–14 yaş arası en fazla üç çocuk ücretsiz yolculuk eder'
+    },
+    w_tag_ab3: { de: 'Ab der dritten Fahrt günstiger als Einzelfahrausweise', en: 'Cheaper than single tickets from the third trip', uk: 'Від третьої поїздки дешевше за разові квитки', ar: 'أرخص من تذاكر الرحلة الواحدة ابتداءً من الرحلة الثالثة', tr: 'Üçüncü yolculuktan itibaren tek biletlerden daha ucuz' },
+    w_tag_24_lang: { de: '24 Stunden ab Entwertung, nicht nur bis Mitternacht', en: '24 hours from validation, not just until midnight', uk: '24 години з моменту компостування, а не лише до півночі', ar: '24 ساعة من لحظة الختم، وليس حتى منتصف الليل فقط', tr: 'Damgalamadan itibaren 24 saat, sadece gece yarısına kadar değil' },
+    w_tag_24: { de: '24 Stunden ab Entwertung', en: '24 hours from validation', uk: '24 години з моменту компостування', ar: '24 ساعة من لحظة الختم', tr: 'Damgalamadan itibaren 24 saat' },
+    w_hund_frei: { de: 'Ein Hund fährt kostenlos mit', en: 'One dog travels free', uk: 'Одна собака їде безкоштовно', ar: 'يسافر كلب واحد مجانًا', tr: 'Bir köpek ücretsiz yolculuk eder' },
+    w_tag_vbb: {
+      de: 'Gilt in ganz Berlin und Brandenburg, in allen Bussen und Bahnen des VBB',
+      en: 'Valid throughout Berlin and Brandenburg, on all VBB buses and trains',
+      uk: 'Діє по всьому Берліну й Бранденбургу, в усіх автобусах і потягах VBB',
+      ar: 'صالحة في كل برلين وبراندنبورغ، في جميع حافلات وقطارات VBB',
+      tr: 'Tüm Berlin ve Brandenburg’da, VBB’nin bütün otobüs ve trenlerinde geçerli'
+    },
+    b_tag_vbb: {
+      de: 'Montag bis Freitag erst ab 9 Uhr gültig (bis 3 Uhr am Folgetag); am Wochenende und an Feiertagen ganztägig.',
+      en: 'Monday to Friday valid only from 9 am (until 3 am the next day); all day at weekends and on public holidays.',
+      uk: 'З понеділка по п’ятницю діє лише з 9:00 (до 3:00 наступного дня); у вихідні та святкові дні — цілодобово.',
+      ar: 'من الاثنين إلى الجمعة صالحة فقط ابتداءً من الساعة 9 صباحًا (حتى الساعة 3 من اليوم التالي)؛ في عطلة نهاية الأسبوع والأعياد طوال اليوم.',
+      tr: 'Pazartesiden cumaya ancak saat 9’dan itibaren geçerli (ertesi gün saat 3’e kadar); hafta sonu ve resmî tatillerde tüm gün.'
+    },
+    w_gruppe1: { de: 'Ab drei Personen günstiger als einzelne 24-Stunden-Karten', en: 'From three people, cheaper than separate 24-Stunden-Karten', uk: 'Від трьох осіб дешевше, ніж окремі 24-Stunden-Karten', ar: 'من ثلاثة أشخاص فأكثر أرخص من تذاكر 24-Stunden-Karte منفصلة', tr: 'Üç kişiden itibaren ayrı ayrı 24-Stunden-Karte’den daha ucuz' },
+    w_gruppe2: { de: 'Alle fahren gemeinsam auf einer Karte', en: 'Everyone travels together on one ticket', uk: 'Усі їдуть разом за одним квитком', ar: 'الجميع يسافرون معًا بتذكرة واحدة', tr: 'Herkes tek biletle birlikte yolculuk eder' },
+    b_gruppe: {
+      de: 'Kinder zählen hier als Personen – die kostenlose Kindermitnahme gilt nur für die normale 24-Stunden-Karte.',
+      en: 'Children count as people here – free travel for children only applies to the normal 24-Stunden-Karte.',
+      uk: 'Діти тут рахуються як особи — безкоштовний проїзд дітей діє лише зі звичайною 24-Stunden-Karte.',
+      ar: 'يُحسب الأطفال هنا كأشخاص – اصطحاب الأطفال مجانًا يسري فقط مع تذكرة 24-Stunden-Karte العادية.',
+      tr: 'Çocuklar burada kişi sayılır – çocukların ücretsiz yolculuğu yalnızca normal 24-Stunden-Karte için geçerlidir.'
+    },
+    w_dt1: {
+      de: 'Gilt deutschlandweit in allen Bussen, Trams, S-Bahnen und Regionalzügen',
+      en: 'Valid throughout Germany on all buses, trams, S-Bahn and regional trains',
+      uk: 'Діє по всій Німеччині в усіх автобусах, трамваях, S-Bahn і регіональних поїздах',
+      ar: 'صالحة في كل ألمانيا في جميع الحافلات والترامات وقطارات S-Bahn والقطارات الإقليمية',
+      tr: 'Tüm Almanya’da bütün otobüs, tramvay, S-Bahn ve bölgesel trenlerde geçerli'
+    },
+    w_dt2: { de: 'Monatlich kündbar', en: 'Can be cancelled monthly', uk: 'Можна скасувати щомісяця', ar: 'يمكن إلغاؤه شهريًا', tr: 'Her ay iptal edilebilir' },
+    w_dt3: { de: 'Im VBB fährt ein Hund kostenlos mit', en: 'Within the VBB, one dog travels free', uk: 'У мережі VBB одна собака їде безкоштовно', ar: 'داخل شبكة VBB يسافر كلب واحد مجانًا', tr: 'VBB içinde bir köpek ücretsiz yolculuk eder' },
+    b_dt1: {
+      de: 'Nur als Abo, nicht am Automaten – Ausweis und Bankverbindung nötig',
+      en: 'Subscription only, not from ticket machines – ID and bank details required',
+      uk: 'Лише як абонемент, не в автоматі — потрібні посвідчення особи та банківські реквізити',
+      ar: 'بالاشتراك فقط، لا يُباع في آلات البيع – يلزم إثبات الهوية وبيانات الحساب البنكي',
+      tr: 'Sadece abonelik olarak, otomattan alınamaz – kimlik ve banka hesap bilgileri gerekir'
+    },
+    b_dt2: {
+      de: 'Persönlich, nicht übertragbar; andere Erwachsene können nicht mitgenommen werden',
+      en: 'Personal and non-transferable; you cannot take other adults with you',
+      uk: 'Іменний, не передається іншим; брати з собою інших дорослих не можна',
+      ar: 'شخصية وغير قابلة للتحويل؛ لا يمكن اصطحاب بالغين آخرين',
+      tr: 'Kişiye özeldir, devredilemez; başka yetişkinler yanınızda ücretsiz gelemez'
+    },
+    b_dt3: {
+      de: 'Fahrrad kostet extra, Fernzüge (ICE, IC) sind ausgeschlossen',
+      en: 'Bicycles cost extra; long-distance trains (ICE, IC) are excluded',
+      uk: 'Велосипед — за окрему плату; поїзди далекого сполучення (ICE, IC) не входять',
+      ar: 'الدراجة مقابل رسوم إضافية، والقطارات السريعة (ICE وIC) غير مشمولة',
+      tr: 'Bisiklet ayrıca ücretlidir; şehirlerarası trenler (ICE, IC) kapsam dışıdır'
+    },
+    w_uk1: {
+      de: 'Übertragbar – kann auch von Familie oder Kolleg:innen genutzt werden',
+      en: 'Transferable – family members or colleagues can use it too',
+      uk: 'Не іменна — нею можуть користуватися й рідні чи колеги',
+      ar: 'قابلة للتحويل – يمكن أن يستخدمها أفراد العائلة أو الزملاء أيضًا',
+      tr: 'Devredilebilir – aile üyeleri veya iş arkadaşları da kullanabilir'
+    },
+    w_uk2: {
+      de: 'Abends ab 20 Uhr, am Wochenende und an Feiertagen fahren ein Erwachsener und bis zu drei Kinder (6–14) kostenlos mit',
+      en: 'From 8 pm, at weekends and on public holidays, one adult and up to three children (6–14) travel with you free',
+      uk: 'Увечері з 20:00, у вихідні та святкові дні з вами безкоштовно їдуть один дорослий і до трьох дітей (6–14 років)',
+      ar: 'مساءً بعد الساعة 8 وفي عطلة نهاية الأسبوع والأعياد يرافقك مجانًا شخص بالغ واحد وحتى ثلاثة أطفال (6–14 سنة)',
+      tr: 'Akşam 20.00’den sonra, hafta sonu ve resmî tatillerde bir yetişkin ve en fazla üç çocuk (6–14 yaş) yanınızda ücretsiz yolculuk eder'
+    },
+    b_uk_abo: { de: 'Laufzeit und Kündigungsfrist laut ViP-Abo-Bedingungen', en: 'Term and notice period according to the ViP subscription conditions', uk: 'Строк дії та строк розірвання — згідно з умовами абонемента ViP', ar: 'مدة الاشتراك ومهلة الإلغاء وفق شروط اشتراك ViP', tr: 'Süre ve fesih bildirimi ViP abonelik koşullarına göre' },
+    b_uk_monat: { de: 'Gilt einen Monat ab dem gewählten Tag (gleitend)', en: 'Valid for one month from the day you choose', uk: 'Діє один місяць від обраного дня', ar: 'صالحة لمدة شهر من اليوم الذي تختاره', tr: 'Seçtiğiniz günden itibaren bir ay geçerli' },
+    w_mobil1: { de: 'Etwa die Hälfte des normalen Monatskartenpreises', en: 'About half the price of a normal monthly ticket', uk: 'Приблизно половина ціни звичайного місячного квитка', ar: 'حوالي نصف سعر التذكرة الشهرية العادية', tr: 'Normal aylık bilet fiyatının yaklaşık yarısı' },
+    w_mobil2: { de: 'Ein Hund und Kinder unter 6 fahren kostenlos mit', en: 'One dog and children under 6 travel free', uk: 'Одна собака й діти до 6 років їдуть безкоштовно', ar: 'يسافر كلب واحد والأطفال دون 6 سنوات مجانًا', tr: 'Bir köpek ve 6 yaş altı çocuklar ücretsiz yolculuk eder' },
+    b_mobil1: { de: 'Gilt nur in Brandenburg, nicht für Fahrten nach Berlin', en: 'Valid in Brandenburg only, not for trips to Berlin', uk: 'Діє лише в Бранденбурзі, не для поїздок до Берліна', ar: 'صالحة في براندنبورغ فقط، وليس للرحلات إلى برلين', tr: 'Sadece Brandenburg’da geçerli, Berlin yolculukları için değil' },
+    b_mobil2: { de: 'Persönliche Monatskarte, kein Abo – jeden Monat neu kaufen', en: 'Personal monthly ticket, not a subscription – buy a new one every month', uk: 'Іменний місячний квиток, не абонемент — купувати щомісяця заново', ar: 'تذكرة شهرية شخصية وليست اشتراكًا – تُشترى من جديد كل شهر', tr: 'Kişiye özel aylık bilet, abonelik değil – her ay yeniden satın alınır' },
+    b_mobil3: {
+      de: 'In Potsdam für Bürgergeld-Beziehende als Handyticket über das Jobcenter',
+      en: 'In Potsdam, Bürgergeld recipients get it as a mobile ticket via the Jobcenter',
+      uk: 'У Потсдамі отримувачі Bürgergeld отримують його як мобільний квиток через Jobcenter',
+      ar: 'في بوتسدام يحصل المستفيدون من Bürgergeld عليها كتذكرة على الهاتف عبر الـ Jobcenter',
+      tr: 'Potsdam’da Bürgergeld alanlar bunu Jobcenter üzerinden mobil bilet olarak alır'
+    },
+    w_sch1: {
+      de: 'Die Stadt Potsdam übernimmt den Großteil – voller Preis wären {p}',
+      en: 'The City of Potsdam pays most of it – the full price would be {p}',
+      uk: 'Більшу частину оплачує місто Потсдам — повна ціна становила б {p}',
+      ar: 'تتحمّل مدينة بوتسدام الجزء الأكبر – السعر الكامل سيكون {p}',
+      tr: 'Bedelin büyük kısmını Potsdam şehri karşılar – tam fiyat {p} olurdu'
+    },
+    w_sch2: {
+      de: 'Gilt in ganz Potsdam (Tarifbereich AB), auch in der Freizeit und in den Ferien',
+      en: 'Valid throughout Potsdam (fare zone AB), also in free time and during school holidays',
+      uk: 'Діє по всьому Потсдаму (тарифна зона AB), також у вільний час і на канікулах',
+      ar: 'صالحة في كل بوتسدام (المنطقة التعريفية AB)، وكذلك في أوقات الفراغ والعطل المدرسية',
+      tr: 'Tüm Potsdam’da (AB tarife bölgesi) geçerli, boş zamanda ve tatillerde de'
+    },
+    b_sch1: { de: 'Nur als Abo, mit Schulbescheinigung', en: 'Subscription only, with a school certificate', uk: 'Лише як абонемент, з довідкою зі школи', ar: 'بالاشتراك فقط، مع شهادة مدرسية', tr: 'Sadece abonelik olarak, okul belgesiyle' },
+    b_sch2: { de: 'Gilt nicht in Berlin – dafür eignet sich das Deutschlandticket', en: 'Not valid in Berlin – use the Deutschlandticket for that', uk: 'Не діє в Берліні — для цього підходить Deutschlandticket', ar: 'غير صالحة في برلين – لذلك يناسبك Deutschlandticket', tr: 'Berlin’de geçerli değil – bunun için Deutschlandticket uygundur' },
+    w_azubi1: { de: 'Günstiger als die normale Umweltkarte', en: 'Cheaper than the normal Umweltkarte', uk: 'Дешевше, ніж звичайна Umweltkarte', ar: 'أرخص من Umweltkarte العادية', tr: 'Normal Umweltkarte’den daha ucuz' },
+    w_azubi2: { de: 'Als Monatskarte ohne Abo: {p}', en: 'As a monthly ticket without subscription: {p}', uk: 'Як місячний квиток без абонемента: {p}', ar: 'كتذكرة شهرية بدون اشتراك: {p}', tr: 'Abonelik olmadan aylık bilet olarak: {p}' },
+    b_azubi1: { de: 'Ausbildungs- oder Schulbescheinigung nötig', en: 'Training or school certificate required', uk: 'Потрібна довідка з місця навчання', ar: 'يلزم إثبات التدريب أو شهادة مدرسية', tr: 'Meslek eğitimi veya okul belgesi gerekir' },
+    b_azubi2: { de: 'Gilt nur im gewählten Tarifbereich', en: 'Valid only in the chosen fare zone', uk: 'Діє лише в обраній тарифній зоні', ar: 'صالحة فقط في المنطقة التعريفية المختارة', tr: 'Sadece seçilen tarife bölgesinde geçerli' },
+    w_dta1: {
+      de: 'Deutschlandweit, auch in der Freizeit – rund 40 % unter dem normalen Deutschlandticket',
+      en: 'Valid throughout Germany, also in your free time – about 40% below the normal Deutschlandticket',
+      uk: 'По всій Німеччині, також у вільний час — приблизно на 40 % дешевше за звичайний Deutschlandticket',
+      ar: 'في كل ألمانيا، وفي أوقات الفراغ أيضًا – أقل بنحو 40% من Deutschlandticket العادي',
+      tr: 'Tüm Almanya’da, boş zamanda da – normal Deutschlandticket’ten yaklaşık %40 daha ucuz'
+    },
+    b_dta1: {
+      de: 'Duale Ausbildung: läuft über den Ausbildungsbetrieb (Jobticket-Vertrag, schon ab einem Beschäftigten). Vollschulische Ausbildung: Zuschuss vom Land Brandenburg',
+      en: 'Dual training: arranged via your training company (job ticket contract, possible even with one employee). Full-time school-based training: subsidy from the State of Brandenburg',
+      uk: 'Дуальне навчання: оформлюється через підприємство (договір Jobticket, можливо вже з одним працівником). Шкільне професійне навчання: дотація від землі Бранденбург',
+      ar: 'التدريب المزدوج: عن طريق جهة التدريب (عقد Jobticket، ممكن حتى مع موظف واحد). التدريب المدرسي بدوام كامل: دعم من ولاية براندنبورغ',
+      tr: 'İkili eğitim: eğitim aldığınız işletme üzerinden (Jobticket sözleşmesi, tek çalışanla bile mümkün). Tam zamanlı okulda eğitim: Brandenburg eyaletinden destek'
+    },
+    b_dta2: { de: 'Nur als Handyticket', en: 'Mobile ticket only', uk: 'Лише як мобільний квиток', ar: 'كتذكرة على الهاتف فقط', tr: 'Sadece mobil bilet olarak' },
+    b_dta3: {
+      de: 'Preis ab 2027 abgeleitet (60 % des Deutschlandtickets) – bitte im Kundenzentrum bestätigen lassen',
+      en: 'Price from 2027 is derived (60% of the Deutschlandticket) – please have it confirmed at the customer centre',
+      uk: 'Ціну з 2027 року розраховано (60 % від Deutschlandticket) — уточніть, будь ласка, у клієнтському центрі',
+      ar: 'السعر ابتداءً من 2027 محسوب تقديريًا (60% من Deutschlandticket) – يُرجى التأكد منه في مركز خدمة العملاء',
+      tr: '2027 fiyatı hesaplanmıştır (Deutschlandticket’in %60’ı) – lütfen müşteri merkezinde teyit ettirin'
+    },
+
+    f_vbb_monat: {
+      de: 'Fahrrad: Monatskarte Fahrrad VBB-Gesamtnetz {p} – auch zum Deutschlandticket nötig.',
+      en: 'Bicycle: Monatskarte Fahrrad VBB-Gesamtnetz {p} – also needed with the Deutschlandticket.',
+      uk: 'Велосипед: Monatskarte Fahrrad VBB-Gesamtnetz {p} — потрібна й до Deutschlandticket.',
+      ar: 'الدراجة: Monatskarte Fahrrad VBB-Gesamtnetz بسعر {p} – مطلوبة أيضًا مع Deutschlandticket.',
+      tr: 'Bisiklet: Monatskarte Fahrrad VBB-Gesamtnetz {p} – Deutschlandticket ile de gereklidir.'
+    },
+    f_vbb_tag: {
+      de: 'Fahrrad: 24-Stunden-Karte Fahrrad VBB-Gesamtnetz {p} bzw. Einzelfahrt {q}. Mitnahme nur, wenn Platz ist – Rollstuhl und Kinderwagen haben Vorrang.',
+      en: 'Bicycle: 24-Stunden-Karte Fahrrad VBB-Gesamtnetz {p}, or a single trip {q}. Only if there is room – wheelchairs and prams have priority.',
+      uk: 'Велосипед: 24-Stunden-Karte Fahrrad VBB-Gesamtnetz {p} або разова поїздка {q}. Лише якщо є місце — інвалідні візки й дитячі коляски мають перевагу.',
+      ar: 'الدراجة: 24-Stunden-Karte Fahrrad VBB-Gesamtnetz بسعر {p} أو رحلة واحدة بسعر {q}. فقط عند توفر مكان – الأولوية للكراسي المتحركة وعربات الأطفال.',
+      tr: 'Bisiklet: 24-Stunden-Karte Fahrrad VBB-Gesamtnetz {p} veya tek yolculuk {q}. Sadece yer varsa – tekerlekli sandalye ve bebek arabası önceliklidir.'
+    },
+    f_berlin_monat: {
+      de: 'Fahrrad: Monatskarte Fahrrad Berlin ABC {p} – auch zum Deutschlandticket nötig.',
+      en: 'Bicycle: Monatskarte Fahrrad Berlin ABC {p} – also needed with the Deutschlandticket.',
+      uk: 'Велосипед: Monatskarte Fahrrad Berlin ABC {p} — потрібна й до Deutschlandticket.',
+      ar: 'الدراجة: Monatskarte Fahrrad Berlin ABC بسعر {p} – مطلوبة أيضًا مع Deutschlandticket.',
+      tr: 'Bisiklet: Monatskarte Fahrrad Berlin ABC {p} – Deutschlandticket ile de gereklidir.'
+    },
+    f_berlin_tag: {
+      de: 'Fahrrad: Einzelfahrausweis Fahrrad Berlin ABC {p}, 24-Stunden-Karte Fahrrad {q}. Mitnahme nur, wenn Platz ist.',
+      en: 'Bicycle: Einzelfahrausweis Fahrrad Berlin ABC {p}, 24-Stunden-Karte Fahrrad {q}. Only if there is room.',
+      uk: 'Велосипед: Einzelfahrausweis Fahrrad Berlin ABC {p}, 24-Stunden-Karte Fahrrad {q}. Лише якщо є місце.',
+      ar: 'الدراجة: Einzelfahrausweis Fahrrad Berlin ABC بسعر {p}، و24-Stunden-Karte Fahrrad بسعر {q}. فقط عند توفر مكان.',
+      tr: 'Bisiklet: Einzelfahrausweis Fahrrad Berlin ABC {p}, 24-Stunden-Karte Fahrrad {q}. Sadece yer varsa.'
+    },
+    f_pd_monat: {
+      de: 'Fahrrad: Monatskarte Fahrrad Potsdam AB {p} – auch zum Deutschlandticket nötig.',
+      en: 'Bicycle: Monatskarte Fahrrad Potsdam AB {p} – also needed with the Deutschlandticket.',
+      uk: 'Велосипед: Monatskarte Fahrrad Potsdam AB {p} — потрібна й до Deutschlandticket.',
+      ar: 'الدراجة: Monatskarte Fahrrad Potsdam AB بسعر {p} – مطلوبة أيضًا مع Deutschlandticket.',
+      tr: 'Bisiklet: Monatskarte Fahrrad Potsdam AB {p} – Deutschlandticket ile de gereklidir.'
+    },
+    f_pd_tag: {
+      de: 'Fahrrad: Einzelfahrausweis Fahrrad Potsdam {p} (gilt in ganz Potsdam ABC), 24-Stunden-Karte Fahrrad {q}. Mitnahme nur, wenn Platz ist – Rollstuhl und Kinderwagen haben Vorrang.',
+      en: 'Bicycle: Einzelfahrausweis Fahrrad Potsdam {p} (valid in all of Potsdam ABC), 24-Stunden-Karte Fahrrad {q}. Only if there is room – wheelchairs and prams have priority.',
+      uk: 'Велосипед: Einzelfahrausweis Fahrrad Potsdam {p} (діє в усій зоні Potsdam ABC), 24-Stunden-Karte Fahrrad {q}. Лише якщо є місце — інвалідні візки й дитячі коляски мають перевагу.',
+      ar: 'الدراجة: Einzelfahrausweis Fahrrad Potsdam بسعر {p} (صالحة في كل Potsdam ABC)، و24-Stunden-Karte Fahrrad بسعر {q}. فقط عند توفر مكان – الأولوية للكراسي المتحركة وعربات الأطفال.',
+      tr: 'Bisiklet: Einzelfahrausweis Fahrrad Potsdam {p} (tüm Potsdam ABC’de geçerli), 24-Stunden-Karte Fahrrad {q}. Sadece yer varsa – tekerlekli sandalye ve bebek arabası önceliklidir.'
+    },
+
+    w_einzel_vbb: {
+      de: 'Der Preis richtet sich nach der Strecke – die VBB-App oder der Automat zeigen ihn nach Eingabe des Ziels',
+      en: 'The price depends on the route – the VBB app or the ticket machine shows it once you enter your destination',
+      uk: 'Ціна залежить від маршруту — застосунок VBB або автомат покажуть її після введення пункту призначення',
+      ar: 'يعتمد السعر على المسافة – يعرضه تطبيق VBB أو آلة البيع بعد إدخال الوجهة',
+      tr: 'Fiyat güzergâha göre belirlenir – VBB uygulaması veya bilet otomatı varış yerini girdikten sonra gösterir'
+    },
+    b_einzel_vbb: {
+      de: 'Hin und zurück am selben Tag? Dann ist die Tageskarte VBB-Gesamtnetz ({p}) oft günstiger.',
+      en: 'There and back on the same day? Then the Tageskarte VBB-Gesamtnetz ({p}) is often cheaper.',
+      uk: 'Туди й назад того самого дня? Тоді Tageskarte VBB-Gesamtnetz ({p}) часто дешевша.',
+      ar: 'ذهاب وعودة في اليوم نفسه؟ إذن غالبًا ما تكون Tageskarte VBB-Gesamtnetz ({p}) أرخص.',
+      tr: 'Aynı gün gidiş-dönüş mü? O zaman Tageskarte VBB-Gesamtnetz ({p}) çoğu zaman daha ucuzdur.'
+    },
+    w_kurz: { de: 'Reicht für bis zu 4 Haltestellen mit Bus oder Tram', en: 'Covers up to 4 stops by bus or tram', uk: 'Підходить для поїздки до 4 зупинок автобусом або трамваєм', ar: 'تكفي حتى 4 محطات بالحافلة أو الترام', tr: 'Otobüs veya tramvayla en fazla 4 durak için yeterli' },
+    b_kurz: { de: 'Kein Wechsel zwischen ViP, regiobus und Havelbus', en: 'No changing between ViP, regiobus and Havelbus', uk: 'Без пересадок між ViP, regiobus і Havelbus', ar: 'بدون التبديل بين ViP وregiobus وHavelbus', tr: 'ViP, regiobus ve Havelbus arasında aktarma yok' },
+    h_anschluss: {
+      de: 'Wer schon eine Zeitkarte Potsdam AB hat, braucht für die Weiterfahrt nach Berlin nur den Anschlussfahrausweis Potsdam → Berlin AB für {p}.',
+      en: 'If you already have a period ticket for Potsdam AB, you only need the Anschlussfahrausweis Potsdam → Berlin AB for {p} to continue to Berlin.',
+      uk: 'Якщо у вас уже є проїзний Potsdam AB, для поїздки далі до Берліна потрібен лише доплатний квиток Anschlussfahrausweis Potsdam → Berlin AB за {p}.',
+      ar: 'إذا كانت لديك تذكرة فترة لـ Potsdam AB، فلا تحتاج لمتابعة الرحلة إلى برلين إلا إلى التذكرة التكميلية Anschlussfahrausweis Potsdam → Berlin AB بسعر {p}.',
+      tr: 'Zaten Potsdam AB dönem biletiniz varsa, Berlin’e devam etmek için yalnızca {p} tutarındaki Anschlussfahrausweis Potsdam → Berlin AB ek biletine ihtiyacınız var.'
+    },
+    h_gruppe_einmal: {
+      de: 'Für eine einzelne Fahrt braucht jede Person einen Fahrausweis. Bei mehreren Fahrten am Tag lohnt sich die 24-Stunden-Kleingruppenkarte.',
+      en: 'For a single trip, everyone needs their own ticket. For several trips in a day, the 24-Stunden-Kleingruppenkarte is worth it.',
+      uk: 'Для однієї поїздки кожному потрібен власний квиток. Якщо поїздок за день кілька, вигідна 24-Stunden-Kleingruppenkarte.',
+      ar: 'للرحلة الواحدة يحتاج كل شخص إلى تذكرة. عند عدة رحلات في اليوم تكون 24-Stunden-Kleingruppenkarte مجدية.',
+      tr: 'Tek bir yolculuk için herkesin kendi bileti olmalı. Bir günde birkaç yolculukta 24-Stunden-Kleingruppenkarte avantajlıdır.'
+    },
+    w_2einzel: { de: 'Nur wenn es wirklich bei hin und zurück bleibt', en: 'Only if it really is just there and back', uk: 'Лише якщо справді буде тільки туди й назад', ar: 'فقط إذا اقتصر الأمر فعلًا على الذهاب والعودة', tr: 'Sadece gerçekten gidiş-dönüşten ibaretse' },
+    h_gruppe_vbb: {
+      de: 'Für das VBB-Gesamtnetz gibt es keine Gruppenkarte – jede Person braucht eine eigene Tageskarte.',
+      en: 'There is no group ticket for the whole VBB network – everyone needs their own Tageskarte.',
+      uk: 'Для всієї мережі VBB групового квитка немає — кожному потрібна власна Tageskarte.',
+      ar: 'لا توجد تذكرة جماعية لكامل شبكة VBB – يحتاج كل شخص إلى Tageskarte خاصة به.',
+      tr: 'Tüm VBB ağı için grup bileti yoktur – herkesin kendi Tageskarte’si olmalı.'
+    },
+    h_kinder_tag: {
+      de: 'Mit der 24-Stunden-Karte fahren bis zu drei Kinder von 6 bis 14 Jahren kostenlos mit – ein eigenes Ticket brauchen sie nicht.',
+      en: 'With the 24-Stunden-Karte, up to three children aged 6 to 14 travel free – they do not need their own ticket.',
+      uk: 'Із 24-Stunden-Karte до трьох дітей від 6 до 14 років їдуть безкоштовно — окремий квиток їм не потрібен.',
+      ar: 'مع 24-Stunden-Karte يسافر حتى ثلاثة أطفال من 6 إلى 14 سنة مجانًا – لا يحتاجون إلى تذكرة خاصة.',
+      tr: '24-Stunden-Karte ile 6–14 yaş arası en fazla üç çocuk ücretsiz yolculuk eder – ayrı bilete gerek yoktur.'
+    },
+    h_dt_tageskarten: {
+      de: 'Ab drei Tagesfahrten im Monat ist das Deutschlandticket günstiger als einzelne Tageskarten.',
+      en: 'From three day trips a month, the Deutschlandticket is cheaper than separate day tickets.',
+      uk: 'Від трьох денних поїздок на місяць Deutschlandticket дешевший за окремі денні квитки.',
+      ar: 'ابتداءً من ثلاث رحلات يومية في الشهر يكون Deutschlandticket أرخص من التذاكر اليومية المنفصلة.',
+      tr: 'Ayda üç günlük geziden itibaren Deutschlandticket, ayrı günlük biletlerden daha ucuzdur.'
+    },
+    b_vierer_schwelle: {
+      de: 'Bei etwa {n} Fahrten im Monat: rund {p} – ein Abo lohnt sich erst ab etwa {m} Fahrten',
+      en: 'At about {n} trips a month: around {p} – a subscription only pays off from about {m} trips',
+      uk: 'Приблизно {n} поїздок на місяць: близько {p} — абонемент вигідний лише від приблизно {m} поїздок',
+      ar: 'عند حوالي {n} رحلات في الشهر: نحو {p} – الاشتراك يصبح مجديًا فقط من حوالي {m} رحلة',
+      tr: 'Ayda yaklaşık {n} yolculukta: yaklaşık {p} – abonelik ancak yaklaşık {m} yolculuktan itibaren kârlıdır'
+    },
+    h_schueler_berlin: {
+      de: 'Für Schüler:innen gibt es im VBB kein ermäßigtes Deutschlandticket; das Schülerticket Potsdam gilt nur in Potsdam. Ausnahme: Wer eine vollschulische Berufsausbildung macht, bekommt das Deutschlandticket Zuschuss Ausbildung ({p}) über die Schule.',
+      en: 'There is no reduced Deutschlandticket for school pupils in the VBB; the Schülerticket Potsdam is only valid in Potsdam. Exception: students in full-time school-based vocational training get the Deutschlandticket Zuschuss Ausbildung ({p}) through their school.',
+      uk: 'Для учнів у VBB немає пільгового Deutschlandticket; Schülerticket Potsdam діє лише в Потсдамі. Виняток: ті, хто здобуває професію в навчальному закладі, отримують Deutschlandticket Zuschuss Ausbildung ({p}) через свій заклад.',
+      ar: 'لا يوجد في VBB تذكرة Deutschlandticket مخفّضة للتلاميذ؛ وتذكرة Schülerticket Potsdam صالحة في بوتسدام فقط. استثناء: من يتلقى تدريبًا مهنيًا مدرسيًا بدوام كامل يحصل على Deutschlandticket Zuschuss Ausbildung ({p}) عن طريق المدرسة.',
+      tr: 'VBB’de okul öğrencileri için indirimli Deutschlandticket yoktur; Schülerticket Potsdam sadece Potsdam’da geçerlidir. İstisna: tam zamanlı okulda meslek eğitimi alanlar Deutschlandticket Zuschuss Ausbildung’u ({p}) okul üzerinden alır.'
+    },
+    w_vv1: { de: 'Kein Abo, keine Bindung', en: 'No subscription, no commitment', uk: 'Без абонемента й без зобов’язань', ar: 'بدون اشتراك وبدون التزام', tr: 'Abonelik yok, bağlılık yok' },
+    w_vv2: { de: 'Lohnt sich bei wenigen Fahrten', en: 'Worth it if you travel only a little', uk: 'Вигідно, якщо поїздок небагато', ar: 'مجدية عند القليل من الرحلات', tr: 'Az yolculukta avantajlı' },
+    w_dt_berlin: {
+      de: 'Weit günstiger als jede Berlin-ABC-Zeitkarte (Umweltkarte Berlin ABC im Abo: {p})',
+      en: 'Far cheaper than any Berlin ABC period ticket (Umweltkarte Berlin ABC subscription: {p})',
+      uk: 'Набагато дешевше за будь-який проїзний Berlin ABC (Umweltkarte Berlin ABC в абонементі: {p})',
+      ar: 'أرخص بكثير من أي تذكرة فترة لـ Berlin ABC (اشتراك Umweltkarte Berlin ABC: {p})',
+      tr: 'Her türlü Berlin ABC dönem biletinden çok daha ucuz (Umweltkarte Berlin ABC aboneliği: {p})'
+    },
+    w_kombi1: {
+      de: 'Lohnt sich, wenn Berlin die Ausnahme ist: bis etwa {n} Berlin-Fahrten im Monat günstiger als das Deutschlandticket',
+      en: 'Worth it if Berlin is the exception: cheaper than the Deutschlandticket for up to about {n} Berlin trips a month',
+      uk: 'Вигідно, якщо Берлін — виняток: до приблизно {n} поїздок до Берліна на місяць дешевше за Deutschlandticket',
+      ar: 'مجدية إذا كانت برلين استثناءً: أرخص من Deutschlandticket حتى حوالي {n} رحلات إلى برلين في الشهر',
+      tr: 'Berlin istisnaysa avantajlı: ayda yaklaşık {n} Berlin yolculuğuna kadar Deutschlandticket’ten daha ucuz'
+    },
+    w_kombi2: { de: 'Übertragbar, mit Mitnahme abends und am Wochenende', en: 'Transferable, and you can take people along in the evening and at weekends', uk: 'Не іменна, увечері й у вихідні можна брати когось із собою', ar: 'قابلة للتحويل، مع اصطحاب مرافقين مساءً وفي عطلة نهاية الأسبوع', tr: 'Devredilebilir; akşamları ve hafta sonu yanınıza birilerini alabilirsiniz' },
+    b_kombi: {
+      de: 'Der Anschlussfahrausweis Potsdam → Berlin AB wird je Fahrt zusätzlich gelöst',
+      en: 'The Anschlussfahrausweis Potsdam → Berlin AB is bought separately for each trip',
+      uk: 'Доплатний квиток Anschlussfahrausweis Potsdam → Berlin AB купується окремо на кожну поїздку',
+      ar: 'تُشترى التذكرة التكميلية Anschlussfahrausweis Potsdam → Berlin AB بشكل إضافي لكل رحلة',
+      tr: 'Anschlussfahrausweis Potsdam → Berlin AB her yolculuk için ayrıca alınır'
+    },
+    h_kind_schueler: {
+      de: 'Für Kinder im Schulalter gibt es mit Schulbescheinigung das Schülerticket Potsdam ({p} im Monat, Potsdam AB) oder das VBB-Abo Schüler/Azubi.',
+      en: 'For school-age children with a school certificate there is the Schülerticket Potsdam ({p} a month, Potsdam AB) or the VBB-Abo Schüler/Azubi.',
+      uk: 'Для дітей шкільного віку з довідкою зі школи є Schülerticket Potsdam ({p} на місяць, Potsdam AB) або VBB-Abo Schüler/Azubi.',
+      ar: 'للأطفال في سن المدرسة مع شهادة مدرسية توجد Schülerticket Potsdam ({p} شهريًا، Potsdam AB) أو VBB-Abo Schüler/Azubi.',
+      tr: 'Okul belgesi olan okul çağındaki çocuklar için Schülerticket Potsdam (aylık {p}, Potsdam AB) veya VBB-Abo Schüler/Azubi vardır.'
+    },
+    h_abc_vergleich: {
+      de: 'Die Umweltkarte Potsdam ABC im Abo und das Deutschlandticket liegen nur {p} auseinander. Wer gelegentlich weiter fährt, ist mit dem Deutschlandticket flexibler; wer die Karte weitergeben oder abends Familie mitnehmen will, mit der Umweltkarte.',
+      en: 'The Umweltkarte Potsdam ABC subscription and the Deutschlandticket are only {p} apart. If you sometimes travel further, the Deutschlandticket is more flexible; if you want to lend the ticket or take family along in the evening, choose the Umweltkarte.',
+      uk: 'Umweltkarte Potsdam ABC в абонементі й Deutschlandticket відрізняються лише на {p}. Якщо інколи їздите далі — гнучкіший Deutschlandticket; якщо хочете передавати квиток іншим чи брати ввечері родину — Umweltkarte.',
+      ar: 'الفرق بين اشتراك Umweltkarte Potsdam ABC وDeutschlandticket هو {p} فقط. إذا كنت تسافر أبعد أحيانًا فإن Deutschlandticket أكثر مرونة؛ وإذا أردت إعارة التذكرة أو اصطحاب العائلة مساءً فاختر Umweltkarte.',
+      tr: 'Umweltkarte Potsdam ABC aboneliği ile Deutschlandticket arasında sadece {p} fark var. Ara sıra daha uzağa gidiyorsanız Deutschlandticket daha esnektir; bileti başkasına vermek ya da akşamları ailenizi yanınıza almak istiyorsanız Umweltkarte.'
+    },
+    h_senior: {
+      de: 'Ein eigenes Seniorenangebot gibt es im VBB seit 2026 nicht mehr (das Abo 65plus wurde eingestellt) – das Deutschlandticket ersetzt es und ist günstiger.',
+      en: 'Since 2026 the VBB no longer has a separate offer for seniors (the Abo 65plus was discontinued) – the Deutschlandticket replaces it and is cheaper.',
+      uk: 'З 2026 року окремої пропозиції для людей похилого віку у VBB немає (Abo 65plus скасовано) — його замінює Deutschlandticket, і він дешевший.',
+      ar: 'منذ 2026 لم يعد في VBB عرض خاص بكبار السن (أُوقف Abo 65plus) – ويحل محله Deutschlandticket وهو أرخص.',
+      tr: '2026’dan beri VBB’de yaşlılara özel bir teklif yok (Abo 65plus kaldırıldı) – yerini Deutschlandticket aldı ve daha ucuzdur.'
+    },
+    h_leistung_berlin: {
+      de: 'Das Mobilitätsticket Brandenburg gilt nicht in Berlin. Für regelmäßige Berlin-Fahrten bleibt das Deutschlandticket zum vollen Preis – ein ermäßigtes Deutschlandticket gibt es in Brandenburg derzeit nicht.',
+      en: 'The Mobilitätsticket Brandenburg is not valid in Berlin. For regular trips to Berlin, the Deutschlandticket at full price remains – there is currently no reduced Deutschlandticket in Brandenburg.',
+      uk: 'Mobilitätsticket Brandenburg не діє в Берліні. Для регулярних поїздок до Берліна залишається Deutschlandticket за повну ціну — пільгового Deutschlandticket у Бранденбурзі наразі немає.',
+      ar: 'تذكرة Mobilitätsticket Brandenburg غير صالحة في برلين. للرحلات المنتظمة إلى برلين يبقى Deutschlandticket بالسعر الكامل – لا يوجد حاليًا Deutschlandticket مخفّض في براندنبورغ.',
+      tr: 'Mobilitätsticket Brandenburg Berlin’de geçerli değildir. Düzenli Berlin yolculukları için tam fiyatlı Deutschlandticket kalır – Brandenburg’da şu anda indirimli Deutschlandticket yoktur.'
+    },
+    h_student_oft: {
+      de: 'Studierende: Fragen Sie an Ihrer Hochschule nach dem Deutschlandsemesterticket – {p} im Monat über den Semesterbeitrag, deutschlandweit gültig. Es wird nicht im Kundenzentrum verkauft. Nimmt Ihre Hochschule nicht teil, gelten die Angebote unten.',
+      en: 'Students: ask your university about the Deutschlandsemesterticket – {p} a month via the semester fee, valid throughout Germany. It is not sold at the customer centre. If your university does not take part, the offers below apply.',
+      uk: 'Студенти: запитайте у своєму виші про Deutschlandsemesterticket — {p} на місяць у складі семестрового внеску, діє по всій Німеччині. У клієнтському центрі він не продається. Якщо ваш виш не бере участі, діють пропозиції нижче.',
+      ar: 'للطلاب الجامعيين: اسأل جامعتك عن Deutschlandsemesterticket – {p} شهريًا ضمن رسوم الفصل الدراسي، وصالحة في كل ألمانيا. لا تُباع في مركز خدمة العملاء. إذا لم تكن جامعتك مشاركة فتنطبق العروض أدناه.',
+      tr: 'Üniversite öğrencileri: okulunuza Deutschlandsemesterticket’i sorun – dönem harcı üzerinden aylık {p}, tüm Almanya’da geçerli. Müşteri merkezinde satılmaz. Okulunuz katılmıyorsa aşağıdaki teklifler geçerlidir.'
+    },
+    h_student: {
+      de: 'Mit Deutschlandsemesterticket Ihrer Hochschule brauchen Sie kein weiteres Ticket – es gilt deutschlandweit im Nahverkehr.',
+      en: 'With your university’s Deutschlandsemesterticket you do not need another ticket – it is valid on local transport throughout Germany.',
+      uk: 'Якщо у вас є Deutschlandsemesterticket від вишу, інший квиток не потрібен — він діє в місцевому транспорті по всій Німеччині.',
+      ar: 'مع Deutschlandsemesterticket من جامعتك لا تحتاج إلى تذكرة أخرى – فهي صالحة في المواصلات المحلية في كل ألمانيا.',
+      tr: 'Okulunuzun Deutschlandsemesterticket’i varsa başka bilete gerek yoktur – tüm Almanya’da yerel ulaşımda geçerlidir.'
+    },
+    h_hund_einmal: {
+      de: 'Hund: Für den Einzelfahrausweis braucht der Hund einen eigenen Fahrausweis zum Ermäßigungstarif ({p}). Kleine Hunde in einer Tasche oder Box fahren kostenlos. Leine und Maulkorb sind Pflicht.',
+      en: 'Dog: With a single ticket, the dog needs its own ticket at the reduced fare ({p}). Small dogs in a bag or box travel free. Lead and muzzle are mandatory.',
+      uk: 'Собака: при разовому квитку собаці потрібен власний квиток за пільговим тарифом ({p}). Маленькі собаки в сумці чи переносці їдуть безкоштовно. Повідець і намордник обов’язкові.',
+      ar: 'الكلب: مع تذكرة الرحلة الواحدة يحتاج الكلب إلى تذكرة خاصة بالتعرفة المخفّضة ({p}). الكلاب الصغيرة في حقيبة أو صندوق تسافر مجانًا. المقود والكمامة إلزاميان.',
+      tr: 'Köpek: Tek yolculuk biletinde köpeğin indirimli tarifeden kendi bileti olmalı ({p}). Çanta veya kutudaki küçük köpekler ücretsizdir. Tasma ve ağızlık zorunludur.'
+    },
+    h_hund: {
+      de: 'Hund: Mit 24-Stunden-Karte, Zeitkarte oder Deutschlandticket fährt ein Hund im VBB kostenlos mit. Leine und Maulkorb sind Pflicht.',
+      en: 'Dog: With a 24-Stunden-Karte, period ticket or Deutschlandticket, one dog travels free within the VBB. Lead and muzzle are mandatory.',
+      uk: 'Собака: із 24-Stunden-Karte, проїзним або Deutschlandticket одна собака у VBB їде безкоштовно. Повідець і намордник обов’язкові.',
+      ar: 'الكلب: مع 24-Stunden-Karte أو تذكرة فترة أو Deutschlandticket يسافر كلب واحد مجانًا داخل VBB. المقود والكمامة إلزاميان.',
+      tr: 'Köpek: 24-Stunden-Karte, dönem bileti veya Deutschlandticket ile VBB içinde bir köpek ücretsiz yolculuk eder. Tasma ve ağızlık zorunludur.'
+    },
+    h_kinder_monat: {
+      de: 'Kinder: Mit der VBB-Umweltkarte fahren abends ab 20 Uhr und am Wochenende ein Erwachsener und bis zu drei Kinder (6–14) kostenlos mit. Beim Deutschlandticket braucht jedes Kind ab 6 Jahren ein eigenes Ticket.',
+      en: 'Children: With the VBB-Umweltkarte, one adult and up to three children (6–14) travel with you free from 8 pm and at weekends. With the Deutschlandticket, every child aged 6 or over needs their own ticket.',
+      uk: 'Діти: із VBB-Umweltkarte увечері з 20:00 і у вихідні з вами безкоштовно їдуть один дорослий і до трьох дітей (6–14 років). З Deutschlandticket кожній дитині від 6 років потрібен власний квиток.',
+      ar: 'الأطفال: مع VBB-Umweltkarte يرافقك مجانًا مساءً بعد الساعة 8 وفي عطلة نهاية الأسبوع شخص بالغ واحد وحتى ثلاثة أطفال (6–14 سنة). مع Deutschlandticket يحتاج كل طفل من عمر 6 سنوات إلى تذكرة خاصة.',
+      tr: 'Çocuklar: VBB-Umweltkarte ile akşam 20.00’den sonra ve hafta sonu bir yetişkin ve en fazla üç çocuk (6–14 yaş) yanınızda ücretsiz yolculuk eder. Deutschlandticket’te 6 yaşından itibaren her çocuğun kendi bileti olmalı.'
+    },
+    h_kinder_einmal: {
+      de: 'Kinder von 6 bis 14 Jahren zahlen den Ermäßigungstarif. Bei mehreren Fahrten am Tag ist die 24-Stunden-Karte meist günstiger – dort fahren bis zu drei Kinder kostenlos mit.',
+      en: 'Children aged 6 to 14 pay the reduced fare. For several trips in a day, the 24-Stunden-Karte is usually cheaper – up to three children travel free with it.',
+      uk: 'Діти від 6 до 14 років платять за пільговим тарифом. Якщо поїздок за день кілька, зазвичай дешевша 24-Stunden-Karte — з нею до трьох дітей їдуть безкоштовно.',
+      ar: 'يدفع الأطفال من 6 إلى 14 سنة التعرفة المخفّضة. عند عدة رحلات في اليوم تكون 24-Stunden-Karte أرخص غالبًا – ويسافر معها حتى ثلاثة أطفال مجانًا.',
+      tr: '6–14 yaş arası çocuklar indirimli tarife öder. Bir günde birkaç yolculukta 24-Stunden-Karte genellikle daha ucuzdur – onunla en fazla üç çocuk ücretsiz yolculuk eder.'
+    },
+
+    d_abo: { de: 'Ausweis und Bankverbindung (für Abos)', en: 'ID and bank details (for subscriptions)', uk: 'Посвідчення особи та банківські реквізити (для абонемента)', ar: 'إثبات الهوية وبيانات الحساب البنكي (للاشتراكات)', tr: 'Kimlik ve banka hesap bilgileri (abonelik için)' },
+    d_schule: { de: 'Schulbescheinigung', en: 'School certificate (Schulbescheinigung)', uk: 'Довідка зі школи (Schulbescheinigung)', ar: 'شهادة مدرسية (Schulbescheinigung)', tr: 'Okul belgesi (Schulbescheinigung)' },
+    d_azubi: { de: 'Ausbildungsvertrag oder Bescheinigung des Ausbildungsbetriebs', en: 'Training contract or certificate from your training company', uk: 'Договір про професійне навчання або довідка від підприємства', ar: 'عقد التدريب أو إفادة من جهة التدريب', tr: 'Meslek eğitimi sözleşmesi veya işletmeden belge' },
+    d_leistung: { de: 'Aktueller Leistungsbescheid (Jobcenter, Sozialamt)', en: 'Current benefits notice (Leistungsbescheid from the Jobcenter or Sozialamt)', uk: 'Актуальне рішення про виплати (Leistungsbescheid від Jobcenter чи Sozialamt)', ar: 'إشعار المساعدات الحالي (Leistungsbescheid من الـ Jobcenter أو Sozialamt)', tr: 'Güncel yardım kararı (Jobcenter veya Sozialamt’tan Leistungsbescheid)' },
+    d_student: { de: 'Immatrikulationsbescheinigung (für die Hochschule)', en: 'Certificate of enrolment (for the university)', uk: 'Довідка про зарахування (для вишу)', ar: 'إفادة التسجيل الجامعي (للجامعة)', tr: 'Öğrenci belgesi (üniversite için)' }
+  };
+
+  function langInfo(code) {
+    for (var i = 0; i < LANGS.length; i++) if (LANGS[i].code === code) return LANGS[i];
+    return LANGS[0];
+  }
+  function has(key) { return Object.prototype.hasOwnProperty.call(X, key); }
+  function t(lang, key, p) {
+    var e = X[key];
+    if (!e) return key;
+    var s = (e[lang] !== undefined && e[lang] !== null) ? e[lang] : e.de;
+    return s.replace(/\{(\w+)\}/g, function (m, k) { return (p && p[k] !== undefined) ? String(p[k]) : m; });
+  }
+  // Deutsch bleibt bei "3,00 €" (wie auf Automat und Aushang); die anderen
+  // Sprachen formatieren nach ihren Gewohnheiten, Ziffern immer lateinisch.
+  function eur(x, lang) {
+    if (!lang || lang === 'de' || typeof Intl === 'undefined') return x.toFixed(2).replace('.', ',') + ' €';
+    try {
+      return new Intl.NumberFormat(langInfo(lang).locale, { style: 'currency', currency: 'EUR', currencyDisplay: 'narrowSymbol' }).format(x);
+    } catch (err) {
+      return x.toFixed(2).replace('.', ',') + ' €';
+    }
+  }
+  function match(code) {
+    if (!code) return null;
+    var c = String(code).toLowerCase().split('-')[0];
+    for (var i = 0; i < LANGS.length; i++) if (LANGS[i].code === c) return c;
+    return null;
+  }
+
+  return { langs: LANGS, questions: QUESTIONS, text: X, t: t, has: has, eur: eur, info: langInfo, match: match };
+})();
+</script>
+
 <!-- ============================================================
      EMPFEHLUNGSLOGIK - reine Funktion ohne DOM, damit sie sich
      mit Node testen lässt (tarifberater/test/engine-test.mjs).
@@ -439,7 +1096,8 @@ body.embed .topbar { display: none; }
 var TarifEngine = (function () {
   'use strict';
 
-  function eur(x) { return x.toFixed(2).replace('.', ',') + ' €'; }
+  // Deutsches Preisformat - bleibt als Export für Tests und Altaufrufe.
+  function eurDe(x) { return x.toFixed(2).replace('.', ',') + ' €'; }
 
   // Ein Preis ist immer ein Paar [2026, 2027]; `j` ist der Index des
   // aktuell gültigen Jahres. `next` liefert den Folgepreis, falls er abweicht.
@@ -457,7 +1115,12 @@ var TarifEngine = (function () {
   // Ungefähre Kosten pro Monat bei n Fahrten, für den Vergleich.
   function monatlich(preisProFahrt, n) { return preisProFahrt * n; }
 
+  // a.lang wählt die Sprache der Texte (Standard: Deutsch). Die Logik ist
+  // für alle Sprachen dieselbe; nur die Sätze kommen aus TarifI18n.
   function empfehlen(a, T) {
+    var L = a.lang || 'de';
+    var t = function (k, p) { return TarifI18n.t(L, k, p); };
+    var eur = function (x) { return TarifI18n.eur(x, L); };
     var j = a.jahrIndex || 0;
     var n = T.fahrtenProMonat[a.wie] || 1;
     var erm = a.wer === 'kind' ? 'erm' : 'regel';
@@ -465,78 +1128,67 @@ var TarifEngine = (function () {
     var hat = function (x) { return extras.indexOf(x) >= 0; };
     var r = { empfehlungen: [], hinweise: [], unterlagen: [], sofort: null, fahrtenProMonat: n };
     var PO = T.potsdam, BE = T.berlin, Z = T.zeit, F = T.fahrrad;
+    var BEST = t('tag_best');
 
     // ---------- Sofort-Antworten ----------
     if (a.wer === 'u6') {
-      r.sofort = {
-        name: 'Kein Ticket nötig',
-        text: 'Kinder unter 6 Jahren fahren in Bus, Tram, S-Bahn und Regionalzug kostenlos mit – auch mit dem Deutschlandticket einer Begleitperson.',
-        beachten: ['Ab dem 6. Geburtstag gilt der Ermäßigungstarif (Kinder 6 bis 14 Jahre).']
-      };
+      r.sofort = { name: t('s_u6_name'), text: t('s_u6_text'), beachten: [t('s_u6_b1')] };
       return r;
     }
     if (a.wer === 'sb') {
-      r.sofort = {
-        name: 'Freifahrt mit Wertmarke',
-        text: 'Mit Schwerbehindertenausweis und gültiger Wertmarke fahren Sie im gesamten Nahverkehr kostenlos – bundesweit, also auch im VBB und mit dem Regionalzug.',
-        beachten: [
-          'Die Wertmarke gibt es beim Versorgungsamt (in Brandenburg: Landesamt für Soziales und Versorgung). Ohne Wertmarke gilt der normale Tarif.',
-          'Mit Merkzeichen B fährt eine Begleitperson kostenlos mit – oder ein Hund.',
-          'Rollstuhl, Rollator und Gepäck fahren immer kostenlos mit.'
-        ]
-      };
-      r.unterlagen = ['Schwerbehindertenausweis', 'Beiblatt mit gültiger Wertmarke'];
+      r.sofort = { name: t('s_sb_name'), text: t('s_sb_text'), beachten: [t('s_sb_b1'), t('s_sb_b2'), t('s_sb_b3')] };
+      r.unterlagen = [t('d_sb1'), t('d_sb2')];
       return r;
     }
 
     // ---------- Gemeinsame Bausteine ----------
-    var kaufBar = 'Automat in Bus und Tram, VBB-App, ViP-Kundenzentrum';
-    var kaufAbo = 'ViP-Kundenzentrum oder online unter swp-potsdam.de/abonnement – Abos beginnen zum Monatsersten, am besten bis zum 10. des Vormonats beantragen';
+    var kaufBar = t('buy_bar');
+    var kaufAbo = t('buy_abo');
 
     function einzel(bereich) {
-      if (bereich === 'ab') return empfehlung('einzel-ab', 'Einzelfahrausweis Potsdam AB', PO.ab[erm], 'pro Fahrt', j, {
-        warum: ['60 Minuten in eine Richtung, Umsteigen erlaubt', 'Gilt in Bus, Tram, S-Bahn und Regionalzug innerhalb Potsdams'],
+      if (bereich === 'ab') return empfehlung('einzel-ab', 'Einzelfahrausweis Potsdam AB', PO.ab[erm], t('u_fahrt'), j, {
+        warum: [t('w_60min'), t('w_einzel_ab')],
         kaufen: kaufBar });
-      if (bereich === 'abc') return empfehlung('einzel-abc', 'Einzelfahrausweis Potsdam ABC', PO.abc[erm], 'pro Fahrt', j, {
-        warum: ['60 Minuten in eine Richtung, Umsteigen erlaubt', 'Gilt in Potsdam und im Umland (Tarifbereich C)'],
+      if (bereich === 'abc') return empfehlung('einzel-abc', 'Einzelfahrausweis Potsdam ABC', PO.abc[erm], t('u_fahrt'), j, {
+        warum: [t('w_60min'), t('w_einzel_abc')],
         kaufen: kaufBar });
-      if (bereich === 'berlin') return empfehlung('einzel-berlin', 'Einzelfahrausweis Berlin ABC', BE.abc[erm], 'pro Fahrt', j, {
-        warum: ['120 Minuten in eine Richtung, Umsteigen erlaubt', 'Von Potsdam bis in die Berliner Innenstadt und zurück'],
-        beachten: ['Bis Wannsee oder Zehlendorf reicht ebenfalls nur ABC – den früheren Bereich BC gibt es nicht mehr.'],
+      if (bereich === 'berlin') return empfehlung('einzel-berlin', 'Einzelfahrausweis Berlin ABC', BE.abc[erm], t('u_fahrt'), j, {
+        warum: [t('w_120min'), t('w_einzel_berlin')],
+        beachten: [t('b_einzel_berlin')],
         kaufen: kaufBar });
       return null;
     }
 
     function vierer(bereich) {
-      if (bereich === 'ab') return empfehlung('vierer-ab', '4-Fahrten-Karte Potsdam AB', PO.ab4[erm], 'für 4 Fahrten', j, {
+      if (bereich === 'ab') return empfehlung('vierer-ab', '4-Fahrten-Karte Potsdam AB', PO.ab4[erm], t('u_4fahrten'), j, {
         proFahrt: PO.ab4[erm][j] / 4,
-        warum: ['Günstiger als vier Einzelfahrausweise', 'Kein festes Datum – die Fahrten können an verschiedenen Tagen liegen'],
+        warum: [t('w_vierer'), t('w_vierer_datum_lang')],
         kaufen: kaufBar });
-      if (bereich === 'abc') return empfehlung('vierer-abc', '4-Fahrten-Karte Potsdam ABC', PO.abc4[erm], 'für 4 Fahrten', j, {
+      if (bereich === 'abc') return empfehlung('vierer-abc', '4-Fahrten-Karte Potsdam ABC', PO.abc4[erm], t('u_4fahrten'), j, {
         proFahrt: PO.abc4[erm][j] / 4,
-        warum: ['Günstiger als vier Einzelfahrausweise', 'Kein festes Datum'],
+        warum: [t('w_vierer'), t('w_vierer_datum')],
         kaufen: kaufBar });
-      if (bereich === 'berlin') return empfehlung('vierer-berlin', '4-Fahrten-Karte Berlin ABC', BE.abc4[erm], 'für 4 Fahrten', j, {
+      if (bereich === 'berlin') return empfehlung('vierer-berlin', '4-Fahrten-Karte Berlin ABC', BE.abc4[erm], t('u_4fahrten'), j, {
         proFahrt: BE.abc4[erm][j] / 4,
-        warum: ['Günstiger als vier Einzelfahrausweise', 'Kein festes Datum'],
+        warum: [t('w_vierer'), t('w_vierer_datum')],
         kaufen: kaufBar });
       return null;
     }
 
     function tageskarte(bereich) {
-      var kinderSatz = 'Bis zu drei Kinder von 6 bis 14 Jahren fahren kostenlos mit';
-      if (bereich === 'ab') return empfehlung('tag-ab', '24-Stunden-Karte Potsdam AB', PO.tagAB[erm], 'für 24 Stunden', j, {
-        warum: ['Ab der dritten Fahrt günstiger als Einzelfahrausweise', '24 Stunden ab Entwertung, nicht nur bis Mitternacht', kinderSatz, 'Ein Hund fährt kostenlos mit'],
+      var kinderSatz = t('w_kinder3');
+      if (bereich === 'ab') return empfehlung('tag-ab', '24-Stunden-Karte Potsdam AB', PO.tagAB[erm], t('u_24h'), j, {
+        warum: [t('w_tag_ab3'), t('w_tag_24_lang'), kinderSatz, t('w_hund_frei')],
         kaufen: kaufBar });
-      if (bereich === 'abc') return empfehlung('tag-abc', '24-Stunden-Karte Potsdam ABC', PO.tagABC[erm], 'für 24 Stunden', j, {
-        warum: ['Ab der dritten Fahrt günstiger als Einzelfahrausweise', '24 Stunden ab Entwertung', kinderSatz, 'Ein Hund fährt kostenlos mit'],
+      if (bereich === 'abc') return empfehlung('tag-abc', '24-Stunden-Karte Potsdam ABC', PO.tagABC[erm], t('u_24h'), j, {
+        warum: [t('w_tag_ab3'), t('w_tag_24'), kinderSatz, t('w_hund_frei')],
         kaufen: kaufBar });
-      if (bereich === 'berlin') return empfehlung('tag-berlin', '24-Stunden-Karte Berlin ABC', BE.tagABC[erm], 'für 24 Stunden', j, {
-        warum: ['Ab der dritten Fahrt günstiger als Einzelfahrausweise', '24 Stunden ab Entwertung', kinderSatz, 'Ein Hund fährt kostenlos mit'],
+      if (bereich === 'berlin') return empfehlung('tag-berlin', '24-Stunden-Karte Berlin ABC', BE.tagABC[erm], t('u_24h'), j, {
+        warum: [t('w_tag_ab3'), t('w_tag_24'), kinderSatz, t('w_hund_frei')],
         kaufen: kaufBar });
-      if (bereich === 'weit') return empfehlung('tag-vbb', 'Tageskarte VBB-Gesamtnetz', T.gesamtnetzTag, 'für einen Tag', j, {
-        warum: ['Gilt in ganz Berlin und Brandenburg, in allen Bussen und Bahnen des VBB'],
-        beachten: ['Montag bis Freitag erst ab 9 Uhr gültig (bis 3 Uhr am Folgetag); am Wochenende und an Feiertagen ganztägig.'],
+      if (bereich === 'weit') return empfehlung('tag-vbb', 'Tageskarte VBB-Gesamtnetz', T.gesamtnetzTag, t('u_tag'), j, {
+        warum: [t('w_tag_vbb')],
+        beachten: [t('b_tag_vbb')],
         kaufen: kaufBar });
       return null;
     }
@@ -546,17 +1198,17 @@ var TarifEngine = (function () {
                   abc: ['gruppe-abc', '24-Stunden-Kleingruppenkarte Potsdam ABC', PO.tagABC.gruppe],
                   berlin: ['gruppe-berlin', '24-Stunden-Kleingruppenkarte Berlin ABC', BE.tagABC.gruppe] };
       var m = map[bereich]; if (!m) return null;
-      return empfehlung(m[0], m[1], m[2], 'für bis zu 5 Personen, 24 Stunden', j, {
-        warum: ['Ab drei Personen günstiger als einzelne 24-Stunden-Karten', 'Alle fahren gemeinsam auf einer Karte'],
-        beachten: ['Kinder zählen hier als Personen – die kostenlose Kindermitnahme gilt nur für die normale 24-Stunden-Karte.'],
+      return empfehlung(m[0], m[1], m[2], t('u_gruppe'), j, {
+        warum: [t('w_gruppe1'), t('w_gruppe2')],
+        beachten: [t('b_gruppe')],
         kaufen: kaufBar });
     }
 
     function dticket(tagText) {
-      return empfehlung('dticket', 'Deutschlandticket', Z.dticket, 'pro Monat', j, {
+      return empfehlung('dticket', 'Deutschlandticket', Z.dticket, t('u_monat'), j, {
         tag: tagText || null,
-        warum: ['Gilt deutschlandweit in allen Bussen, Trams, S-Bahnen und Regionalzügen', 'Monatlich kündbar', 'Im VBB fährt ein Hund kostenlos mit'],
-        beachten: ['Nur als Abo, nicht am Automaten – Ausweis und Bankverbindung nötig', 'Persönlich, nicht übertragbar; andere Erwachsene können nicht mitgenommen werden', 'Fahrrad kostet extra, Fernzüge (ICE, IC) sind ausgeschlossen'],
+        warum: [t('w_dt1'), t('w_dt2'), t('w_dt3')],
+        beachten: [t('b_dt1'), t('b_dt2'), t('b_dt3')],
         kaufen: kaufAbo });
     }
 
@@ -566,124 +1218,123 @@ var TarifEngine = (function () {
                   berlin: ['umwelt-berlin', 'VBB-Umweltkarte Berlin ABC', Z.umweltBerlinABC],
                   weit: ['umwelt-vbb', 'VBB-Umweltkarte Gesamtnetz', Z.gesamtnetz] };
       var m = map[bereich]; if (!m) return null;
-      var e = empfehlung(m[0] + (abo ? '-abo' : '-monat'), m[1] + (abo ? ' im Abo' : ' als Monatskarte'), abo ? m[2].abo : m[2].monat, 'pro Monat', j, {
-        warum: ['Übertragbar – kann auch von Familie oder Kolleg:innen genutzt werden',
-                'Abends ab 20 Uhr, am Wochenende und an Feiertagen fahren ein Erwachsener und bis zu drei Kinder (6–14) kostenlos mit',
-                'Ein Hund fährt kostenlos mit'],
-        beachten: abo ? ['Laufzeit und Kündigungsfrist laut ViP-Abo-Bedingungen'] : ['Gilt einen Monat ab dem gewählten Tag (gleitend)'],
+      var e = empfehlung(m[0] + (abo ? '-abo' : '-monat'), m[1] + (abo ? t('n_abo') : t('n_monat')), abo ? m[2].abo : m[2].monat, t('u_monat'), j, {
+        warum: [t('w_uk1'), t('w_uk2'), t('w_hund_frei')],
+        beachten: abo ? [t('b_uk_abo')] : [t('b_uk_monat')],
         kaufen: abo ? kaufAbo : kaufBar });
       return e;
     }
 
     function mobilitaetsticket(bereich) {
       var abc = bereich === 'abc';
-      return empfehlung('mobil', 'Mobilitätsticket Brandenburg Potsdam ' + (abc ? 'ABC' : 'AB'), abc ? Z.mobilABC : Z.mobilAB, 'pro Monat', j, {
-        tag: 'Für Leistungsberechtigte',
-        warum: ['Etwa die Hälfte des normalen Monatskartenpreises', 'Ein Hund und Kinder unter 6 fahren kostenlos mit'],
-        beachten: ['Gilt nur in Brandenburg, nicht für Fahrten nach Berlin', 'Persönliche Monatskarte, kein Abo – jeden Monat neu kaufen', 'In Potsdam für Bürgergeld-Beziehende als Handyticket über das Jobcenter'],
-        kaufen: 'Nach Berechtigungsnachweis: ViP-Kundenzentrum bzw. Handyticket über das Jobcenter' });
+      return empfehlung('mobil', 'Mobilitätsticket Brandenburg Potsdam ' + (abc ? 'ABC' : 'AB'), abc ? Z.mobilABC : Z.mobilAB, t('u_monat'), j, {
+        tag: t('tag_leistung'),
+        warum: [t('w_mobil1'), t('w_mobil2')],
+        beachten: [t('b_mobil1'), t('b_mobil2'), t('b_mobil3')],
+        kaufen: t('buy_mobil') });
     }
 
     function schuelerticket() {
-      return empfehlung('schueler-potsdam', 'Schülerticket Potsdam', Z.schuelerticketPotsdam.eigenanteil, 'pro Monat (Eigenanteil)', j, {
-        tag: 'Für Potsdamer Schüler:innen',
-        warum: ['Die Stadt Potsdam übernimmt den Großteil – voller Preis wären ' + eur(Z.schuelerticketPotsdam.gesamt[j]), 'Gilt in ganz Potsdam (Tarifbereich AB), auch in der Freizeit und in den Ferien'],
-        beachten: ['Nur als Abo, mit Schulbescheinigung', 'Gilt nicht in Berlin – dafür eignet sich das Deutschlandticket'],
+      return empfehlung('schueler-potsdam', 'Schülerticket Potsdam', Z.schuelerticketPotsdam.eigenanteil, t('u_monat_eigen'), j, {
+        tag: t('tag_schueler'),
+        warum: [t('w_sch1', { p: eur(Z.schuelerticketPotsdam.gesamt[j]) }), t('w_sch2')],
+        beachten: [t('b_sch1'), t('b_sch2')],
         kaufen: kaufAbo });
     }
 
     function aboAzubi(bereich) {
       var abc = bereich === 'abc';
-      return empfehlung('abo-azubi', 'VBB-Abo Schüler/Azubi Potsdam ' + (abc ? 'ABC' : 'AB'), abc ? Z.azubiABC.abo : Z.azubiAB.abo, 'pro Monat', j, {
-        warum: ['Günstiger als die normale Umweltkarte', 'Als Monatskarte ohne Abo: ' + eur((abc ? Z.azubiABC : Z.azubiAB).monat[j])],
-        beachten: ['Ausbildungs- oder Schulbescheinigung nötig', 'Gilt nur im gewählten Tarifbereich'],
+      return empfehlung('abo-azubi', 'VBB-Abo Schüler/Azubi Potsdam ' + (abc ? 'ABC' : 'AB'), abc ? Z.azubiABC.abo : Z.azubiAB.abo, t('u_monat'), j, {
+        warum: [t('w_azubi1'), t('w_azubi2', { p: eur((abc ? Z.azubiABC : Z.azubiAB).monat[j]) })],
+        beachten: [t('b_azubi1'), t('b_azubi2')],
         kaufen: kaufAbo });
     }
 
     function dticketAzubi() {
-      return empfehlung('dticket-azubi', 'Deutschlandticket Zuschuss Ausbildung', Z.dticketAzubi, 'pro Monat', j, {
-        tag: 'Für Auszubildende',
-        warum: ['Deutschlandweit, auch in der Freizeit – rund 40 % unter dem normalen Deutschlandticket', 'Monatlich kündbar'],
-        beachten: ['Duale Ausbildung: läuft über den Ausbildungsbetrieb (Jobticket-Vertrag, schon ab einem Beschäftigten). Vollschulische Ausbildung: Zuschuss vom Land Brandenburg', 'Nur als Handyticket', 'Preis ab 2027 abgeleitet (60 % des Deutschlandtickets) – bitte im Kundenzentrum bestätigen lassen'],
-        kaufen: 'Über den Ausbildungsbetrieb (firmenticket@vip-potsdam.de) bzw. die Schule' });
+      return empfehlung('dticket-azubi', 'Deutschlandticket Zuschuss Ausbildung', Z.dticketAzubi, t('u_monat'), j, {
+        tag: t('tag_azubi'),
+        warum: [t('w_dta1'), t('w_dt2')],
+        beachten: [t('b_dta1'), t('b_dta2'), t('b_dta3')],
+        kaufen: t('buy_dta') });
     }
 
     function fahrradHinweis(bereich, monatlichB) {
       if (bereich === 'weit') {
         return monatlichB
-          ? 'Fahrrad: Monatskarte Fahrrad VBB-Gesamtnetz ' + eur(F.gesamtnetz.monat[j]) + ' – auch zum Deutschlandticket nötig.'
-          : 'Fahrrad: 24-Stunden-Karte Fahrrad VBB-Gesamtnetz ' + eur(F.gesamtnetz.tag[j]) + ' bzw. Einzelfahrt ' + eur(F.gesamtnetz.einzel[j]) + '. Mitnahme nur, wenn Platz ist – Rollstuhl und Kinderwagen haben Vorrang.';
+          ? t('f_vbb_monat', { p: eur(F.gesamtnetz.monat[j]) })
+          : t('f_vbb_tag', { p: eur(F.gesamtnetz.tag[j]), q: eur(F.gesamtnetz.einzel[j]) });
       }
       if (bereich === 'berlin') {
         return monatlichB
-          ? 'Fahrrad: Monatskarte Fahrrad Berlin ABC ' + eur(F.berlin.monatABC[j]) + ' – auch zum Deutschlandticket nötig.'
-          : 'Fahrrad: Einzelfahrausweis Fahrrad Berlin ABC ' + eur(F.berlin.einzelABC[j]) + ', 24-Stunden-Karte Fahrrad ' + eur(F.berlin.tagABC[j]) + '. Mitnahme nur, wenn Platz ist.';
+          ? t('f_berlin_monat', { p: eur(F.berlin.monatABC[j]) })
+          : t('f_berlin_tag', { p: eur(F.berlin.einzelABC[j]), q: eur(F.berlin.tagABC[j]) });
       }
       return monatlichB
-        ? 'Fahrrad: Monatskarte Fahrrad Potsdam AB ' + eur(F.potsdam.monatAB[j]) + ' – auch zum Deutschlandticket nötig.'
-        : 'Fahrrad: Einzelfahrausweis Fahrrad Potsdam ' + eur(F.potsdam.einzel[j]) + ' (gilt in ganz Potsdam ABC), 24-Stunden-Karte Fahrrad ' + eur(F.potsdam.tag[j]) + '. Mitnahme nur, wenn Platz ist – Rollstuhl und Kinderwagen haben Vorrang.';
+        ? t('f_pd_monat', { p: eur(F.potsdam.monatAB[j]) })
+        : t('f_pd_tag', { p: eur(F.potsdam.einzel[j]), q: eur(F.potsdam.tag[j]) });
     }
 
     // ---------- Einmalige Fahrt ----------
     if (a.wie === 'einmal') {
       if (a.wohin === 'weit') {
-        r.empfehlungen.push(empfehlung('einzel-vbb', 'Einzelfahrausweis nach Entfernung', [0, 0], '', j, {
+        r.empfehlungen.push(empfehlung('einzel-vbb', t('n_einzel_vbb'), [0, 0], '', j, {
           preis: null, preisNext: null,
-          warum: ['Der Preis richtet sich nach der Strecke – die VBB-App oder der Automat zeigen ihn nach Eingabe des Ziels'],
-          beachten: ['Hin und zurück am selben Tag? Dann ist die Tageskarte VBB-Gesamtnetz (' + eur(T.gesamtnetzTag[j]) + ') oft günstiger.'],
+          warum: [t('w_einzel_vbb')],
+          beachten: [t('b_einzel_vbb', { p: eur(T.gesamtnetzTag[j]) })],
           kaufen: kaufBar }));
         r.empfehlungen.push(tageskarte('weit'));
       } else {
-        var e1 = einzel(a.wohin); e1.tag = 'Günstigste Wahl'; r.empfehlungen.push(e1);
+        var e1 = einzel(a.wohin); e1.tag = BEST; r.empfehlungen.push(e1);
         if (a.wohin === 'ab') {
-          r.empfehlungen.push(empfehlung('kurz', 'Kurzstrecke Potsdam', PO.kurz[erm], 'pro Fahrt', j, {
-            warum: ['Reicht für bis zu 4 Haltestellen mit Bus oder Tram'],
-            beachten: ['Kein Wechsel zwischen ViP, regiobus und Havelbus'],
+          r.empfehlungen.push(empfehlung('kurz', 'Kurzstrecke Potsdam', PO.kurz[erm], t('u_fahrt'), j, {
+            warum: [t('w_kurz')],
+            beachten: [t('b_kurz')],
             kaufen: kaufBar }));
         }
         r.empfehlungen.push(vierer(a.wohin));
         if (a.wohin === 'berlin') {
-          r.hinweise.push({ art: 'info', text: 'Wer schon eine Zeitkarte Potsdam AB hat, braucht für die Weiterfahrt nach Berlin nur den Anschlussfahrausweis Potsdam → Berlin AB für ' + eur(PO.anschlussBerlinAB[j]) + '.' });
+          r.hinweise.push({ art: 'info', text: t('h_anschluss', { p: eur(PO.anschlussBerlinAB[j]) }) });
         }
       }
-      if (hat('gruppe')) r.hinweise.push({ art: 'info', text: 'Für eine einzelne Fahrt braucht jede Person einen Fahrausweis. Bei mehreren Fahrten am Tag lohnt sich die 24-Stunden-Kleingruppenkarte.' });
+      if (hat('gruppe')) r.hinweise.push({ art: 'info', text: t('h_gruppe_einmal') });
     }
 
     // ---------- Mehrere Fahrten an einem Tag ----------
     if (a.wie === 'tag') {
       if (hat('gruppe') && a.wohin !== 'weit') {
-        var g = gruppenkarte(a.wohin); g.tag = 'Günstigste Wahl'; r.empfehlungen.push(g);
+        var g = gruppenkarte(a.wohin); g.tag = BEST; r.empfehlungen.push(g);
         r.empfehlungen.push(tageskarte(a.wohin));
       } else {
-        var t = tageskarte(a.wohin); t.tag = 'Günstigste Wahl'; r.empfehlungen.push(t);
+        var tk = tageskarte(a.wohin); tk.tag = BEST; r.empfehlungen.push(tk);
         if (a.wohin !== 'weit') {
           var e2 = einzel(a.wohin);
-          e2.name = '2 Einzelfahrausweise statt Tageskarte';
-          e2.preis = e2.preis * 2; e2.preisNext = e2.preisNext ? e2.preisNext * 2 : null; e2.einheit = 'für hin und zurück';
-          e2.warum = ['Nur wenn es wirklich bei hin und zurück bleibt'];
+          e2.name = t('n_2einzel');
+          e2.preis = e2.preis * 2; e2.preisNext = e2.preisNext ? e2.preisNext * 2 : null; e2.einheit = t('u_hinzurueck');
+          e2.warum = [t('w_2einzel')];
           r.empfehlungen.push(e2);
           r.empfehlungen.push(vierer(a.wohin));
         }
-        if (hat('gruppe') && a.wohin === 'weit') r.hinweise.push({ art: 'info', text: 'Für das VBB-Gesamtnetz gibt es keine Gruppenkarte – jede Person braucht eine eigene Tageskarte.' });
+        if (hat('gruppe') && a.wohin === 'weit') r.hinweise.push({ art: 'info', text: t('h_gruppe_vbb') });
       }
-      if (hat('kinder') && !hat('gruppe') && a.wohin !== 'weit') r.hinweise.push({ art: 'info', text: 'Mit der 24-Stunden-Karte fahren bis zu drei Kinder von 6 bis 14 Jahren kostenlos mit – ein eigenes Ticket brauchen sie nicht.' });
+      if (hat('kinder') && !hat('gruppe') && a.wohin !== 'weit') r.hinweise.push({ art: 'info', text: t('h_kinder_tag') });
     }
 
     // ---------- Ein paar Mal im Monat ----------
     if (a.wie === 'gelegentlich') {
       if (a.wohin === 'weit') {
-        var d0 = dticket('Günstigste Wahl'); r.empfehlungen.push(d0);
+        var d0 = dticket(BEST); r.empfehlungen.push(d0);
         r.empfehlungen.push(tageskarte('weit'));
-        r.hinweise.push({ art: 'info', text: 'Ab drei Tagesfahrten im Monat ist das Deutschlandticket günstiger als einzelne Tageskarten.' });
+        r.hinweise.push({ art: 'info', text: t('h_dt_tageskarten') });
       } else {
-        var v = vierer(a.wohin); v.tag = 'Günstigste Wahl';
-        v.beachten = (v.beachten || []).concat(['Bei etwa ' + n + ' Fahrten im Monat: rund ' + eur(monatlich(v.proFahrt, n)) + ' – ein Abo lohnt sich erst ab etwa ' + Math.ceil((a.wohin === 'berlin' ? Z.dticket[j] : (a.wohin === 'abc' ? Z.umweltABC.abo[j] : Z.umweltAB.abo[j])) / v.proFahrt) + ' Fahrten']);
+        var v = vierer(a.wohin); v.tag = BEST;
+        var aboPreis = a.wohin === 'berlin' ? Z.dticket[j] : (a.wohin === 'abc' ? Z.umweltABC.abo[j] : Z.umweltAB.abo[j]);
+        v.beachten = (v.beachten || []).concat([t('b_vierer_schwelle', { n: n, p: eur(monatlich(v.proFahrt, n)), m: Math.ceil(aboPreis / v.proFahrt) })]);
         r.empfehlungen.push(v);
         r.empfehlungen.push(einzel(a.wohin));
         if (a.wohin === 'berlin') r.empfehlungen.push(dticket(null));
       }
       if (a.wer === 'schueler' && a.wohin === 'ab') {
-        var s0 = schuelerticket(); s0.tag = 'Für Potsdamer Schüler:innen'; r.empfehlungen.unshift(s0);
+        var s0 = schuelerticket(); s0.tag = t('tag_schueler'); r.empfehlungen.unshift(s0);
       }
     }
 
@@ -707,16 +1358,16 @@ var TarifEngine = (function () {
       if (a.wer === 'azubi') kandidaten.push(dticketAzubi());
       if (a.wer === 'azubi' && (bereich === 'ab' || bereich === 'abc')) kandidaten.push(aboAzubi(bereich));
       if (a.wer === 'schueler' && (bereich === 'berlin' || bereich === 'weit')) {
-        r.hinweise.push({ art: 'info', text: 'Für Schüler:innen gibt es im VBB kein ermäßigtes Deutschlandticket; das Schülerticket Potsdam gilt nur in Potsdam. Ausnahme: Wer eine vollschulische Berufsausbildung macht, bekommt das Deutschlandticket Zuschuss Ausbildung (' + eur(Z.dticketAzubi[j]) + ') über die Schule.' });
+        r.hinweise.push({ art: 'info', text: t('h_schueler_berlin', { p: eur(Z.dticketAzubi[j]) }) });
       }
       if (a.wer === 'leistung' && (bereich === 'ab' || bereich === 'abc')) kandidaten.push(mobilitaetsticket(bereich));
 
       // Allgemeine Angebote
       if (bereich === 'ab' || bereich === 'abc') {
         var vv = vierer(bereich);
-        vv.name = '4-Fahrten-Karten für etwa ' + n + ' Fahrten';
+        vv.name = t('n_vierer_n', { n: n });
         vv.preis = monatlich(vv.proFahrt, n); vv.preisNext = (j === 0) ? monatlich((bereich === 'abc' ? PO.abc4 : PO.ab4)[erm][1] / 4, n) : null;
-        vv.einheit = 'pro Monat, geschätzt'; vv.warum = ['Kein Abo, keine Bindung', 'Lohnt sich bei wenigen Fahrten']; vv.beachten = [];
+        vv.einheit = t('u_monat_geschaetzt'); vv.warum = [t('w_vv1'), t('w_vv2')]; vv.beachten = [];
         kandidaten.push(vv);
         if (a.wer !== 'kind') {
           kandidaten.push(umweltkarte(bereich, true));
@@ -726,14 +1377,14 @@ var TarifEngine = (function () {
       }
       if (bereich === 'berlin') {
         var d1 = dticket(null);
-        d1.warum.unshift('Weit günstiger als jede Berlin-ABC-Zeitkarte (Umweltkarte Berlin ABC im Abo: ' + eur(Z.umweltBerlinABC.abo[j]) + ')');
+        d1.warum.unshift(t('w_dt_berlin', { p: eur(Z.umweltBerlinABC.abo[j]) }));
         kandidaten.push(d1);
         if (a.wer !== 'kind') {
           kombi = umweltkarte('ab', true);
-          kombi.id = 'kombi'; kombi.name = 'Umweltkarte Potsdam AB im Abo + Anschluss nach Berlin';
-          kombi.einheit = 'pro Monat + ' + eur(PO.anschlussBerlinAB[j]) + ' je Berlin-Fahrt';
-          kombi.warum = ['Lohnt sich, wenn Berlin die Ausnahme ist: bis etwa ' + Math.floor((Z.dticket[j] - Z.umweltAB.abo[j]) / PO.anschlussBerlinAB[j]) + ' Berlin-Fahrten im Monat günstiger als das Deutschlandticket', 'Übertragbar, mit Mitnahme abends und am Wochenende'];
-          kombi.beachten = ['Der Anschlussfahrausweis Potsdam → Berlin AB wird je Fahrt zusätzlich gelöst'];
+          kombi.id = 'kombi'; kombi.name = t('n_kombi');
+          kombi.einheit = t('u_kombi', { p: eur(PO.anschlussBerlinAB[j]) });
+          kombi.warum = [t('w_kombi1', { n: Math.floor((Z.dticket[j] - Z.umweltAB.abo[j]) / PO.anschlussBerlinAB[j]) }), t('w_kombi2')];
+          kombi.beachten = [t('b_kombi')];
           kandidaten.push(umweltkarte('berlin', true));
         }
       }
@@ -742,53 +1393,53 @@ var TarifEngine = (function () {
         if (a.wer !== 'kind') kandidaten.push(umweltkarte('weit', true));
       }
       if (a.wer === 'kind' && bereich !== 'ab') {
-        r.hinweise.push({ art: 'info', text: 'Für Kinder im Schulalter gibt es mit Schulbescheinigung das Schülerticket Potsdam (' + eur(Z.schuelerticketPotsdam.eigenanteil[j]) + ' im Monat, Potsdam AB) oder das VBB-Abo Schüler/Azubi.' });
+        r.hinweise.push({ art: 'info', text: t('h_kind_schueler', { p: eur(Z.schuelerticketPotsdam.eigenanteil[j]) }) });
       }
       if (a.wer === 'kind' && bereich === 'ab') kandidaten.unshift(schuelerticket());
 
       // Nach Preis sortieren, Zielgruppen-Angebote bleiben wegen ihres Preises ohnehin vorn
       kandidaten = kandidaten.filter(Boolean);
       kandidaten.sort(function (x, y) { return x.preis - y.preis; });
-      if (kandidaten.length) kandidaten[0].tag = kandidaten[0].tag || 'Günstigste Wahl';
+      if (kandidaten.length) kandidaten[0].tag = kandidaten[0].tag || BEST;
       if (kombi) kandidaten.splice(Math.min(1, kandidaten.length), 0, kombi);
       r.empfehlungen = kandidaten;
 
       // Einordnung der Alternativen
       if (bereich === 'abc' && a.wer === 'erwachsen') {
-        r.hinweise.push({ art: 'info', text: 'Die Umweltkarte Potsdam ABC im Abo und das Deutschlandticket liegen nur ' + eur(Math.abs(Z.dticket[j] - Z.umweltABC.abo[j])) + ' auseinander. Wer gelegentlich weiter fährt, ist mit dem Deutschlandticket flexibler; wer die Karte weitergeben oder abends Familie mitnehmen will, mit der Umweltkarte.' });
+        r.hinweise.push({ art: 'info', text: t('h_abc_vergleich', { p: eur(Math.abs(Z.dticket[j] - Z.umweltABC.abo[j])) }) });
       }
-      if (a.wer === 'senior') r.hinweise.push({ art: 'info', text: 'Ein eigenes Seniorenangebot gibt es im VBB seit 2026 nicht mehr (das Abo 65plus wurde eingestellt) – das Deutschlandticket ersetzt es und ist günstiger.' });
-      if (a.wer === 'leistung' && bereich === 'berlin') r.hinweise.push({ art: 'warn', text: 'Das Mobilitätsticket Brandenburg gilt nicht in Berlin. Für regelmäßige Berlin-Fahrten bleibt das Deutschlandticket zum vollen Preis – ein ermäßigtes Deutschlandticket gibt es in Brandenburg derzeit nicht.' });
-      if (a.wer === 'student') r.hinweise.unshift({ art: 'info', text: 'Studierende: Fragen Sie an Ihrer Hochschule nach dem Deutschlandsemesterticket – ' + eur(Z.dsemester[j]) + ' im Monat über den Semesterbeitrag, deutschlandweit gültig. Es wird nicht im Kundenzentrum verkauft. Nimmt Ihre Hochschule nicht teil, gelten die Angebote unten.' });
+      if (a.wer === 'senior') r.hinweise.push({ art: 'info', text: t('h_senior') });
+      if (a.wer === 'leistung' && bereich === 'berlin') r.hinweise.push({ art: 'warn', text: t('h_leistung_berlin') });
+      if (a.wer === 'student') r.hinweise.unshift({ art: 'info', text: t('h_student_oft', { p: eur(Z.dsemester[j]) }) });
     }
 
     // ---------- Student:in bei gelegentlichen Fahrten ----------
     if (a.wer === 'student' && a.wie !== 'wenig' && a.wie !== 'oft') {
-      r.hinweise.unshift({ art: 'info', text: 'Mit Deutschlandsemesterticket Ihrer Hochschule brauchen Sie kein weiteres Ticket – es gilt deutschlandweit im Nahverkehr.' });
+      r.hinweise.unshift({ art: 'info', text: t('h_student') });
     }
 
     // ---------- Extras ----------
     var monatlichB = (a.wie === 'wenig' || a.wie === 'oft');
     if (hat('fahrrad')) r.hinweise.push({ art: 'warn', text: fahrradHinweis(a.wohin, monatlichB) });
     if (hat('hund')) {
-      if (a.wie === 'einmal') r.hinweise.push({ art: 'warn', text: 'Hund: Für den Einzelfahrausweis braucht der Hund einen eigenen Fahrausweis zum Ermäßigungstarif (' + eur((a.wohin === 'berlin' ? BE.abc : (a.wohin === 'abc' ? PO.abc : PO.ab)).erm[j]) + '). Kleine Hunde in einer Tasche oder Box fahren kostenlos. Leine und Maulkorb sind Pflicht.' });
-      else r.hinweise.push({ art: 'info', text: 'Hund: Mit 24-Stunden-Karte, Zeitkarte oder Deutschlandticket fährt ein Hund im VBB kostenlos mit. Leine und Maulkorb sind Pflicht.' });
+      if (a.wie === 'einmal') r.hinweise.push({ art: 'warn', text: t('h_hund_einmal', { p: eur((a.wohin === 'berlin' ? BE.abc : (a.wohin === 'abc' ? PO.abc : PO.ab)).erm[j]) }) });
+      else r.hinweise.push({ art: 'info', text: t('h_hund') });
     }
-    if (hat('kinder') && monatlichB) r.hinweise.push({ art: 'info', text: 'Kinder: Mit der VBB-Umweltkarte fahren abends ab 20 Uhr und am Wochenende ein Erwachsener und bis zu drei Kinder (6–14) kostenlos mit. Beim Deutschlandticket braucht jedes Kind ab 6 Jahren ein eigenes Ticket.' });
-    if (hat('kinder') && a.wie === 'einmal') r.hinweise.push({ art: 'info', text: 'Kinder von 6 bis 14 Jahren zahlen den Ermäßigungstarif. Bei mehreren Fahrten am Tag ist die 24-Stunden-Karte meist günstiger – dort fahren bis zu drei Kinder kostenlos mit.' });
+    if (hat('kinder') && monatlichB) r.hinweise.push({ art: 'info', text: t('h_kinder_monat') });
+    if (hat('kinder') && a.wie === 'einmal') r.hinweise.push({ art: 'info', text: t('h_kinder_einmal') });
 
     // ---------- Unterlagen ----------
     var abo = r.empfehlungen.some(function (e) { return /abo|dticket|schueler|mobil/.test(e.id); });
-    if (abo) r.unterlagen.push('Ausweis und Bankverbindung (für Abos)');
-    if (a.wer === 'schueler' || a.wer === 'kind') r.unterlagen.push('Schulbescheinigung');
-    if (a.wer === 'azubi') r.unterlagen.push('Ausbildungsvertrag oder Bescheinigung des Ausbildungsbetriebs');
-    if (a.wer === 'leistung') r.unterlagen.push('Aktueller Leistungsbescheid (Jobcenter, Sozialamt)');
-    if (a.wer === 'student') r.unterlagen.push('Immatrikulationsbescheinigung (für die Hochschule)');
+    if (abo) r.unterlagen.push(t('d_abo'));
+    if (a.wer === 'schueler' || a.wer === 'kind') r.unterlagen.push(t('d_schule'));
+    if (a.wer === 'azubi') r.unterlagen.push(t('d_azubi'));
+    if (a.wer === 'leistung') r.unterlagen.push(t('d_leistung'));
+    if (a.wer === 'student') r.unterlagen.push(t('d_student'));
 
     return r;
   }
 
-  return { empfehlen: empfehlen, eur: eur };
+  return { empfehlen: empfehlen, eur: eurDe };
 })();
 </script>
 
@@ -796,6 +1447,7 @@ var TarifEngine = (function () {
 (function () {
   'use strict';
   var T = JSON.parse(document.getElementById('tarif-data').textContent);
+  var I = TarifI18n;
 
   // Aktuelles Tarifjahr: das letzte, dessen "ab"-Datum erreicht ist.
   // ?jahr=2027 erlaubt eine Vorschau der Folgepreise (für die Pflege).
@@ -806,21 +1458,30 @@ var TarifEngine = (function () {
   if (params.get('jahr')) T.jahre.forEach(function (y, i) { if (y.key === params.get('jahr')) jahrIndex = i; });
   if (params.get('embed') === '1') document.body.classList.add('embed');
 
-  var standLine = document.getElementById('stand-line');
-  var naechstes = T.jahre[jahrIndex + 1];
-  standLine.innerHTML = 'Preise ' + T.jahre[jahrIndex].label + (naechstes ? '. Wo sich der Preis ändert, steht der Folgepreis dabei (' + naechstes.label + ')' : '') + '. Datenstand <span class="stand">' + formatDatum(T.stand) + '</span>.';
-
-  function formatDatum(iso) { var p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
-  function eur(x) { return TarifEngine.eur(x); }
+  // Sprache: Hash (#l=tr) vor ?lang=tr vor Gerätesprache, sonst Deutsch.
+  var lang = 'de';
+  function t(k, p) { return I.t(lang, k, p); }
+  function eur(x) { return I.eur(x, lang); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  // Deutsche Produktnamen in arabischem Text: Ohne Isolierung zieht der
+  // Browser die führende Ziffer ans Ende ("Fahrten-Karte Potsdam-4 AB").
+  // Darum werden lateinische Namen mit Ziffer vorn in <bdi> gesetzt.
+  var LATIN_NAME = /\d+-[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]*(?: [A-ZÄÖÜ][A-Za-zÄÖÜäöüß\/-]*)*/g;
+  function txt(s) {
+    var h = esc(s);
+    return I.info(lang).dir === 'rtl' ? h.replace(LATIN_NAME, '<bdi>$&</bdi>') : h;
+  }
+  function name(s) { return '<bdi>' + esc(s) + '</bdi>'; }
+  function jahrLabel(i) { var k = 'jahr_' + T.jahre[i].key; return I.has(k) ? t(k) : T.jahre[i].label; }
+  function formatDatum(iso) {
+    var p = iso.split('-');
+    try {
+      return new Intl.DateTimeFormat(I.info(lang).locale, { day: 'numeric', month: 'numeric', year: 'numeric' })
+        .format(new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])));
+    } catch (e) { return p[2] + '.' + p[1] + '.' + p[0]; }
+  }
 
   var ORDER = ['wer', 'wie', 'wohin', 'extras'];
-  var LABELS = {};
-  document.querySelectorAll('.opt').forEach(function (b) {
-    var key = b.closest('.stop').dataset.key;
-    LABELS[key] = LABELS[key] || {};
-    LABELS[key][b.dataset.value] = b.querySelector('.opt-main').textContent;
-  });
-
   var answers = { wer: null, wie: null, wohin: null, extras: [] };
   var extrasDone = false;
 
@@ -831,9 +1492,11 @@ var TarifEngine = (function () {
     if (h.get('h')) answers.wie = h.get('h');
     if (h.get('z')) answers.wohin = h.get('z');
     if (h.has('x')) { answers.extras = h.get('x') ? h.get('x').split(',') : []; extrasDone = true; }
+    return I.match(h.get('l'));
   }
   function writeHash() {
     var h = new URLSearchParams();
+    if (lang !== 'de') h.set('l', lang);
     if (answers.wer) h.set('w', answers.wer);
     if (answers.wie) h.set('h', answers.wie);
     if (answers.wohin) h.set('z', answers.wohin);
@@ -855,7 +1518,62 @@ var TarifEngine = (function () {
     return 'result';
   }
 
-  function render() {
+  // ---------- Aufbau in der gewählten Sprache ----------
+  function buildLangbar() {
+    var bar = document.getElementById('langbar-list');
+    bar.setAttribute('aria-label', t('lang_label'));
+    bar.innerHTML = I.langs.map(function (l) {
+      return '<button class="lang-btn" type="button" data-lang="' + l.code + '" lang="' + l.code + '" dir="' + l.dir + '" aria-pressed="' + (l.code === lang) + '">' + esc(l.name) + '</button>';
+    }).join('');
+  }
+
+  function buildStatic() {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = I.info(lang).dir;
+    document.title = t('doc_title');
+    document.querySelectorAll('[data-t]').forEach(function (el) { el.textContent = t(el.getAttribute('data-t')); });
+    var note = document.getElementById('names-note');
+    note.textContent = t('names_note');
+    note.classList.toggle('hidden', !t('names_note'));
+    var naechstes = T.jahre[jahrIndex + 1];
+    document.getElementById('stand-line').innerHTML = esc(t('stand_prices', { label: jahrLabel(jahrIndex) }))
+      + (naechstes ? ' ' + esc(t('stand_next', { label: jahrLabel(jahrIndex + 1) })) : '')
+      + ' <span class="stand">' + esc(t('stand_data', { d: formatDatum(T.stand) })) + '</span>';
+  }
+
+  function buildLine() {
+    var html = I.questions.map(function (q, i) {
+      var label = t('q_' + q.key + '_label');
+      return '<section class="stop" id="stop-' + q.key + '" data-key="' + q.key + '">'
+        + '<span class="stop-dot" aria-hidden="true"></span><div class="card">'
+        + '<div class="summary"><p class="q-label">' + esc(label) + '</p><div class="answer"></div></div>'
+        + '<button class="change" type="button">' + esc(t('change')) + '</button>'
+        + '<div class="q-head"><div><p class="q-label">' + esc(t('q_of', { n: i + 1 })) + '</p><h2 class="q-title">' + esc(t('q_' + q.key + '_title')) + '</h2></div></div>'
+        + '<p class="q-hint">' + esc(t('q_' + q.key + '_hint')) + '</p>'
+        + '<div class="options' + (q.cols2 ? ' cols2' : '') + '" role="group" aria-label="' + esc(label) + '">'
+        + q.opts.map(function (v) {
+          var k = 'o_' + q.key + '_' + v;
+          return '<button class="opt' + (q.multi ? ' multi' : '') + '" type="button" data-value="' + v + '"><span class="mark"></span><span>'
+            + '<span class="opt-main">' + esc(t(k)) + '</span><span class="opt-sub">' + esc(t(k + '_sub')) + '</span></span></button>';
+        }).join('')
+        + '</div>'
+        + (q.multi ? '<div class="actions"><button class="btn" type="button" id="extras-weiter">' + esc(t('extras_btn')) + '</button></div>' : '')
+        + '</div></section>';
+    }).join('');
+    html += '<section class="stop result hidden" id="stop-result"><span class="stop-dot" aria-hidden="true"></span><div id="result"></div></section>';
+    document.getElementById('line').innerHTML = html;
+  }
+
+  function setLang(l, opts) {
+    lang = I.match(l) || 'de';
+    buildLangbar();
+    buildStatic();
+    buildLine();
+    render(opts && opts.scroll);
+  }
+
+  // ---------- Darstellung des Zustands ----------
+  function render(scroll) {
     var step = currentStep();
     ORDER.forEach(function (key) {
       var stop = document.getElementById('stop-' + key);
@@ -865,8 +1583,8 @@ var TarifEngine = (function () {
       stop.classList.toggle('done', answered && step !== key);
       stop.classList.toggle('active', step === key);
       var text = key === 'extras'
-        ? (answers.extras.length ? answers.extras.map(function (v) { return LABELS.extras[v]; }).join(', ') : 'Nichts weiter')
-        : (answers[key] ? LABELS[key][answers[key]] : '');
+        ? (answers.extras.length ? answers.extras.map(function (v) { return t('o_extras_' + v); }).join(', ') : t('extras_none'))
+        : (answers[key] ? t('o_' + key + '_' + answers[key]) : '');
       stop.querySelector('.answer').textContent = text;
       stop.querySelectorAll('.opt').forEach(function (b) {
         var on = key === 'extras' ? answers.extras.indexOf(b.dataset.value) >= 0 : answers[key] === b.dataset.value;
@@ -877,97 +1595,106 @@ var TarifEngine = (function () {
     resultStop.classList.toggle('hidden', step !== 'result');
     if (step === 'result') renderResult();
     writeHash();
-    if (step !== 'wer') {
+    if (scroll && step !== 'wer') {
       var el = step === 'result' ? resultStop : document.getElementById('stop-' + step);
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
   function preisHtml(e) {
-    if (e.preis === null || e.preis === undefined) return '<div class="price-row"><span class="price-unit">Preis nach Strecke</span></div>';
-    var s = '<div class="price-row"><span class="price">' + eur(e.preis) + '</span><span class="price-unit">' + e.einheit + '</span></div>';
-    if (e.preisNext) s += '<div class="price-next">ab 1.1.' + T.jahre[1].key + ': ' + eur(e.preisNext) + '</div>';
-    if (e.proFahrt) s += '<div class="per-ride">entspricht ' + eur(e.proFahrt) + ' je Fahrt</div>';
+    if (e.preis === null || e.preis === undefined) return '<div class="price-row"><span class="price-unit">' + esc(t('price_by_route')) + '</span></div>';
+    var s = '<div class="price-row"><span class="price">' + eur(e.preis) + '</span><span class="price-unit">' + txt(e.einheit) + '</span></div>';
+    if (e.preisNext) s += '<div class="price-next">' + esc(t('price_from', { y: T.jahre[1].key, p: eur(e.preisNext) })) + '</div>';
+    if (e.proFahrt) s += '<div class="per-ride">' + esc(t('per_ride', { p: eur(e.proFahrt) })) + '</div>';
     return s;
   }
   function liste(items, cls) {
     if (!items || !items.length) return '';
-    return '<ul class="reasons ' + (cls || '') + '">' + items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+    return '<ul class="reasons ' + (cls || '') + '">' + items.map(function (x) { return '<li>' + txt(x) + '</li>'; }).join('') + '</ul>';
   }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var ICONS = {
     info: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
     warn: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9.5 16.5h-19L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>'
   };
 
   function renderResult() {
-    var r = TarifEngine.empfehlen({ wer: answers.wer, wie: answers.wie, wohin: answers.wohin, extras: answers.extras, jahrIndex: jahrIndex }, T);
+    var r = TarifEngine.empfehlen({ wer: answers.wer, wie: answers.wie, wohin: answers.wohin, extras: answers.extras, jahrIndex: jahrIndex, lang: lang }, T);
     var html = '';
     if (r.sofort) {
-      html += '<div class="card result-card"><div class="result-head"><p class="result-title">Unsere Empfehlung</p><h2 class="result-name">' + esc(r.sofort.name) + '</h2></div>'
-        + '<div class="result-body"><p style="margin:0">' + esc(r.sofort.text) + '</p>' + liste(r.sofort.beachten, 'beachten') + '</div></div>';
+      html += '<div class="card result-card"><div class="result-head"><p class="result-title">' + esc(t('res_title')) + '</p><h2 class="result-name">' + name(r.sofort.name) + '</h2></div>'
+        + '<div class="result-body"><p style="margin:0">' + txt(r.sofort.text) + '</p>' + liste(r.sofort.beachten, 'beachten') + '</div></div>';
     } else {
       var top = r.empfehlungen[0];
       var rest = r.empfehlungen.slice(1);
-      html += '<div class="card result-card"><div class="result-head"><p class="result-title">Unsere Empfehlung</p><h2 class="result-name">' + esc(top.name) + '</h2>'
+      html += '<div class="card result-card"><div class="result-head"><p class="result-title">' + esc(t('res_title')) + '</p><h2 class="result-name">' + name(top.name) + '</h2>'
         + (top.tag ? '<p class="result-tagline"><span class="tag">' + esc(top.tag) + '</span></p>' : '') + '</div><div class="result-body">' + preisHtml(top)
         + liste(top.warum) + liste(top.beachten, 'beachten')
-        + (top.kaufen ? '<p class="buy"><b>Wo:</b> ' + esc(top.kaufen) + '</p>' : '') + '</div></div>';
+        + (top.kaufen ? '<p class="buy"><b>' + esc(t('where')) + '</b> ' + txt(top.kaufen) + '</p>' : '') + '</div></div>';
       if (rest.length) {
-        html += '<p class="section-label">Alternativen</p><div class="alts">' + rest.map(function (e) {
+        html += '<p class="section-label">' + esc(t('alts')) + '</p><div class="alts">' + rest.map(function (e) {
           var sub = [];
-          if (e.proFahrt) sub.push('<span class="per">' + eur(e.proFahrt) + ' je Fahrt</span>');
-          if (e.preisNext) sub.push('ab 2027: ' + eur(e.preisNext));
-          if (e.warum && e.warum.length) sub.push(esc(e.warum[0]));
-          if (e.beachten && e.beachten.length) sub.push(esc(e.beachten[0]));
-          return '<div class="alt"><div class="alt-row"><span class="alt-name">' + esc(e.name) + '</span><span class="alt-price">'
-            + (e.preis === null ? 'nach Strecke' : '<b>' + eur(e.preis) + '</b> <span class="unit">' + esc(e.einheit) + '</span>') + '</span></div>'
+          if (e.proFahrt) sub.push('<span class="per">' + esc(t('alt_per', { p: eur(e.proFahrt) })) + '</span>');
+          if (e.preisNext) sub.push(esc(t('alt_next', { y: T.jahre[1].key, p: eur(e.preisNext) })));
+          if (e.warum && e.warum.length) sub.push(txt(e.warum[0]));
+          if (e.beachten && e.beachten.length) sub.push(txt(e.beachten[0]));
+          return '<div class="alt"><div class="alt-row"><span class="alt-name">' + name(e.name) + '</span><span class="alt-price">'
+            + (e.preis === null ? esc(t('alt_route')) : '<b>' + eur(e.preis) + '</b> <span class="unit">' + txt(e.einheit) + '</span>') + '</span></div>'
             + (sub.length ? '<div class="alt-sub">' + sub.join(' · ') + '</div>' : '') + '</div>';
         }).join('') + '</div>';
       }
     }
     if (r.hinweise.length) {
-      html += '<div class="notes">' + r.hinweise.map(function (h) { return '<div class="note ' + h.art + '">' + ICONS[h.art] + '<span>' + esc(h.text) + '</span></div>'; }).join('') + '</div>';
+      html += '<div class="notes">' + r.hinweise.map(function (h) { return '<div class="note ' + h.art + '">' + ICONS[h.art] + '<span>' + txt(h.text) + '</span></div>'; }).join('') + '</div>';
     }
     if (r.unterlagen.length) {
-      html += '<p class="section-label">Das brauchen Sie dafür</p><ul class="docs">' + r.unterlagen.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul>';
+      html += '<p class="section-label">' + esc(t('docs_label')) + '</p><ul class="docs">' + r.unterlagen.map(function (u) { return '<li>' + txt(u) + '</li>'; }).join('') + '</ul>';
     }
-    html += '<div class="actions"><button class="btn secondary" type="button" id="restart">Von vorn</button><button class="btn secondary" type="button" id="print">Drucken</button></div>';
+    html += '<div class="actions"><button class="btn secondary" type="button" id="restart">' + esc(t('restart')) + '</button><button class="btn secondary" type="button" id="print">' + esc(t('print')) + '</button></div>';
     document.getElementById('result').innerHTML = html;
-    document.getElementById('restart').addEventListener('click', function () {
-      answers = { wer: null, wie: null, wohin: null, extras: [] }; extrasDone = false; render();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    document.getElementById('print').addEventListener('click', function () { window.print(); });
   }
 
-  document.querySelectorAll('.stop').forEach(function (stop) {
-    var key = stop.dataset.key;
-    if (!key) return;
-    stop.querySelectorAll('.opt').forEach(function (b) {
-      b.addEventListener('click', function () {
-        if (key === 'extras') {
-          var v = b.dataset.value, i = answers.extras.indexOf(v);
-          if (i >= 0) answers.extras.splice(i, 1); else answers.extras.push(v);
-          b.setAttribute('aria-pressed', i >= 0 ? 'false' : 'true');
-          return;
-        }
-        answers[key] = b.dataset.value;
-        // Spätere Antworten bleiben erhalten (Ändern einer Frage), aber ein
-        // Sofort-Fall macht die übrigen Fragen überflüssig.
-        render();
-      });
-    });
-    stop.querySelector('.change').addEventListener('click', function () {
-      if (key === 'extras') extrasDone = false; else answers[key] = null;
-      if (key !== 'extras') extrasDone = extrasDone && true;
-      render();
-    });
+  // ---------- Bedienung (ein Listener für alles, übersteht Sprachwechsel) ----------
+  document.getElementById('langbar-list').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.lang-btn');
+    if (b && b.dataset.lang !== lang) setLang(b.dataset.lang, { scroll: false });
   });
-  document.getElementById('extras-weiter').addEventListener('click', function () { extrasDone = true; render(); });
+  document.getElementById('line').addEventListener('click', function (ev) {
+    var el = ev.target;
+    if (el.closest('#extras-weiter')) { extrasDone = true; render(true); return; }
+    if (el.closest('#restart')) {
+      answers = { wer: null, wie: null, wohin: null, extras: [] }; extrasDone = false; render(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (el.closest('#print')) { window.print(); return; }
+    var stop = el.closest('.stop');
+    var key = stop && stop.dataset.key;
+    if (!key) return;
+    if (el.closest('.change')) {
+      if (key === 'extras') extrasDone = false; else answers[key] = null;
+      render(true);
+      return;
+    }
+    var b = el.closest('.opt');
+    if (!b) return;
+    if (key === 'extras') {
+      var v = b.dataset.value, i = answers.extras.indexOf(v);
+      if (i >= 0) answers.extras.splice(i, 1); else answers.extras.push(v);
+      b.setAttribute('aria-pressed', i >= 0 ? 'false' : 'true');
+      return;
+    }
+    // Spätere Antworten bleiben erhalten (Ändern einer Frage), aber ein
+    // Sofort-Fall macht die übrigen Fragen überflüssig.
+    answers[key] = b.dataset.value;
+    render(true);
+  });
 
-  readHash();
-  render();
+  var hashLang = readHash();
+  var start = hashLang || I.match(params.get('lang'));
+  if (!start && navigator.languages) {
+    for (var i = 0; i < navigator.languages.length && !start; i++) start = I.match(navigator.languages[i]);
+  }
+  setLang(start || I.match(navigator.language) || 'de', { scroll: false });
 })();
 </script>
 </body>
