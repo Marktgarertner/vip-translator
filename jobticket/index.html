@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Was kostet das Deutschlandticket Job für Ihr Unternehmen? Zuschuss wählen, Kosten und Vorteil für Ihre Beschäftigten sofort sehen.">
+<title>Jobticket-Rechner</title>
+<style>
+/* ============================================================
+   ViP Jobticket-Rechner - eine Datei, keine Abhängigkeiten.
+   Gleiches Designsystem wie Tarifberater und Live-Übersetzer:
+   ViP-Palette, Windrad-Farben als Akzente, eckige Bedienelemente.
+   ============================================================ */
+:root {
+  --paper: #DEF3F0; --surface: #FFFFFF; --surface-soft: #EEF8F5; --mint: #CDEAE0;
+  --ink: #09503D; --ink-strong: #0D1A15; --muted: #4C6A5F; --outline: #B9DDD3;
+  --accent: #006A4D; --accent-2: #008963; --on-accent: #FFFFFF;
+  --rot: #D5232A; --orange: #F39200; --blau: #1467A8; --gruen: #41A62A;
+  --warn-bg: #FFF1DB; --warn-ink: #6E4300; --info-bg: #E8F1FA; --info-ink: #0F3D66;
+  --bar-rabatt: #1467A8; --bar-ag: #006A4D; --bar-an: #9DBFB4;
+  --shadow: 0 1px 2px rgba(9,80,61,.06), 0 10px 30px -18px rgba(9,80,61,.35);
+  --radius: 10px; --radius-sm: 8px;
+  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #071F18; --surface: #0F2E25; --surface-soft: #153B30; --mint: #1C5A47;
+    --ink: #E7EFEA; --ink-strong: #FFFFFF; --muted: #9CC8BA; --outline: #24584A;
+    --accent: #45C199; --accent-2: #6FD6B3; --on-accent: #06120E;
+    --warn-bg: #3B2D0E; --warn-ink: #FFD58A; --info-bg: #12304A; --info-ink: #BFDDF7;
+    --bar-rabatt: #6FB1E8; --bar-ag: #45C199; --bar-an: #4C7A6C;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #071F18; --surface: #0F2E25; --surface-soft: #153B30; --mint: #1C5A47;
+  --ink: #E7EFEA; --ink-strong: #FFFFFF; --muted: #9CC8BA; --outline: #24584A;
+  --accent: #45C199; --accent-2: #6FD6B3; --on-accent: #06120E;
+  --warn-bg: #3B2D0E; --warn-ink: #FFD58A; --info-bg: #12304A; --info-ink: #BFDDF7;
+  --bar-rabatt: #6FB1E8; --bar-ag: #45C199; --bar-an: #4C7A6C;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 17px; line-height: 1.5; }
+button, input, select { font: inherit; color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.hidden { display: none !important; }
+
+.topbar { background: #006A4D; color: #FFFFFF; padding: 12px 16px; }
+.topbar-inner { max-width: 1040px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.logo { height: 34px; width: auto; display: block; }
+.topbar-title { font-weight: 600; font-size: 17px; margin-inline-start: auto; opacity: .95; }
+body.embed .topbar { display: none; }
+
+.shell { max-width: 1040px; margin: 0 auto; padding: 0 16px 80px; }
+.intro { padding: 26px 0 18px; max-width: 680px; }
+.kicker, .label, .result-title, .section-label {
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 6px;
+}
+h1 { font-size: clamp(28px, 6vw, 38px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin: 0 0 10px; color: var(--ink-strong); text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); }
+
+.grid { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); } .result-col { position: sticky; top: 16px; } }
+
+.card { background: var(--surface); border: 1px solid var(--outline); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 16px; }
+.card + .card { margin-top: 12px; }
+.q-title { font-size: 18px; font-weight: 700; margin: 0; color: var(--ink-strong); letter-spacing: -.01em; }
+.q-hint { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+
+/* Anzahl mit Plus/Minus */
+.stepper { display: flex; align-items: stretch; gap: 8px; margin-top: 12px; }
+.stepper button {
+  flex: none; width: 52px; border-radius: 6px; border: 1.5px solid var(--outline); background: var(--surface-soft);
+  font-size: 22px; font-weight: 600; cursor: pointer; color: var(--accent);
+}
+.stepper button:hover { border-color: var(--accent); }
+.num {
+  width: 100%; min-height: 52px; border-radius: 6px; border: 1.5px solid var(--outline); background: var(--surface);
+  padding: 8px 12px; font-size: 22px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink-strong);
+}
+.num:focus { border-color: var(--accent); outline: none; }
+
+/* Auswahl wie im Tarifberater */
+.options { display: grid; gap: 8px; margin-top: 12px; grid-template-columns: 1fr; }
+@media (min-width: 520px) { .options.cols2 { grid-template-columns: 1fr 1fr; } }
+.opt {
+  display: flex; align-items: center; gap: 12px; text-align: start; width: 100%; min-height: 52px; padding: 10px 14px;
+  border-radius: 8px; cursor: pointer; background: var(--surface-soft); border: 1.5px solid transparent; transition: border-color .12s, background .12s;
+}
+.opt:hover { border-color: var(--outline); }
+.opt[aria-pressed="true"] { background: var(--mint); border-color: var(--accent); }
+.opt-main { font-weight: 600; color: var(--ink-strong); display: block; }
+.opt-sub { font-size: 14px; color: var(--muted); display: block; font-variant-numeric: tabular-nums; }
+.mark { flex: none; width: 22px; height: 22px; border-radius: 4px; border: 2px solid var(--outline); position: relative; }
+.opt[aria-pressed="true"] .mark { border-color: var(--accent); background: var(--accent); }
+.opt[aria-pressed="true"] .mark::after {
+  content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px;
+  border: solid var(--on-accent); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+}
+.custom { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.custom .num { font-size: 18px; text-align: end; max-width: 140px; min-height: 46px; }
+.custom span { color: var(--muted); font-size: 15px; }
+
+details.more { margin-top: 12px; }
+details.more summary { cursor: pointer; font-weight: 600; color: var(--accent); list-style: none; display: flex; align-items: center; gap: 8px; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::before { content: ""; width: 8px; height: 8px; border: solid var(--accent); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
+details.more[open] summary::before { transform: rotate(45deg); }
+.fields { display: grid; gap: 10px; margin-top: 10px; grid-template-columns: 1fr 1fr; }
+.field label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+.field input { width: 100%; min-height: 46px; border-radius: 6px; border: 1.5px solid var(--outline); background: var(--surface); padding: 8px 12px; font-size: 17px; color: var(--ink-strong); }
+.field input:focus { border-color: var(--accent); outline: none; }
+.field.wide { grid-column: 1 / -1; }
+
+/* Ergebnis */
+.result-card { padding: 0; overflow: hidden; }
+.result-head { padding: 18px 16px 14px; border-bottom: 1px dashed var(--outline); }
+.big { font-size: clamp(30px, 7vw, 40px); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; }
+.big-sub { margin-top: 6px; color: var(--muted); font-size: 15.5px; }
+.big-sub b { color: var(--ink-strong); }
+.result-body { padding: 14px 16px 18px; }
+
+.split { margin-top: 4px; }
+.bar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; background: var(--surface-soft); }
+.bar span { display: block; height: 100%; transition: width .2s; }
+.bar span + span { border-inline-start: 2px solid var(--surface); }
+.legend { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 15px; }
+.legend li { display: flex; align-items: center; gap: 10px; }
+.legend .sw { flex: none; width: 12px; height: 12px; border-radius: 3px; }
+.legend .what { flex: 1; }
+.legend .val { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-strong); }
+
+.rows { margin: 16px 0 0; display: grid; gap: 0; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 1px solid var(--outline); font-size: 15.5px; }
+.row .k { color: var(--muted); }
+.row .v { font-weight: 700; color: var(--ink-strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.row.total .k { color: var(--ink-strong); font-weight: 600; }
+.row.total .v { color: var(--accent); font-size: 19px; }
+
+.note { border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; }
+.note.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.note.info { background: var(--info-bg); color: var(--info-ink); }
+.note .ico { flex: none; width: 20px; height: 20px; margin-top: 1px; }
+.note b { font-weight: 700; }
+
+.cta { margin-top: 16px; }
+.cta h2 { font-size: 20px; margin: 0 0 4px; color: var(--ink-strong); letter-spacing: -.01em; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.btn { border: 0; border-radius: 6px; padding: 12px 18px; font-weight: 600; cursor: pointer; background: var(--accent); color: var(--on-accent); text-decoration: none; display: inline-block; }
+.btn.secondary { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+
+.footer { margin-top: 28px; font-size: 13px; color: var(--muted); line-height: 1.55; max-width: 760px; }
+.footer a { color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media print {
+  body { background: #fff; color: #000; }
+  .topbar, .actions, .stepper button, details.more summary::before { display: none !important; }
+  .card { box-shadow: none; break-inside: avoid; }
+  .grid { grid-template-columns: 1fr 1fr; }
+  .result-col { position: static; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <img class="logo" src="data:image/png;base64,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" alt="ViP Verkehrsbetrieb Potsdam">
+    <div class="topbar-title">Für Arbeitgeber</div>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="intro">
+    <p class="kicker">Deutschlandticket Job</p>
+    <h1>Was kostet das Jobticket für Ihr Team?</h1>
+    <p class="lede">Zuschuss wählen und sofort sehen, was Ihr Unternehmen zahlt und was bei Ihren Beschäftigten ankommt – schon ab einer Person.</p>
+  </section>
+
+  <div class="grid">
+    <!-- ============ Eingaben ============ -->
+    <div>
+      <section class="card">
+        <p class="label">Schritt 1</p>
+        <h2 class="q-title">Wie viele Beschäftigte machen mit?</h2>
+        <p class="q-hint">Nur wer das Ticket nutzen möchte – eine Schätzung reicht.</p>
+        <div class="stepper">
+          <button type="button" id="minus" aria-label="Eine Person weniger">−</button>
+          <label class="sr-only" for="anzahl">Anzahl Beschäftigte</label>
+          <input class="num" id="anzahl" type="number" inputmode="numeric" min="1" max="100000" step="1" value="20">
+          <button type="button" id="plus" aria-label="Eine Person mehr">+</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="label">Schritt 2</p>
+        <h2 class="q-title">Wie viel geben Sie pro Person dazu?</h2>
+        <p class="q-hint">Pro Monat. Mindestens 25 % des Ticketpreises – dann gibt es zusätzlich 5 % Rabatt.</p>
+        <div class="options cols2" id="zuschuss-opts" role="group" aria-label="Zuschuss pro Person"></div>
+        <div class="custom" id="custom-row">
+          <label class="sr-only" for="zuschuss-eigen">Eigener Zuschuss in Euro</label>
+          <input class="num" id="zuschuss-eigen" type="number" inputmode="decimal" min="0" step="0.5" value="25">
+          <span id="custom-hint">€ pro Person und Monat</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="label">Schritt 3</p>
+        <h2 class="q-title">Wie zahlen Sie den Zuschuss aus?</h2>
+        <div class="options" id="steuer-opts" role="group" aria-label="Steuerliche Behandlung">
+          <button class="opt" type="button" data-steuer="frei"><span class="mark"></span><span>
+            <span class="opt-main">Zusätzlich zum Gehalt – steuerfrei</span>
+            <span class="opt-sub">§ 3 Nr. 15 EStG: keine Lohnsteuer, keine Sozialabgaben. Wird bei der Entfernungspauschale der Beschäftigten angerechnet.</span></span></button>
+          <button class="opt" type="button" data-steuer="pauschal"><span class="mark"></span><span>
+            <span class="opt-main">Mit 25 % Pauschalsteuer</span>
+            <span class="opt-sub">§ 40 Abs. 2 EStG: Sie zahlen die Steuer, dafür keine Anrechnung auf die Entfernungspauschale – auch bei Gehaltsumwandlung möglich.</span></span></button>
+        </div>
+        <details class="more" id="park-details">
+          <summary>Parkplätze gegenrechnen (optional)</summary>
+          <div class="fields">
+            <div class="field"><label for="park-kosten">Kosten je Stellplatz / Monat</label><input id="park-kosten" type="number" inputmode="decimal" min="0" step="5" placeholder="z. B. 80"></div>
+            <div class="field"><label for="park-anzahl">Stellplätze, die frei würden</label><input id="park-anzahl" type="number" inputmode="numeric" min="0" step="1" placeholder="z. B. 5"></div>
+          </div>
+        </details>
+      </section>
+    </div>
+
+    <!-- ============ Ergebnis ============ -->
+    <div class="result-col">
+      <section class="card result-card" aria-live="polite">
+        <div class="result-head">
+          <p class="result-title">Ihre Beschäftigten zahlen</p>
+          <div class="big" id="r-an"></div>
+          <div class="big-sub" id="r-an-sub"></div>
+        </div>
+        <div class="result-body">
+          <div class="split">
+            <div class="bar" id="r-bar" aria-hidden="true"></div>
+            <ul class="legend" id="r-legend"></ul>
+          </div>
+          <div class="rows" id="r-rows"></div>
+          <div id="r-notes"></div>
+        </div>
+      </section>
+
+      <section class="card cta" id="kontakt">
+        <h2>Angebot anfragen</h2>
+        <p class="q-hint">Wir richten das Deutschlandticket Job für Ihr Unternehmen ein – Vertrag, Bestellung und Abrechnung. Die Angaben unten gehen nur in Ihre E-Mail, diese Seite speichert und sendet nichts.</p>
+        <div class="fields">
+          <div class="field wide"><label for="k-firma">Unternehmen</label><input id="k-firma" type="text" autocomplete="organization"></div>
+          <div class="field"><label for="k-name">Ansprechperson</label><input id="k-name" type="text" autocomplete="name"></div>
+          <div class="field"><label for="k-tel">Telefon (optional)</label><input id="k-tel" type="tel" autocomplete="tel"></div>
+        </div>
+        <div class="actions">
+          <a class="btn" id="mail" href="#">E-Mail an ViP vorbereiten</a>
+          <button class="btn secondary" type="button" id="print">Rechnung drucken</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p id="stand-line"></p>
+    <p>Diese Rechnung ist eine Orientierung, keine Steuer- oder Rechtsberatung. Verbindlich sind die Tarifbestimmungen des VBB und der Vertrag mit der ViP; steuerliche Fragen klären Sie bitte mit Ihrer Lohnbuchhaltung. Ansprechpartner für Firmenkunden: <a href="mailto:firmenticket@vip-potsdam.de">firmenticket@vip-potsdam.de</a>.</p>
+  </footer>
+</main>
+
+<!-- ============================================================
+     DATEN - hier pflegen. Preise als Paar [2026, 2027].
+     ============================================================ -->
+<script id="jobticket-data" type="application/json">
+{
+  "stand": "2026-11-02",
+  "jahre": [
+    { "key": "2026", "ab": "2026-01-01", "label": "gültig seit 1. Januar 2026" },
+    { "key": "2027", "ab": "2027-01-01", "label": "ab 1. Januar 2027 (Deutschlandticket 66,80 €, Beschluss der Verkehrsministerkonferenz)" }
+  ],
+  "dticket": [63.00, 66.80],
+  "rabattProzent": 5,
+  "mindestzuschussProzent": 25,
+  "pauschalsteuerProzent": 25,
+  "soliProzent": 5.5,
+  "faustwert": {
+    "abzuegeBeschaeftigteProzent": 40,
+    "svArbeitgeberProzent": 21
+  },
+  "email": "firmenticket@vip-potsdam.de"
+}
+</script>
+
+<!-- ============================================================
+     RECHENLOGIK - reine Funktion ohne DOM, getestet mit
+     node jobticket/test/rechner-test.mjs
+     ============================================================ -->
+<script id="jobticket-engine">
+var JobticketRechner = (function () {
+  'use strict';
+  function r2(x) { return Math.round(x * 100) / 100; }
+  function eur(x) {
+    var s = Math.abs(x).toFixed(2).split('.');
+    s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return (x < 0 ? '−' : '') + s[0] + ',' + s[1] + ' €';
+  }
+
+  // e = { jahrIndex, anzahl, zuschuss: Zahl oder 'min' oder 'voll', steuer: 'frei'|'pauschal',
+  //       parkKosten, parkAnzahl }
+  function rechnen(e, D) {
+    var j = e.jahrIndex || 0;
+    var n = Math.max(1, Math.floor(Number(e.anzahl) || 1));
+    var preis = D.dticket[j];
+    var rabatt = r2(preis * D.rabattProzent / 100);
+    var jobPreis = r2(preis - rabatt);
+    var minZ = r2(preis * D.mindestzuschussProzent / 100);
+
+    var z;
+    if (e.zuschuss === 'min') z = minZ;
+    else if (e.zuschuss === 'voll') z = jobPreis;
+    else z = r2(Math.max(0, Number(e.zuschuss) || 0));
+    var gekappt = z > jobPreis;
+    if (gekappt) z = jobPreis;
+    var zulaessig = z + 0.001 >= minZ;
+
+    // Unter dem Mindestzuschuss gibt es kein Deutschlandticket Job:
+    // Beschäftigte zahlen dann den normalen Preis abzüglich Zuschuss.
+    var an = zulaessig ? r2(jobPreis - z) : r2(Math.max(0, preis - z));
+    var pauschal = e.steuer === 'pauschal';
+    var steuer = pauschal ? r2(z * D.pauschalsteuerProzent / 100 * (1 + D.soliProzent / 100)) : 0;
+    var agPerson = r2(z + steuer);
+    var agMonat = r2(agPerson * n);
+    var parkKosten = Math.max(0, Number(e.parkKosten) || 0);
+    var parkAnzahl = Math.max(0, Math.floor(Number(e.parkAnzahl) || 0));
+    var park = r2(parkKosten * parkAnzahl);
+
+    // Faustwert: Welche Gehaltserhöhung bringt netto denselben Vorteil?
+    var vorteil = r2(preis - an);
+    var abzug = D.faustwert.abzuegeBeschaeftigteProzent / 100;
+    var brutto = r2(vorteil / (1 - abzug));
+    var bruttoAG = r2(brutto * (1 + D.faustwert.svArbeitgeberProzent / 100));
+
+    return {
+      anzahl: n, preis: preis, rabatt: zulaessig ? rabatt : 0, jobPreis: jobPreis, mindestzuschuss: minZ,
+      zuschuss: z, zulaessig: zulaessig, gekappt: gekappt, beschaeftigte: an,
+      vorteilProPerson: vorteil, vorteilJahr: r2(vorteil * 12),
+      steuerProPerson: steuer, arbeitgeberProPerson: agPerson,
+      arbeitgeberMonat: agMonat, arbeitgeberJahr: r2(agMonat * 12),
+      parkMonat: park, nettoMonat: r2(agMonat - park), nettoJahr: r2((agMonat - park) * 12),
+      gehaltBrutto: brutto, gehaltArbeitgeber: bruttoAG, gehaltArbeitgeberMonat: r2(bruttoAG * n)
+    };
+  }
+
+  return { rechnen: rechnen, eur: eur };
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var D = JSON.parse(document.getElementById('jobticket-data').textContent);
+  var R = JobticketRechner, eur = R.eur;
+  var params = new URLSearchParams(location.search);
+  if (params.get('embed') === '1') document.body.classList.add('embed');
+  var jahrIndex = 0;
+  var heute = new Date();
+  D.jahre.forEach(function (y, i) { if (new Date(y.ab) <= heute) jahrIndex = i; });
+  if (params.get('jahr')) D.jahre.forEach(function (y, i) { if (y.key === params.get('jahr')) jahrIndex = i; });
+
+  var state = { anzahl: 20, zuschuss: 'min', eigen: 25, steuer: 'frei', parkKosten: '', parkAnzahl: '' };
+
+  // Zustand im Hash, damit Vertrieb einen fertig gerechneten Link verschicken kann.
+  (function readHash() {
+    var h = new URLSearchParams(location.hash.replace(/^#/, ''));
+    if (h.get('n')) state.anzahl = Math.max(1, parseInt(h.get('n'), 10) || 20);
+    if (h.get('z')) {
+      if (h.get('z') === 'min' || h.get('z') === 'voll' || h.get('z') === '30') state.zuschuss = h.get('z');
+      else { state.zuschuss = 'eigen'; state.eigen = parseFloat(h.get('z').replace(',', '.')) || 0; }
+    }
+    if (h.get('s') === 'pauschal') state.steuer = 'pauschal';
+    if (h.get('pk')) state.parkKosten = h.get('pk');
+    if (h.get('pa')) state.parkAnzahl = h.get('pa');
+  })();
+  function writeHash() {
+    var h = new URLSearchParams();
+    h.set('n', state.anzahl);
+    h.set('z', state.zuschuss === 'eigen' ? String(state.eigen) : state.zuschuss);
+    if (state.steuer !== 'frei') h.set('s', state.steuer);
+    if (state.parkKosten) h.set('pk', state.parkKosten);
+    if (state.parkAnzahl) h.set('pa', state.parkAnzahl);
+    try { history.replaceState(null, '', '#' + h.toString()); } catch (e) { /* sandboxed */ }
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var basis = R.rechnen({ jahrIndex: jahrIndex, anzahl: 1, zuschuss: 'min' }, D);
+
+  // Zuschuss-Optionen mit den Beträgen des gültigen Jahres
+  var OPTS = [
+    { v: 'min', main: 'Mindestzuschuss', sub: eur(basis.mindestzuschuss) + ' (25 %) – Beschäftigte zahlen ' + eur(basis.jobPreis - basis.mindestzuschuss) },
+    { v: '30', main: '30 € pro Monat', sub: 'Beschäftigte zahlen ' + eur(basis.jobPreis - 30) },
+    { v: 'voll', main: 'Ticket komplett', sub: eur(basis.jobPreis) + ' – für Beschäftigte kostenlos' },
+    { v: 'eigen', main: 'Eigener Betrag', sub: 'frei wählbar' }
+  ];
+  $('zuschuss-opts').innerHTML = OPTS.map(function (o) {
+    return '<button class="opt" type="button" data-zuschuss="' + o.v + '"><span class="mark"></span><span><span class="opt-main">' + o.main + '</span><span class="opt-sub">' + o.sub + '</span></span></button>';
+  }).join('');
+
+  function zuschussWert() {
+    if (state.zuschuss === 'min' || state.zuschuss === 'voll') return state.zuschuss;
+    if (state.zuschuss === '30') return 30;
+    return state.eigen;
+  }
+
+  var ICON_INFO = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>';
+  var ICON_WARN = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9.5 16.5h-19L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>';
+  function row(k, v, cls) { return '<div class="row' + (cls ? ' ' + cls : '') + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+  function pers(n) { return n === 1 ? '1 Person' : n.toLocaleString('de-DE') + ' Personen'; }
+
+  function setVal(id, v) { var el = $(id); if (document.activeElement !== el) el.value = v; }
+  function render() {
+    // Felder, in denen gerade getippt wird, nicht überschreiben ("25," bliebe sonst nicht stehen).
+    setVal('anzahl', state.anzahl); setVal('zuschuss-eigen', state.eigen);
+    $('custom-row').classList.toggle('hidden', state.zuschuss !== 'eigen');
+    document.querySelectorAll('[data-zuschuss]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.zuschuss === state.zuschuss)); });
+    document.querySelectorAll('[data-steuer]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.steuer === state.steuer)); });
+    setVal('park-kosten', state.parkKosten); setVal('park-anzahl', state.parkAnzahl);
+    if (state.parkKosten || state.parkAnzahl) $('park-details').open = true;
+
+    var r = R.rechnen({ jahrIndex: jahrIndex, anzahl: state.anzahl, zuschuss: zuschussWert(), steuer: state.steuer,
+      parkKosten: state.parkKosten, parkAnzahl: state.parkAnzahl }, D);
+
+    $('r-an').textContent = eur(r.beschaeftigte);
+    $('r-an-sub').innerHTML = 'statt ' + eur(r.preis) + ' für das Deutschlandticket – <b>' + eur(r.vorteilJahr) + ' weniger im Jahr</b> pro Person.';
+
+    var parts = [
+      { w: r.rabatt, c: 'var(--bar-rabatt)', t: 'Jobticket-Rabatt (5 %)' },
+      { w: r.zuschuss, c: 'var(--bar-ag)', t: 'Ihr Zuschuss' },
+      { w: r.beschaeftigte, c: 'var(--bar-an)', t: 'Eigenanteil Beschäftigte' }
+    ];
+    $('r-bar').innerHTML = parts.filter(function (p) { return p.w > 0; }).map(function (p) {
+      return '<span style="width:' + (p.w / r.preis * 100).toFixed(2) + '%;background:' + p.c + '"></span>';
+    }).join('');
+    $('r-legend').innerHTML = parts.map(function (p) {
+      return '<li><span class="sw" style="background:' + p.c + '"></span><span class="what">' + p.t + '</span><span class="val">' + eur(p.w) + '</span></li>';
+    }).join('');
+
+    var rows = row('Ihr Zuschuss je Person', eur(r.zuschuss));
+    if (r.steuerProPerson) rows += row('Pauschalsteuer inkl. Soli je Person', eur(r.steuerProPerson));
+    rows += row('Ihre Kosten im Monat (' + pers(r.anzahl) + ')', eur(r.arbeitgeberMonat));
+    if (r.parkMonat > 0) rows += row('Weniger Kosten für Stellplätze', eur(-r.parkMonat));
+    rows += row('Ihre Kosten im Jahr', eur(r.parkMonat > 0 ? r.nettoJahr : r.arbeitgeberJahr), 'total');
+    $('r-rows').innerHTML = rows;
+
+    var notes = '';
+    if (!r.zulaessig) {
+      notes += '<div class="note warn">' + ICON_WARN + '<span><b>Unter dem Mindestzuschuss von ' + eur(r.mindestzuschuss) + '</b> ist das Deutschlandticket Job nicht möglich – es entfällt auch der Rabatt. Ihre Beschäftigten zahlen dann den normalen Preis abzüglich Ihres Zuschusses.</span></div>';
+    }
+    if (r.gekappt) {
+      notes += '<div class="note info">' + ICON_INFO + '<span>Mehr als ' + eur(r.jobPreis) + ' sind nicht nötig – damit ist das Ticket für Ihre Beschäftigten bereits kostenlos.</span></div>';
+    }
+    if (r.zulaessig && r.vorteilProPerson > 0) {
+      notes += '<div class="note info">' + ICON_INFO + '<span><b>Zum Vergleich:</b> Denselben Vorteil von ' + eur(r.vorteilProPerson) + ' netto als Gehaltserhöhung zu geben, kostet Sie etwa ' + eur(r.gehaltArbeitgeber) + ' je Person im Monat (rund ' + eur(r.gehaltBrutto) + ' brutto plus Arbeitgeberanteil). Faustwert mit ' + D.faustwert.abzuegeBeschaeftigteProzent + ' % Abzügen bei den Beschäftigten und ' + D.faustwert.svArbeitgeberProzent + ' % Sozialabgaben bei Ihnen.</span></div>';
+    }
+    $('r-notes').innerHTML = notes;
+
+    var naechstes = D.jahre[jahrIndex + 1];
+    var rNext = naechstes ? R.rechnen({ jahrIndex: jahrIndex + 1, anzahl: 1, zuschuss: 'min' }, D) : null;
+    $('stand-line').textContent = 'Preise ' + D.jahre[jahrIndex].label + '.'
+      + (rNext ? ' Ab 1. Januar ' + naechstes.key + ': Deutschlandticket ' + eur(rNext.preis) + ', Mindestzuschuss ' + eur(rNext.mindestzuschuss) + ', Eigenanteil höchstens ' + eur(rNext.beschaeftigte) + '.' : '')
+      + ' Datenstand ' + D.stand.split('-').reverse().join('.') + '.';
+
+    updateMail(r);
+    writeHash();
+  }
+
+  function updateMail(r) {
+    var firma = $('k-firma').value.trim(), name = $('k-name').value.trim(), tel = $('k-tel').value.trim();
+    var body = [
+      'Guten Tag,',
+      '',
+      'wir interessieren uns für das Deutschlandticket Job' + (firma ? ' für ' + firma : '') + '.',
+      '',
+      'Unsere Rechnung mit dem ViP-Jobticket-Rechner:',
+      '- Beschäftigte: etwa ' + r.anzahl,
+      '- Zuschuss je Person und Monat: ' + eur(r.zuschuss),
+      '- Eigenanteil der Beschäftigten: ' + eur(r.beschaeftigte),
+      '- Steuerliche Behandlung: ' + (state.steuer === 'pauschal' ? '25 % Pauschalsteuer' : 'steuerfrei zusätzlich zum Gehalt'),
+      '',
+      'Bitte melden Sie sich für ein Angebot.',
+      '',
+      'Viele Grüße',
+      name || '',
+      firma || '',
+      tel ? 'Telefon: ' + tel : '',
+      '',
+      'Link zur Rechnung: ' + location.href
+    ].join('\n').replace(/\n{3,}/g, '\n\n');
+    var subject = 'Anfrage Deutschlandticket Job' + (firma ? ' – ' + firma : '');
+    $('mail').href = 'mailto:' + D.email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  }
+
+  // ---------- Bedienung ----------
+  function setAnzahl(v) { state.anzahl = Math.min(100000, Math.max(1, Math.floor(v) || 1)); render(); }
+  $('minus').addEventListener('click', function () { setAnzahl(state.anzahl - 1); });
+  $('plus').addEventListener('click', function () { setAnzahl(state.anzahl + 1); });
+  $('anzahl').addEventListener('change', function (e) { setAnzahl(parseInt(e.target.value, 10)); });
+  $('anzahl').addEventListener('input', function (e) { var v = parseInt(e.target.value, 10); if (v >= 1) { state.anzahl = Math.min(100000, v); render(); } });
+  $('zuschuss-opts').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-zuschuss]'); if (!b) return;
+    state.zuschuss = b.dataset.zuschuss; render();
+    if (state.zuschuss === 'eigen') $('zuschuss-eigen').focus();
+  });
+  $('zuschuss-eigen').addEventListener('input', function (e) { state.eigen = parseFloat(String(e.target.value).replace(',', '.')) || 0; render(); });
+  $('steuer-opts').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-steuer]'); if (!b) return;
+    state.steuer = b.dataset.steuer; render();
+  });
+  ['park-kosten', 'park-anzahl'].forEach(function (id) {
+    $(id).addEventListener('input', function (e) { state[id === 'park-kosten' ? 'parkKosten' : 'parkAnzahl'] = e.target.value; render(); });
+  });
+  ['k-firma', 'k-name', 'k-tel'].forEach(function (id) {
+    $(id).addEventListener('input', function () { render(); });
+  });
+  $('print').addEventListener('click', function () { window.print(); });
+
+  render();
+})();
+</script>
+</body>
+</html>
