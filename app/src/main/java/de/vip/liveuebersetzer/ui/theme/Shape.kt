@@ -5,19 +5,23 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 /**
- * Eine Rundungsskala für die ganze App, damit Karten, Blasen, Banner und
- * Knöpfe zusammengehörig wirken: Kleines (Chips, Badges) 10 dp, Karten und
- * Banner 18 dp, große Flächen 24 dp. Pillen (Sprachwahl, Sprechtaste) sind
- * voll gerundet und stehen in den Komponenten direkt.
+ * Bewusst knappe Rundungen: Bedienelemente sind eckig mit kleinem Radius
+ * wie Beschilderung an der Haltestelle, nicht voll gerundete "Pillen"
+ * (Rückmeldung aus dem Praxistest: wirkte nach Baukasten). Einzige runde
+ * Form bleibt die Sprechtaste - sie ist das eine Element, das man auf
+ * beiden Seiten sofort finden soll.
  */
 val VipShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(14.dp),
-    large = RoundedCornerShape(18.dp),
-    extraLarge = RoundedCornerShape(24.dp),
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(6.dp),
+    medium = RoundedCornerShape(8.dp),
+    large = RoundedCornerShape(10.dp),
+    extraLarge = RoundedCornerShape(12.dp),
 )
 
-/** Sprechblase: rundum weich, die "Sprecher-Ecke" etwas enger. */
-val BubbleShapeMine = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 18.dp, bottomEnd = 6.dp)
-val BubbleShapeOther = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 6.dp, bottomEnd = 18.dp)
+/** Knöpfe, Sprachauswahl, Sprach-Chips, Kopfleisten-Icons. */
+val ControlShape = RoundedCornerShape(6.dp)
+
+/** Sprechblase: knapp gerundet, die "Sprecher-Ecke" spitz. */
+val BubbleShapeMine = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 10.dp, bottomEnd = 2.dp)
+val BubbleShapeOther = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 2.dp, bottomEnd = 10.dp)

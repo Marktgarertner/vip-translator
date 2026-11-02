@@ -182,7 +182,7 @@ das UI ist deshalb ein **Splitscreen**:
   Bildschirmhintergrund). Karten in Weiß mit feinem Rahmen statt Schatten;
   das dunkle Theme leitet seine Flächen aus Dunkelgrün ab. Die **vier
   Farben des Windrads** (Rot #D5232A, Orange #F39200, Blau #1467A8, Grün
-  #41A62A aus `vip_logo.xml`) dienen als Statusakzente - Rot für "Aufnahme
+  #41A62A, wie im Windrad) dienen als Statusakzente - Rot für "Aufnahme
   läuft" und Fehler, Orange für Hinweise, Grün für "bereit" - statt des
   Material-Standardrots. Der Launcher-Icon-Hintergrund ist Waldgrün, das
   Launcher-Symbol ein weißes Windrad.
@@ -194,15 +194,14 @@ das UI ist deshalb ein **Splitscreen**:
   Android automatisch auf die Systemschrift zurück. Die Typo-Skala
   (`ui/theme/Type.kt`) ist etwas größer als die Material-Defaults, weil am
   Schalter mit Abstand gelesen wird.
-- **Logo:** `res/drawable/vip_logo.xml` ist eine **stilisierte
-  Vektor-Annäherung** an das offizielle Windrad, nach der
-  Original-Vorlage aufgebaut: vier gebogene Ringsegmente mit Lücken -
-  Rot (oben links), Blau (oben rechts), Orange (unten rechts), Grün
-  (unten links). Das Original hat zusätzlich geschwungene Lücken und
-  Farbverläufe - für das finale Branding bitte das offizielle Logo aus dem
-  SWP-Markenportal als Vector-Asset importieren (Android Studio: File >
-  New > Vector Asset) und diese Datei ersetzen - dabei auch
-  `ic_launcher_foreground.xml` (weiße Variante fürs App-Icon) angleichen.
+- **Logo:** Seit 1.4 das **Original-Windrad** mit seinen geschwungenen
+  Segmenten und Farbverläufen (`res/drawable-nodpi/vip_windrad.png`,
+  180 × 180 px, das Symbol von swp-potsdam.de) statt der früheren
+  Nachzeichnung `vip_logo.xml`. Bei 40 dp Anzeigegröße reicht die
+  Auflösung bis xxxhdpi. Liegt im SWP-Markenportal eine Vektorfassung
+  vor, kann sie die PNG ersetzen (Android Studio: File > New > Vector
+  Asset); dann auch `ic_launcher_foreground.xml` (weißes Windrad fürs
+  App-Icon, weiterhin eine vereinfachte Nachzeichnung) angleichen.
 
 ## Gestaltung & Screenshots
 

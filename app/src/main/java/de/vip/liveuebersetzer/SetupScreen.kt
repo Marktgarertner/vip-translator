@@ -47,6 +47,7 @@ import de.vip.liveuebersetzer.ui.components.StatusRow
 import de.vip.liveuebersetzer.ui.components.VipButton
 import de.vip.liveuebersetzer.ui.components.VipCard
 import de.vip.liveuebersetzer.ui.components.VipOutlinedButton
+import de.vip.liveuebersetzer.ui.components.VipLogoColor
 import de.vip.liveuebersetzer.ui.components.VipTopBar
 import de.vip.liveuebersetzer.ui.theme.VipTheme
 
@@ -242,6 +243,15 @@ fun SetupContent(
                     text = "Fertig - zum Gespräch",
                     onClick = onDone,
                 )
+            }
+
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 18.dp),
+                    contentAlignment = Alignment.Center,
+                ) { VipLogoColor() }
             }
 
             item {

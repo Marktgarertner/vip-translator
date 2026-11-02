@@ -31,7 +31,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import de.vip.liveuebersetzer.ui.components.BannerKind
 import de.vip.liveuebersetzer.ui.components.EmptyState
-import de.vip.liveuebersetzer.ui.components.FloatingPillButton
+import de.vip.liveuebersetzer.ui.components.FloatingButton
 import de.vip.liveuebersetzer.ui.components.HeaderIconButton
 import de.vip.liveuebersetzer.ui.components.ListTopFade
 import de.vip.liveuebersetzer.ui.components.MessageBubble
@@ -391,7 +391,7 @@ private fun StaffPane(
         // Ersetzt den früheren Papierkorb: räumt alles für den nächsten
         // Kunden ab, nicht nur den Verlauf. Unten rechts, auf Höhe der
         // Sprechtaste - beide Hauptaktionen liegen so in Daumenreichweite.
-        FloatingPillButton(
+        FloatingButton(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 54.dp),

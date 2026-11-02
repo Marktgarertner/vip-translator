@@ -130,6 +130,23 @@ class TransitGlossaryTest {
     }
 
     @Test
+    fun `laesst spanische Saetze unveraendert`() {
+        // Rückmeldung aus dem Kundenzentrum: Spanisch klappte nicht gut.
+        // Abgesichert, dass die Nachkorrektur daran keinen Anteil hat.
+        val spanish = language("es")
+        listOf(
+            "Buenos días necesito un billete para la estación central",
+            "Cuánto cuesta un billete sencillo para Berlín",
+            "Quiero ir a Potsdam con mi bicicleta y mi perro",
+            "Dónde está la parada del autobús hacia el centro",
+            "Tengo una tarjeta mensual pero la máquina no funciona",
+            "Perdone, el tranvía llega con retraso a la universidad",
+            "Necesito información sobre el abono para estudiantes",
+        ).forEach { assertUnchanged(it, spanish) }
+        assertCorrected("Quiero ir a Potsdam", "Quiero ir a Potstam", spanish)
+    }
+
+    @Test
     fun `laesst nicht-lateinische Schrift unveraendert`() {
         assertUnchanged("Доброго дня, де зупинка", ukrainian)
     }

@@ -136,7 +136,7 @@ class ScreenshotTest {
                     speechReady = index < 11,
                 )
             },
-            versionName = "1.3",
+            versionName = "1.4",
             onRequestMic = {}, onOpenModels = {}, onOpenGlossary = {}, onOpenPhrases = {}, onDone = {}, onClose = {},
         )
     }
@@ -146,7 +146,7 @@ class ScreenshotTest {
         SetupContent(
             micGranted = false,
             readiness = null,
-            versionName = "1.3",
+            versionName = "1.4",
             onRequestMic = {}, onOpenModels = {}, onOpenGlossary = {}, onOpenPhrases = {}, onDone = {}, onClose = {},
         )
     }

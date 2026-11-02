@@ -19,7 +19,7 @@ val VipSeegruen = Color(0xFF008963)
 val VipAquamarine = Color(0xFFDEF3F0)
 
 /**
- * Die vier Farben des ViP-Windrads (`res/drawable/vip_logo.xml`). Werden
+ * Die vier Farben des ViP-Windrads (offizielles Logo `res/drawable-nodpi/vip_logo_farbig.png`). Werden
  * als **semantische Akzente** genutzt, damit Zustände markenkonform bleiben
  * statt Material-Standardrot/-gelb zu zeigen: Rot = Aufnahme läuft / Fehler,
  * Orange = Hinweis/Warnung, Blau = Information, Grün = bereit.

@@ -62,17 +62,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.vip.liveuebersetzer.Language
 import de.vip.liveuebersetzer.LanguageCatalog
 import de.vip.liveuebersetzer.R
+import de.vip.liveuebersetzer.ui.theme.ControlShape
 import de.vip.liveuebersetzer.ui.theme.VipDisabled
 import de.vip.liveuebersetzer.ui.theme.VipTheme
 
@@ -118,33 +121,45 @@ fun VipTopBar(
     }
 }
 
-/** Das ViP-Windrad in einem weißen Kreis - auf beiden Bildschirmhälften links oben. */
+/**
+ * Das offizielle ViP-Logo (Windrad + Schriftzug, Negativfassung in Weiß) -
+ * steht direkt auf der waldgrünen Kopfleiste, ohne weißen Kreis drumherum.
+ * Antippen öffnet die Einrichtung.
+ */
 @Composable
 fun LogoBadge(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
+    Image(
+        painter = painterResource(R.drawable.vip_logo_weiss),
+        contentDescription = "ViP - Einrichtung öffnen",
         modifier = modifier
-            .size(40.dp)
-            .background(Color.White, CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painter = painterResource(R.drawable.vip_logo),
-            contentDescription = "Einrichtung öffnen",
-            modifier = Modifier.size(28.dp),
-        )
-    }
+            .clip(ControlShape)
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp)
+            .height(30.dp),
+        contentScale = ContentScale.FillHeight,
+    )
+}
+
+/** Das farbige ViP-Logo für helle Flächen (Einrichtung, Fußzeilen). */
+@Composable
+fun VipLogoColor(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(R.drawable.vip_logo_farbig),
+        contentDescription = "ViP Verkehrsbetrieb Potsdam",
+        modifier = modifier.height(36.dp),
+        contentScale = ContentScale.FillHeight,
+    )
 }
 
 /**
- * Weiße Pille mit dem Namen der gewählten Sprache und einem Pfeil nach
+ * Weiße Taste mit dem Namen der gewählten Sprache und einem Pfeil nach
  * unten/oben; ein Antippen klappt die Sprachauswahl auf.
  */
 @Composable
-fun LanguagePill(label: String, expanded: Boolean, onClick: () -> Unit) {
+fun LanguageButton(label: String, expanded: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = CircleShape,
+        shape = ControlShape,
         color = Color.White,
         contentColor = MaterialTheme.colorScheme.primary,
     ) {
@@ -206,7 +221,7 @@ fun PaneHeader(
             LogoBadge(onClick = onLogoClick)
             actions?.let { it() }
             Spacer(modifier = Modifier.weight(1f))
-            LanguagePill(label = labelFor(selected), expanded = expanded, onClick = { expanded = !expanded })
+            LanguageButton(label = labelFor(selected), expanded = expanded, onClick = { expanded = !expanded })
         }
         AnimatedVisibility(visible = expanded, enter = expandVertically(), exit = shrinkVertically()) {
             LazyRow(
@@ -236,7 +251,7 @@ fun PaneHeader(
 private fun LanguageChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = CircleShape,
+        shape = ControlShape,
         color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
         contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
         border = if (selected) null else BorderStroke(1.dp, VipTheme.colors.outline),
@@ -261,7 +276,7 @@ fun HeaderIconButton(
     Box(
         modifier = Modifier
             .size(40.dp)
-            .background(Color.White.copy(alpha = if (active) 0.16f else 0.06f), CircleShape)
+            .background(Color.White.copy(alpha = if (active) 0.16f else 0.06f), ControlShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -275,12 +290,12 @@ fun HeaderIconButton(
 }
 
 /**
- * Schwebende Pille über dem Verlauf ("Nächster Kunde" unten rechts, als
+ * Schwebende Taste über dem Verlauf ("Nächster Kunde" unten rechts, als
  * Gegenstück zur Sprechtaste unten links): weiß mit grünem Rahmen, damit
  * die grüne Sprechtaste die dominante Taste bleibt.
  */
 @Composable
-fun FloatingPillButton(
+fun FloatingButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -289,7 +304,7 @@ fun FloatingPillButton(
     Surface(
         onClick = onClick,
         modifier = modifier,
-        shape = CircleShape,
+        shape = ControlShape,
         color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.primary,
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
@@ -713,7 +728,7 @@ fun VipButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = CircleShape,
+        shape = ControlShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -743,7 +758,7 @@ fun VipOutlinedButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = CircleShape,
+        shape = ControlShape,
         border = BorderStroke(1.5.dp, if (enabled) MaterialTheme.colorScheme.primary else VipDisabled),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
@@ -763,7 +778,7 @@ fun VipTextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = CircleShape,
+        shape = ControlShape,
         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
     ) {
         Text(text = text, style = MaterialTheme.typography.labelLarge)
@@ -783,7 +798,7 @@ fun Badge(text: String, modifier: Modifier = Modifier, tone: RowState = RowState
     Text(
         text = text,
         modifier = modifier
-            .background(bg, RoundedCornerShape(8.dp))
+            .background(bg, RoundedCornerShape(4.dp))
             .padding(horizontal = 8.dp, vertical = 3.dp),
         style = MaterialTheme.typography.labelMedium,
         color = fg,
@@ -807,7 +822,7 @@ fun EmptyState(
         Box(
             modifier = Modifier
                 .size(64.dp)
-                .background(VipTheme.colors.bubbleMine, CircleShape),
+                .background(VipTheme.colors.bubbleMine, MaterialTheme.shapes.medium),
             contentAlignment = Alignment.Center,
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))

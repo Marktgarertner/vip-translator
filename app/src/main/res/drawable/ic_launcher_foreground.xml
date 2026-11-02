@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Weißes Windrad (gleiche Geometrie wie vip_logo.xml, einfarbig) auf
+<!-- Weißes Windrad (vereinfachte Nachzeichnung des Windrads, einfarbig) auf
      ViP-grünem Launcher-Hintergrund; skaliert in die Safe-Zone des
      Adaptive Icons. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
