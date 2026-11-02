@@ -21,7 +21,7 @@ Server-Logik; alles läuft im Browser des Nutzers.
 |---|---|
 | `index.html` | Vollansicht mit grüner Kopfleiste |
 | `index.html?embed=1` | ohne Kopfleiste – für WebViews und iframes, in denen die App schon einen Kopf hat |
-| `index.html?lang=tr` | startet auf Türkisch (`de`, `en`, `uk`, `ar`, `tr`) – z. B. für einen eigenen Menüpunkt je Sprache in der App |
+| `index.html?lang=tr` | startet auf Türkisch (Sprachkürzel: `de en uk ru ar fa tr pl vi fr es it zh ja ko hi`) – z. B. für einen eigenen Menüpunkt je Sprache in der App |
 | `index.html?jahr=2027` | Vorschau mit den Preisen des Folgejahres (für die Pflege, nicht verlinken) |
 | `index.html#w=erwachsen&h=oft&z=berlin&x=hund` | Direktlink auf ein Ergebnis – die Antworten stehen im Hash, Zurück-Taste und Neuladen behalten den Stand |
 
@@ -45,9 +45,13 @@ erreichbar. Für den Produktivbetrieb gehört sie aber auf eine ViP-Domain.
 
 ## Sprachen
 
-Deutsch, Englisch, Ukrainisch, Arabisch (von rechts nach links) und
-Türkisch. Die Sprachleiste unter dem Kopf ist auch im `?embed=1`-Modus
-sichtbar. Ohne Vorgabe nimmt die Seite die Gerätesprache, sonst Deutsch;
+16 Sprachen – dieselben wie im Live-Übersetzer: Deutsch, Englisch,
+Ukrainisch, Russisch, Arabisch und Persisch (beide von rechts nach links),
+Türkisch, Polnisch, Vietnamesisch, Französisch, Spanisch, Italienisch,
+Chinesisch, Japanisch, Koreanisch, Hindi. Die Auswahl (Auswahlfeld unter dem
+Kopf, auf Deutsch mit deutschem Sprachnamen dahinter) ist auch im
+`?embed=1`-Modus sichtbar. Datumsangaben immer im gregorianischen Kalender,
+Ziffern immer lateinisch. Ohne Vorgabe nimmt die Seite die Gerätesprache, sonst Deutsch;
 Reihenfolge: Hash `#l=` vor `?lang=` vor Gerätesprache.
 
 - **Produktnamen bleiben deutsch** (Deutschlandticket, 24-Stunden-Karte,
@@ -58,7 +62,7 @@ Reihenfolge: Hash `#l=` vor `?lang=` vor Gerätesprache.
   Text mit einer Zeile je Sprache**. Fehlt eine Sprache, erscheint Deutsch.
   Der Test prüft, dass jeder Text in allen fünf Sprachen existiert, die
   Platzhalter (`{p}` Preis, `{n}`/`{m}` Zahl, `{y}` Jahr) überall gleich
-  sind und alle 8.640 Kombinationen in jeder Sprache dieselbe Empfehlung
+  sind und alle 2.160 Kombinationen in jeder Sprache dieselbe Empfehlung
   ergeben wie auf Deutsch.
 - Verbindlich bleibt der deutsche Tariftext – das steht in jeder Sprache
   im Fuß der Seite.
@@ -68,6 +72,10 @@ Reihenfolge: Hash `#l=` vor `?lang=` vor Gerätesprache.
   die Seite einmal durchzuklicken (`?lang=uk` usw.).
 - Neue Sprache: Eintrag in `LANGS` ergänzen und jedem Text eine Zeile
   geben – der Test zeigt, was fehlt.
+- Bekannte Stellen zum Gegenlesen: Ortsnamen sind teils deutsch geschrieben
+  (Spanisch „Berlin“ statt „Berlín“), teils landesüblich (Russisch
+  „Берлин“); die Übersetzung von „Abo“ (Koreanisch 정기 구독 klingt nach
+  Zeitschriftenabo); Hindi nennt Uhrzeiten doppelt („20 बजे (रात 8 बजे)“).
 
 ## Die Entscheidungslogik in einem Absatz
 

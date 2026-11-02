@@ -132,7 +132,10 @@ check(combos + ' Kombinationen ohne Fehler und ohne leeres Ergebnis', broken ===
 // --- Sprachen ---------------------------------------------------------------
 console.log('\nSprachen');
 const LANGS = I18N.langs.map(l => l.code);
-check('Fünf Sprachen: ' + LANGS.join(', '), LANGS.join(',') === 'de,en,uk,ar,tr');
+check(LANGS.length + ' Sprachen: ' + LANGS.join(', '), LANGS.length === 16 && LANGS[0] === 'de');
+check('Arabisch und Persisch von rechts nach links, alle anderen nicht', I18N.langs.filter(l => l.dir === 'rtl').map(l => l.code).join() === 'ar,fa');
+check('Jede Sprache hat einen deutschen Namen fürs Auswahlfeld', I18N.langs.every(l => l.de && l.name));
+check('Persisch und Hindi mit lateinischen Ziffern', /12/.test(I18N.eur(12, 'fa')) && /12/.test(I18N.eur(12, 'hi')), I18N.eur(12, 'fa') + ' / ' + I18N.eur(12, 'hi'));
 const ph = s => (s.match(/\{\w+\}/g) || []).sort().join(',');
 let missing = [], badPh = [];
 for (const [key, e] of Object.entries(I18N.text)) {
@@ -157,7 +160,7 @@ const unused = Object.keys(I18N.text).filter(k => !usedKeys.has(k) && !/^jahr_/.
 check('Keine verwaisten Texte', unused.length === 0, unused.join(', '));
 check('Fragenliste deckt die Hash-Werte ab', I18N.questions.map(q => q.key).join() === 'wer,wie,wohin,extras');
 check('Arabisch läuft von rechts nach links', I18N.info('ar').dir === 'rtl' && I18N.info('de').dir === 'ltr');
-check('Gerätesprache "tr-TR" wird erkannt, "fr" nicht', I18N.match('tr-TR') === 'tr' && I18N.match('fr') === null);
+check('Gerätesprache "tr-TR" und "zh-Hans-CN" werden erkannt, "nl" nicht', I18N.match('tr-TR') === 'tr' && I18N.match('zh-Hans-CN') === 'zh' && I18N.match('nl') === null);
 check('Deutsch bleibt bei "3,00 €"', I18N.eur(3, 'de') === '3,00 €');
 check('Englisch formatiert "€3.00"', I18N.eur(3, 'en') === '€3.00', I18N.eur(3, 'en'));
 check('Arabisch nutzt lateinische Ziffern', /3\.00/.test(I18N.eur(3, 'ar')), I18N.eur(3, 'ar'));
@@ -182,10 +185,12 @@ for (const w of wer) for (const h of wie) for (const z of wohin) for (const x of
     }
   }
 }
-check(langCombos + ' Kombinationen in en/uk/ar/tr: gleiche Empfehlung wie Deutsch, keine offenen Platzhalter', langBroken.length === 0, langBroken.slice(0, 3).join(' | '));
+check(langCombos + ' Kombinationen in ' + (LANGS.length - 1) + ' weiteren Sprachen: gleiche Empfehlung wie Deutsch, keine offenen Platzhalter', langBroken.length === 0, langBroken.slice(0, 3).join(' | '));
 check('Englisch ist wirklich übersetzt', run({ wer: 'erwachsen', wie: 'oft', wohin: 'ab', lang: 'en' }).hinweise.length === 0
   && run({ wer: 'u6', lang: 'en' }).sofort.name === 'No ticket needed'
   && run({ wer: 'erwachsen', wie: 'tag', wohin: 'weit', lang: 'en' }).empfehlungen[0].beachten.some(t => /9 am/.test(t)));
+const untranslated = LANGS.slice(1).filter(l => ['h1', 'lede', 'q_wie_hint', 'h_hund', 'disclaimer'].some(k => I18N.text[k][l] === I18N.text[k].de));
+check('Alle Sprachen sind wirklich übersetzt (Stichprobe)', untranslated.length === 0, untranslated.join(','));
 check('Produktnamen bleiben deutsch', top({ wer: 'erwachsen', wie: 'oft', wohin: 'berlin', lang: 'ar' }).name === 'Deutschlandticket');
 
 console.log('\n' + (failures ? failures + ' Prüfung(en) fehlgeschlagen' : 'Alle Prüfungen bestanden'));
